@@ -3,5 +3,5 @@
 ### lancer le projet 
 docker compose up -d --build
 
-### pour eviter les problème de dependence sur votre IDE 
+### pour eviter les problèmes de dependence sur votre IDE 
 npm i
