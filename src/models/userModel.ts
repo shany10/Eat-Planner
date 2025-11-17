@@ -10,6 +10,7 @@ export interface IUser extends Document {
   active: boolean;
   created_at: Date;
   updated_at: Date;
+  verifyPassword(candidate: string): Promise<boolean>;
 }
 
 const userSchema = new Schema<IUser>({
@@ -24,15 +25,14 @@ const userSchema = new Schema<IUser>({
   strict: true
 });
 
-// Hash password before save if it's new or modified
-userSchema.pre("save", async function (this: any) {
-  if (!this.isModified || !this.isModified("password")) return;
+userSchema.pre("save", async function (this: IUser) {
+  if (!this.isModified("password")) return;
   this.password = await argon2.hash(this.password);
 });
 
-// Instance method to verify a password
+
 userSchema.methods.verifyPassword = async function (candidate: string) {
   return argon2.verify(this.password, candidate);
 };
 
-export const User = model<IUser>("User", userSchema);
+export const UserModel = model<IUser>("User", userSchema);

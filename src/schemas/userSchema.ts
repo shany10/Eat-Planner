@@ -1,0 +1,19 @@
+// src/schemas/user.ts
+import { z } from "zod";
+
+export const createUserBody = z.object({
+  firstname: z.string().min(1, "firstname requis"),
+  lastname: z.string()
+    .min(1, "lastname requis")
+    .regex(/^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]+$/, "Pas de chiffres dans lastname"),
+  email: z.string().email("email invalide"),
+  password: z.string().min(8, "mot de passe trop court"),
+  statu: z.enum(["admin", "manager"]),
+  active: z.boolean().optional().default(true),
+});
+
+export const updateUserBody = createUserBody
+  .partial()
+  .refine(obj => Object.keys(obj).length > 0, { message: "Au moins un champ est requis" });
+
+export type CreateUserInput = z.infer<typeof createUserBody>;
