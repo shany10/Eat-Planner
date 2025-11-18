@@ -1,5 +1,6 @@
 import express from 'express';
 import userRout from './src/routes/userRout';
+import gymRouter from './src/routes/gymRouter';
 import { connectMongoose, closeMongoose } from "./src/db/mangoose";
 
 const app = express();
@@ -11,11 +12,11 @@ connectMongoose().catch(err => {
 });
 
 app.get('/', (req, res) => {
-    res.send('shany fox man!');
+    res.send('TSPark API - Fitness Challenge Platform');
 });
 
 app.use('/user', userRout);
-
+app.use('/gym', gymRouter);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server is running at http://localhost:${process.env.PORT}`);
