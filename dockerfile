@@ -7,11 +7,11 @@ WORKDIR /app
 # a lockfile is present for reproducible installs.
 COPY package*.json ./
 # Use npm install in the image build to ensure package-lock mismatch doesn't break the build
-RUN npm install
+# RUN npm install
 
 # Copy the rest of the application and build TypeScript
 COPY . .
-RUN npm install && npm run build
+RUN npm install 
 
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["sh", "-c", "npm run build && npm run dev"]

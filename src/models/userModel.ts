@@ -6,7 +6,7 @@ export interface IUser extends Document {
   lastname: string;
   email: string;
   password: string;
-  statu: "admin" | "manager";
+  role: "admin" | "manager" | "member";
   active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -18,7 +18,7 @@ const userSchema = new Schema<IUser>({
   lastname: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  statu: { type: String, enum: ["admin", "manager"], required: true },
+  role: { type: String, enum: ["admin", "manager", "member"], required: true },
   active: { type: Boolean, default: true }
 }, {
   timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
