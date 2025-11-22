@@ -1,6 +1,7 @@
 import express from 'express';
 import userRout from './src/routes/userRout';
 import { connectMongoose, closeMongoose } from "./src/db/mangoose";
+import "dotenv/config";
 
 const app = express();
 app.use(express.json());
