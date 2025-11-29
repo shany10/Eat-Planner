@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { validateMiddleware, authMiddleware } from "../middlewares";
-import { createUserBody, CreateUserInput, updateUserBody } from "../schemas";
+import { createUserBody, CreateUserInput, updateUserBody, UpdateUserInput } from "../schemas";
 import { IUser, UserModel } from "../models";
 import { signAccessToken } from "../utils/jwt";
 
@@ -25,7 +25,7 @@ userRouter.post('/create', authMiddleware, validateMiddleware({ body: createUser
 
 userRouter.post('/auth', async (req, res): Promise<void> => {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
         res.status(400).json({ error: 'Email and password are required' });
         return;
@@ -45,30 +45,29 @@ userRouter.post('/auth', async (req, res): Promise<void> => {
     res.json({ ok: true, token, id: user.id });
 });
 
-userRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: updateUserBody }), async (req, res) => {
+userRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: updateUserBody }), async (req, res): Promise<void> => {
     const id = req.params.id;
-    const updates = req.body as Partial<CreateUserInput>;
+    const updates = req.body as UpdateUserInput;
     if (updates.password) {
         const user = await UserModel.findById(id).select('+password');
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        user.password = updates.password;
-        Object.assign(user, updates);
-    await user.save();
-    return res.json({ ok: true, id: user.id });
+        if (!user) res.status(404).json({ error: 'User not found' });
+        else {
+            user.password = updates.password;
+            Object.assign(user, updates);
+            await user.save();
+            res.json({ ok: true, id: user.id });
+        }
     }
     const updated = await UserModel.findByIdAndUpdate(id, updates, { new: true }).exec();
-    if (!updated) return res.status(404).json({ error: 'User not found' });
-    res.json(updated);
+    if (!updated) res.status(404).json({ error: 'User not found' });
+    else res.json(updated);
 });
 
 userRouter.delete('/delete/:id', authMiddleware, async (req, res): Promise<void> => {
     const { id } = req.params;
     const deleted = await UserModel.findByIdAndDelete(id).exec();
-    if (!deleted) {
-        res.status(404).send("user not found");
-        return;
-    }
-    res.status(204).send();
+    if (!deleted) res.status(404).send("user not found");
+    else res.status(204).send();
 })
 
 userRouter.delete('/deleteAll', authMiddleware, async (req, res): Promise<void> => {
@@ -76,4 +75,4 @@ userRouter.delete('/deleteAll', authMiddleware, async (req, res): Promise<void> 
     res.status(204).send();
 })
 
-export default userRouter;
+export { userRouter };

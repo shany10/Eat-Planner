@@ -1,4 +1,3 @@
-// src/schemas/user.ts
 import { z } from "zod";
 
 export const createUserBody = z.object({
@@ -17,3 +16,4 @@ export const updateUserBody = createUserBody
   .refine(obj => Object.keys(obj).length > 0, { message: "Au moins un champ est requis" });
 
 export type CreateUserInput = z.infer<typeof createUserBody>;
+export type UpdateUserInput = z.infer<typeof updateUserBody>;

@@ -109,4 +109,4 @@ gymRouter.delete('/:id', async (req, res): Promise<void> => {
   }
 });
 
-export default gymRouter;
+export { gymRouter };
