@@ -1,5 +1,5 @@
 import express from 'express';
-import userRout from './src/routes/userRout';
+import userRouter from './src/routes/userRouter';
 import gymRouter from './src/routes/gymRouter';
 import { connectMongoose, closeMongoose } from "./src/db/mangoose";
 import "dotenv/config";
@@ -16,7 +16,7 @@ app.get('/', (req, res) => {
     res.send('TSPark API - Fitness Challenge Platform');
 });
 
-app.use('/user', userRout);
+app.use('/user', userRouter);
 app.use('/gym', gymRouter);
 
 app.listen(process.env.PORT, () => {

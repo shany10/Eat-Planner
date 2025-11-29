@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ZodObject, ZodRawShape, ZodError } from "zod";
 
-export function validate(schema: {
+export function validateMiddleware(schema: {
   body?: ZodObject<ZodRawShape>;
 }) {
   return (req: Request, res: Response, next: NextFunction) => {

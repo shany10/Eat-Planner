@@ -1,30 +1,29 @@
 import { Router } from "express";
-import { validate } from "../middlewares/validate";
-import { requireAuth } from "../middlewares/auth";
-import { createUserBody, CreateUserInput, updateUserBody } from "../schemas/userSchema";
-import { IUser, UserModel } from "../models/userModel";
+import { validateMiddleware, authMiddleware } from "../middlewares";
+import { createUserBody, CreateUserInput, updateUserBody } from "../schemas";
+import { IUser, UserModel } from "../models";
 import { signAccessToken } from "../utils/jwt";
 
-const userRout = Router();
+const userRouter = Router();
 
-userRout.get('/getAll', requireAuth, async (req, res): Promise<void> => {
+userRouter.get('/getAll', authMiddleware, async (req, res): Promise<void> => {
     const list = await UserModel.find().exec();
     res.status(200).json(list);
 })
 
-userRout.get('/get/:id', requireAuth, async (req, res): Promise<void> => {
+userRouter.get('/get/:id', authMiddleware, async (req, res): Promise<void> => {
     const list = await UserModel.findById(req.params.id).exec();
     res.status(200).json(list);
 })
 
-userRout.post('/create', requireAuth, validate({ body: createUserBody }), async (req, res): Promise<void> => {
+userRouter.post('/create', authMiddleware, validateMiddleware({ body: createUserBody }), async (req, res): Promise<void> => {
     const input = req.body as CreateUserInput;
     const created = await UserModel.create(input);
     const message = created && typeof created === "object" ? "user created" : "error";
     res.status(201).send(message);
 })
 
-userRout.post('/auth', async (req, res): Promise<void> => {
+userRouter.post('/auth', async (req, res): Promise<void> => {
     const { email, password } = req.body;
     
     if (!email || !password) {
@@ -46,7 +45,7 @@ userRout.post('/auth', async (req, res): Promise<void> => {
     res.json({ ok: true, token, id: user.id });
 });
 
-userRout.patch('/update/:id', requireAuth, validate({ body: updateUserBody }), async (req, res) => {
+userRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: updateUserBody }), async (req, res) => {
     const id = req.params.id;
     const updates = req.body as Partial<CreateUserInput>;
     if (updates.password) {
@@ -62,7 +61,7 @@ userRout.patch('/update/:id', requireAuth, validate({ body: updateUserBody }), a
     res.json(updated);
 });
 
-userRout.delete('/delete/:id', requireAuth, async (req, res): Promise<void> => {
+userRouter.delete('/delete/:id', authMiddleware, async (req, res): Promise<void> => {
     const { id } = req.params;
     const deleted = await UserModel.findByIdAndDelete(id).exec();
     if (!deleted) {
@@ -72,9 +71,9 @@ userRout.delete('/delete/:id', requireAuth, async (req, res): Promise<void> => {
     res.status(204).send();
 })
 
-userRout.delete('/deleteAll', requireAuth, async (req, res): Promise<void> => {
+userRouter.delete('/deleteAll', authMiddleware, async (req, res): Promise<void> => {
     await UserModel.deleteMany({});
     res.status(204).send();
 })
 
-export default userRout;
+export default userRouter;

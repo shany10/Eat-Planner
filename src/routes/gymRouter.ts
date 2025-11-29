@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { validate } from "../middlewares/validate";
-import { createGymBody, updateGymBody, approveGymBody, CreateGymInput } from "../schemas/gymSchema";
-import { GymModel } from "../models/gymModel";
+import { validateMiddleware } from "../middlewares";
+import { createGymBody, updateGymBody, approveGymBody, CreateGymInput } from "../schemas";
+import { GymModel } from "../models";
 
 const gymRouter = Router();
 
@@ -40,7 +40,7 @@ gymRouter.get('/:id', async (req, res): Promise<void> => {
 });
 
 // Créer une nouvelle salle
-gymRouter.post('/create', validate({ body: createGymBody }), async (req, res): Promise<void> => {
+gymRouter.post('/create', validateMiddleware({ body: createGymBody }), async (req, res): Promise<void> => {
   try {
     const input = req.body as CreateGymInput;
     const gym = await GymModel.create(input);
@@ -51,7 +51,7 @@ gymRouter.post('/create', validate({ body: createGymBody }), async (req, res): P
 });
 
 // Approuver/Rejeter une salle (ADMIN)
-gymRouter.patch('/approve/:id', validate({ body: approveGymBody }), async (req, res): Promise<void> => {
+gymRouter.patch('/approve/:id', validateMiddleware({ body: approveGymBody }), async (req, res): Promise<void> => {
   try {
     const { id } = req.params;
     const { approved } = req.body;
@@ -74,7 +74,7 @@ gymRouter.patch('/approve/:id', validate({ body: approveGymBody }), async (req, 
 });
 
 // Modifier une salle
-gymRouter.patch('/:id', validate({ body: updateGymBody }), async (req, res): Promise<void> => {
+gymRouter.patch('/:id', validateMiddleware({ body: updateGymBody }), async (req, res): Promise<void> => {
   try {
     const { id } = req.params;
     const updates = req.body;
