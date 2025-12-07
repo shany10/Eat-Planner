@@ -1,4 +1,9 @@
-# Projet_Node
+### Installation
+
+```bash
+# Clone du projet
+git clone <repository>
+cd Projet_Node
 
 ### lancer le projet 
 docker compose up -d --build
