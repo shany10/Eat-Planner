@@ -1,5 +1,5 @@
 import express from 'express';
-import { userRouter, gymRouter, badgeRouter } from './src/routes';
+import { userRouter, gymRouter, badgeRouter,exerciseTypeRouter } from './src/routes';
 import { connectMongoose } from "./src/db/mangoose";
 import "dotenv/config";
 
@@ -18,6 +18,7 @@ app.get('/', (req, res) => {
 app.use('/user', userRouter);
 app.use('/gym', gymRouter);
 app.use('/badge', badgeRouter);
+app.use('/exerciseType', exerciseTypeRouter);
 
 app.listen(process.env.PORT, () => {
     console.log(`Server is running at http://localhost:${process.env.PORT}`);
