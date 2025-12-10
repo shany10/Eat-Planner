@@ -5,6 +5,7 @@ export interface IGym extends Document {
   address: string;
   capacity: number;
   equipment: string[];
+  facilities: string[];
   owner: Types.ObjectId;
   approved: boolean;
   description?: string;
@@ -20,6 +21,7 @@ const gymSchema = new Schema<IGym>({
   address: { type: String, required: true },
   capacity: { type: Number, required: true, min: 1 },
   equipment: { type: [String], default: [] },
+  facilities: { type: [String], default: [] },
   owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
   approved: { type: Boolean, default: false },
   description: { type: String },

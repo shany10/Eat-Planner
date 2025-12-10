@@ -64,15 +64,44 @@ gymRouter.get("/:id", async (req, res): Promise<void> => {
 gymRouter.post(
   "/create",
   authMiddleware,
-  roleMiddleware(["manager", "admin"]),
+  roleMiddleware(["admin", "manager"]),
   validateMiddleware({ body: createGymBody }),
   async (req, res): Promise<void> => {
     try {
       const input = req.body as CreateGymInput;
-      const gym = await GymModel.create(input);
-      res.status(201).json({ message: "Salle créée avec succès", gym });
+      if (!req.user) {
+        res.status(401).json({ error: "Utilisateur non authentifié" });
+        return;
+      }
+      const currentUser = await UserModel.findById(req.user.id).exec();
+      
+      if (!currentUser) { 
+        res.status(401).json({ error: "User introuvable" }); 
+        return; 
+      }
+
+      const isAdmin = currentUser.role === "admin";
+      let gymData: any = { ...input };
+
+      if (isAdmin) {
+        gymData.approved = true;
+        const assignedOwner = await UserModel.findById(input.owner).exec();
+        if (!assignedOwner) { 
+          res.status(400).json({ error: "Propriétaire assigné introuvable" }); 
+          return; 
+        }
+      } else {
+        gymData.owner = currentUser.id;
+        gymData.approved = false;
+      }
+
+      const gym = await GymModel.create(gymData);
+      res.status(201).json({ 
+        message: isAdmin ? "Salle créée et approuvée" : "Salle créée, en attente de validation",
+        gym 
+      });
     } catch (error) {
-      res.status(500).json({ error: "Erreur lors de la création de la salle" });
+      res.status(500).json({ error: "Erreur création salle" });
     }
   }
 );
