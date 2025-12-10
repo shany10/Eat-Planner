@@ -9,6 +9,7 @@ export const createGymBody = z.object({
   description: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email("Email invalide").optional(),
+  exerciseTypes: z.array(z.string()).optional().default([])
 });
 
 export const updateGymBody = createGymBody

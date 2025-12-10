@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import {
   validateMiddleware,
   authMiddleware,
@@ -14,11 +15,11 @@ import { GymModel, UserModel } from "../models";
 
 const gymRouter = Router();
 
-// Récupérer toutes les salles
 gymRouter.get("/getAll", async (req, res): Promise<void> => {
   try {
     const gyms = await GymModel.find()
       .populate("owner", "firstname lastname email")
+      .populate("exerciseTypes", "name difficulty")
       .exec();
     res.status(200).json(gyms);
   } catch (error) {
@@ -28,11 +29,11 @@ gymRouter.get("/getAll", async (req, res): Promise<void> => {
   }
 });
 
-// Récupérer les salles approuvées uniquement
 gymRouter.get("/approved", async (req, res): Promise<void> => {
   try {
     const gyms = await GymModel.find({ approved: true })
       .populate("owner", "firstname lastname email")
+      .populate("exerciseTypes", "name difficulty")
       .exec();
     res.status(200).json(gyms);
   } catch (error) {
@@ -42,11 +43,11 @@ gymRouter.get("/approved", async (req, res): Promise<void> => {
   }
 });
 
-// Récupérer une salle par ID
 gymRouter.get("/:id", async (req, res): Promise<void> => {
   try {
     const gym = await GymModel.findById(req.params.id)
       .populate("owner", "firstname lastname email")
+      .populate("exerciseTypes", "name difficulty description")
       .exec();
     if (!gym) {
       res.status(404).json({ error: "Salle non trouvée" });
@@ -60,7 +61,6 @@ gymRouter.get("/:id", async (req, res): Promise<void> => {
   }
 });
 
-// Créer une nouvelle salle
 gymRouter.post(
   "/create",
   authMiddleware,
@@ -77,7 +77,6 @@ gymRouter.post(
   }
 );
 
-// Approuver/Rejeter une salle (ADMIN)
 gymRouter.patch(
   "/approve/:id",
   authMiddleware,
@@ -108,7 +107,53 @@ gymRouter.patch(
   }
 );
 
-// Modifier une salle
+gymRouter.patch(
+  "/:id/exerciseTypes",
+  authMiddleware,
+  validateMiddleware({
+    body: z.object({
+      exerciseTypes: z.array(z.string()),
+    }),
+  }),
+  async (req, res): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { exerciseTypes } = req.body;
+
+      const gym = await GymModel.findById(id).exec();
+      if (!gym) {
+        res.status(404).json({ error: "Salle non trouvée" });
+        return;
+      }
+
+      const user = await UserModel.findById(req.user?.id).exec();
+      if (!user) {
+        res.status(404).json({ error: "Utilisateur non trouvé" });
+        return;
+      }
+
+      const isOwner = gym.owner.toString() === req.user?.id;
+      const isAdmin = user.role === "admin";
+
+      if (!isOwner && !isAdmin) {
+        res.status(403).json({ error: "Accès refusé" });
+        return;
+      }
+
+      gym.exerciseTypes = exerciseTypes;
+      await gym.save();
+
+      const populatedGym = await GymModel.findById(id)
+        .populate("exerciseTypes", "name difficulty")
+        .exec();
+
+      res.status(200).json({ message: "Exercices attribués", gym: populatedGym });
+    } catch (error) {
+      res.status(500).json({ error: "Erreur lors de l'attribution" });
+    }
+  }
+);
+
 gymRouter.patch(
   "/:id",
   authMiddleware,
@@ -150,7 +195,6 @@ gymRouter.patch(
   }
 );
 
-// Supprimer une salle
 gymRouter.delete("/:id", authMiddleware, async (req, res): Promise<void> => {
   try {
     const { id } = req.params;
