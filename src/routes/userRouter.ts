@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { validateMiddleware, authMiddleware } from "../middlewares";
+import { validateMiddleware, authMiddleware, roleMiddleware } from "../middlewares";
 import { createUserBody, CreateUserInput, updateUserBody, UpdateUserInput } from "../schemas";
 import { IUser, UserModel } from "../models";
 import { signAccessToken } from "../utils/jwt";
@@ -36,6 +36,13 @@ userRouter.post('/auth', async (req, res): Promise<void> => {
         res.status(401).json({ error: 'Invalid email or password' });
         return;
     }
+
+    // Vérif si le compte est actif
+    if (!user.active) {
+        res.status(403).json({ error: 'Account disabled. Contact administrator.' });
+        return;
+    }
+
     const isValid = await user.verifyPassword(password);
     if (!isValid) {
         res.status(401).json({ error: 'Invalid email or password' });
@@ -44,6 +51,57 @@ userRouter.post('/auth', async (req, res): Promise<void> => {
     const token = signAccessToken({ sub: user.id });
     res.json({ ok: true, token, id: user.id });
 });
+
+// Route pour activer/desa un utilisateur (admin only)
+userRouter.patch(
+  '/toggle-active/:id',
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  async (req, res): Promise<void> => {
+    try {
+      const { id } = req.params;
+      
+      const user = await UserModel.findById(id).exec();
+      if (!user) {
+        res.status(404).json({ error: 'Utilisateur non trouvé' });
+        return;
+      }
+
+      user.active = !user.active;
+      await user.save();
+
+      res.status(200).json({ 
+        message: user.active ? 'Utilisateur activé' : 'Utilisateur désactivé',
+        user: {
+          id: user.id,
+          email: user.email,
+          active: user.active
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Erreur lors de la modification du statut' });
+    }
+  }
+);
+
+// Route pour voir le statut user
+userRouter.get(
+  '/status/:id',
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  async (req, res): Promise<void> => {
+    try {
+      const user = await UserModel.findById(req.params.id, 'firstname lastname email role active').exec();
+      if (!user) {
+        res.status(404).json({ error: 'Utilisateur non trouvé' });
+        return;
+      }
+      res.status(200).json(user);
+    } catch (error) {
+      res.status(500).json({ error: 'Erreur lors de la récupération du statut' });
+    }
+  }
+);
 
 userRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: updateUserBody }), async (req, res): Promise<void> => {
     const id = req.params.id;
