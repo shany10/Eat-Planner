@@ -10,6 +10,7 @@ export interface IGym extends Document {
   description?: string;
   phone?: string;
   email?: string;
+  exerciseTypes: Types.ObjectId[]; 
   created_at: Date;
   updated_at: Date;
 }
@@ -23,7 +24,8 @@ const gymSchema = new Schema<IGym>({
   approved: { type: Boolean, default: false },
   description: { type: String },
   phone: { type: String },
-  email: { type: String }
+  email: { type: String },
+  exerciseTypes: [{ type: Schema.Types.ObjectId, ref: "ExerciseType" }] 
 }, {
   timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
   strict: true
