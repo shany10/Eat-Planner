@@ -4,5 +4,7 @@ export * from "./badgeSchema";
 export * from "./challengeSchema";
 export * from "./exerciseTypeSchema";
 export * from "./trainingStatSchema";
+export * from "./scoreSchema"; 
+export * from "./userBadgeSchema";
 export * from "./socialChallengeSchema";
 export * from "./scoreSchema";
