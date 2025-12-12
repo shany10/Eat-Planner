@@ -5,5 +5,5 @@ export * from "./exerciseTypeModel";
 export * from "./scoreModel";
 export * from "./trainingStatModel";
 export * from "./userBadgeModel";
-
 export * from "./challengeModel";   
+export * from "./socialChallengeModel";
