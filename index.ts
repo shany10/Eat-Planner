@@ -1,5 +1,5 @@
 import express from 'express';
-import { userRouter, gymRouter, badgeRouter,exerciseTypeRouter } from './src/routes';
+import { userRouter, gymRouter, badgeRouter,exerciseTypeRouter, } from './src/routes';
 import { connectMongoose } from "./src/db/mangoose";
 import "dotenv/config";
 
