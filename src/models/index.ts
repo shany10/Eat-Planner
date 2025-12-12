@@ -2,4 +2,8 @@ export * from "./badgeModel";
 export * from "./gymModel";
 export * from "./userModel";
 export * from "./exerciseTypeModel";
+export * from "./scoreModel";
+export * from "./trainingStatModel";
+export * from "./userBadgeModel";
+
 export * from "./challengeModel";   
