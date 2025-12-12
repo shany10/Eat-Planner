@@ -5,6 +5,7 @@ export const createGymBody = z.object({
   address: z.string().min(1, "L'adresse est requise"),
   capacity: z.number().int().min(1, "La capacité doit être au moins 1"),
   equipment: z.array(z.string()).optional().default([]),
+  facilities: z.array(z.string()).optional().default([]),
   owner: z.string().min(1, "L'ID du propriétaire est requis"),
   description: z.string().optional(),
   phone: z.string().optional(),
