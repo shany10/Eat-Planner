@@ -4,12 +4,14 @@ import { userSeeder } from "./userSeeder";
 import { exerciseTypeSeeder } from "./exerciseTypeSeeder";
 import { gymSeeder } from "./gymSeeder";
 import { badgeSeeder } from "./badgeSeeder";
+import { badgeRuleSeeder } from "./badgeRuleSeeder";
 import { challengeSeeder } from "./challengeSeeder";
 import { 
   UserModel, 
   ExerciseTypeModel, 
   GymModel, 
   BadgeModel, 
+  BadgeRuleModel,
   ChallengeModel,
   TrainingStatModel,
   ScoreModel,
@@ -31,6 +33,7 @@ async function clearDatabase() {
   await ExerciseTypeModel.deleteMany({});
   await GymModel.deleteMany({});
   await BadgeModel.deleteMany({});
+  await BadgeRuleModel.deleteMany({});
   await ChallengeModel.deleteMany({});
   await TrainingStatModel.deleteMany({});
   await ScoreModel.deleteMany({});
@@ -55,6 +58,7 @@ async function seedDatabase() {
     const users = await userSeeder();
     const exerciseTypes = await exerciseTypeSeeder();
     const badges = await badgeSeeder();
+    await badgeRuleSeeder();
     const gyms = await gymSeeder(users, exerciseTypes);
     const challenges = await challengeSeeder(users, exerciseTypes, gyms);
 
@@ -63,6 +67,7 @@ async function seedDatabase() {
     console.log(`   - Users: ${users.length}`);
     console.log(`   - Exercise Types: ${exerciseTypes.length}`);
     console.log(`   - Badges: ${badges.length}`);
+    console.log(`   - Badge Rules: seeded`);
     console.log(`   - Gyms: ${gyms.length}`);
     console.log(`   - Challenges: ${challenges.length}`);
     

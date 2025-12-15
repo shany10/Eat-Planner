@@ -8,13 +8,14 @@ Ce dossier contient les seeders pour peupler la base de données avec des donné
 - **Exercise Types** : Types d'exercices (push-ups, squats, etc.)
 - **Gyms** : Salles de sport
 - **Badges** : Badges de réussite
+- **Badge Rules** : Règles d'attribution automatique des badges
 - **Challenges** : Défis sportifs
 
 ## Utilisation
 
 ### Option 1 : Dans un container Docker (recommandé)
 ```bash
-docker compose exec app npm run seed:dev
+docker compose exec web npm run seed:dev
 ```
 
 ### Option 2 : En développement local (avec ts-node)
@@ -79,6 +80,18 @@ Ne l'exécutez **jamais en production** avec des données réelles !
 - Régularité
 - Légende
 
+### Badge Rules (Règles d'attribution)
+
+- **Première Séance** : 1 entraînement complété
+- **Débutant Déterminé** : 10 entraînements complétés
+- **Régularité** : 30 entraînements complétés
+- **Marathonien** : 50 entraînements complétés
+- **Expert Avancé** : 1000 points accumulés
+- **Champion Intermédiaire** : 5000 points accumulés
+- **Roi du Cardio** : 10000 points accumulés
+
+*Note : Les autres badges (Social Butterfly, Force Brute, Légende) nécessitent la création de règles personnalisées via l'API `/badgeRule/create`*
+
 ### Challenges
 
 - Défi Push-ups 100
@@ -95,6 +108,7 @@ Pour modifier les données seeded, éditez les fichiers dans le dossier `seeders
 - `exerciseTypeSeeder.ts` - Types d'exercices
 - `gymSeeder.ts` - Salles de sport
 - `badgeSeeder.ts` - Badges
+- `badgeRuleSeeder.ts` - Règles d'attribution des badges
 - `challengeSeeder.ts` - Challenges
 
 ## Dépendances
@@ -103,8 +117,9 @@ Les seeders respectent les relations entre collections :
 1. Users (indépendant)
 2. ExerciseTypes (indépendant)
 3. Badges (indépendant)
-4. Gyms (dépend de Users et ExerciseTypes)
-5. Challenges (dépend de Users, ExerciseTypes et Gyms)
+4. Badge Rules (dépend de Badges - liaison par nom)
+5. Gyms (dépend de Users et ExerciseTypes)
+6. Challenges (dépend de Users, ExerciseTypes et Gyms)
 
 ## Exemple de sortie
 
@@ -123,6 +138,8 @@ Seeding exercise types...
 10 exercise types created
 Seeding badges...
 10 badges created
+Seeding badge rules...
+7 badge rules created
 Seeding gyms...
 4 gyms created
 Seeding challenges...
@@ -134,6 +151,7 @@ Summary:
    - Users: 5
    - Exercise Types: 10
    - Badges: 10
+   - Badge Rules: 7
    - Gyms: 4
    - Challenges: 5
 

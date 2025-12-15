@@ -1,5 +1,5 @@
 import express from 'express';
-import { userRouter, gymRouter, badgeRouter,exerciseTypeRouter, } from './src/routes';
+import { userRouter, gymRouter, badgeRouter, badgeRuleRouter, exerciseTypeRouter, } from './src/routes';
 import { connectMongoose } from "./src/db/mangoose";
 import "dotenv/config";
 
@@ -7,7 +7,7 @@ const app = express();
 app.use(express.json());
 
 if (!process.env.MONGODB_URI) {
-    console.error("❌ MONGODB_URI is not defined in environment variables.");
+    console.error("MONGODB_URI is not defined in environment variables.");
     process.exit(1);
 }
 
@@ -23,6 +23,7 @@ app.get('/', (req, res) => {
 app.use('/user', userRouter);
 app.use('/gym', gymRouter);
 app.use('/badge', badgeRouter);
+app.use('/badgeRule', badgeRuleRouter);
 app.use('/exerciseType', exerciseTypeRouter);
 
 app.listen(process.env.PORT, () => {

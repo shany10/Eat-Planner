@@ -1,8 +1,8 @@
-# 📡 Documentation des Routes API
+# Documentation des Routes API
 
 Documentation complète de toutes les routes de l'API Gym Management.
 
-## 🔑 Authentification
+## Authentification
 
 Les routes marquées 🔒 nécessitent un token JWT dans l'en-tête :
 ```
@@ -13,7 +13,7 @@ Les rôles disponibles : `admin`, `manager`, `member`
 
 ---
 
-## 👤 Routes User (`/users`)
+## Routes User (`/users`)
 
 ### Authentification
 
@@ -70,7 +70,7 @@ Les rôles disponibles : `admin`, `manager`, `member`
 
 ---
 
-## 🏢 Routes Gym (`/gyms`)
+## Routes Gym (`/gyms`)
 
 ### Consultation
 
@@ -121,7 +121,7 @@ Les rôles disponibles : `admin`, `manager`, `member`
 
 ---
 
-## 💪 Routes ExerciseType (`/exercise-types`)
+## Routes ExerciseType (`/exercise-types`)
 
 | Méthode | Route | Auth | Rôle | Description |
 |---------|-------|------|------|-------------|
@@ -145,7 +145,7 @@ Les rôles disponibles : `admin`, `manager`, `member`
 
 ---
 
-## 🏆 Routes Badge (`/badges`)
+## Routes Badge (`/badges`)
 
 | Méthode | Route | Auth | Description |
 |---------|-------|------|-------------|
@@ -167,7 +167,140 @@ Les rôles disponibles : `admin`, `manager`, `member`
 
 ---
 
-## 🎯 Routes Challenge (`/challenges`)
+## Routes BadgeRule (`/badgeRule`)
+
+Gestion dynamique des règles d'attribution de badges.
+
+**Association Badge ↔ Règle :**
+Les règles sont liées aux badges via le champ `badgeName` qui doit correspondre exactement au champ `name` du badge. Un badge peut avoir plusieurs règles (conditions alternatives).
+
+**Workflow :**
+1. Créer le badge via `/badge/create`
+2. Créer une ou plusieurs règles via `/badgeRule/create` avec le même `badgeName`
+3. Les règles actives sont automatiquement évaluées lors des entraînements
+
+### Consultation
+
+**Exemples d'utilisation :**
+- Récupérer les règles du badge "Marathonien" : `GET /badgeRule/badge?name=Marathonien`
+- Avec des espaces : `GET /badgeRule/badge?name=Première Séance`
+
+| Méthode | Route | Auth | Description |
+|---------|-------|------|-------------|
+| GET | `/getAll` | 🔒 | Récupérer toutes les règles |
+| GET | `/active` | 🔒 | Récupérer les règles actives uniquement |
+| GET | `/get/:id` | 🔒 | Récupérer une règle par ID |
+| GET | `/badge?name=<badgeName>` | 🔒 | Récupérer les règles d'un badge |
+
+### Gestion
+
+| Méthode | Route | Auth | Description |
+|---------|-------|------|-------------|
+| POST | `/create` | 🔒 | Créer une nouvelle règle |
+| PATCH | `/update/:id` | 🔒 | Mettre à jour une règle |
+| PATCH | `/toggle/:id` | 🔒 | Activer/désactiver une règle |
+| DELETE | `/delete/:id` | 🔒 | Supprimer une règle |
+| DELETE | `/deleteAll` | 🔒 | Supprimer toutes les règles |
+
+**Body `/create` :**
+```json
+{
+  "badgeName": "Marathon",
+  "conditionType": "totalPoints",
+  "conditionField": "totalPoints",
+  "operator": ">=",
+  "value": 5000,
+  "isActive": true
+}
+```
+
+**Champs détaillés :**
+- `badgeName` (string) : Nom du badge associé
+- `conditionType` (enum) : `"totalPoints"` | `"completedTrainings"` | `"custom"`
+- `conditionField` (string) : Champ à évaluer (ex: `"totalPoints"`, `"completedTrainings"`)
+- `operator` (enum) : `">="` | `">"` | `"="` | `"<"` | `"<="`
+- `value` (number) : Valeur seuil à atteindre
+- `customCondition` (string, optionnel) : Condition personnalisée pour règles complexes
+- `isActive` (boolean) : Statut de la règle (défaut: `true`)
+
+**Exemples de règles :**
+
+*Règle basée sur les points :*
+```json
+{
+  "badgeName": "Expert",
+  "conditionType": "totalPoints",
+  "conditionField": "totalPoints",
+  "operator": ">=",
+  "value": 1000
+}
+```
+
+*Règle basée sur les entraînements :*
+```json
+{
+  "badgeName": "Acharné",
+  "conditionType": "completedTrainings",
+  "conditionField": "completedTrainings",
+  "operator": ">=",
+  "value": 10
+}
+```
+
+**Réponse `/toggle/:id` :**
+```json
+{
+  "message": "Rule activated",
+  "data": {
+    "_id": "507f...",
+    "badgeName": "Marathon",
+    "isActive": true,
+    ...
+  }
+}
+```
+
+**⚡ Évaluation automatique :**
+- Les règles actives sont automatiquement évaluées lors de la création d'un `TrainingStat`
+- Le système attribue les badges correspondants si les conditions sont remplies
+- Les règles peuvent être activées/désactivées sans suppression
+
+**📦 Règles par défaut (seeder) :**
+- **Premier Pas** : 1 entraînement complété
+- **Débutant Motivé** : 3 entraînements complétés
+- **Acharné** : 10 entraînements complétés
+- **Expert** : 1000 points
+- **Marathon** : 5000 points
+- **Champion** : 10000 points
+
+**🔗 Exemple complet - Créer un nouveau badge avec sa règle :**
+
+```bash
+# Étape 1 : Créer le badge
+POST /badge/create
+{
+  "name": "Ultra Marathon",
+  "description": "Dépassez les 10000 points",
+  "iconUrl": "/badges/ultra-marathon.svg"
+}
+
+# Étape 2 : Créer la règle d'attribution
+POST /badgeRule/create
+{
+  "badgeName": "Ultra Marathon",
+  "conditionType": "totalPoints",
+  "conditionField": "totalPoints",
+  "operator": ">=",
+  "value": 10000
+}
+
+# Étape 3 : Vérifier les règles du badge
+GET /badgeRule/badge?name=Ultra Marathon
+```
+
+---
+
+## Routes Challenge (`/challenges`)
 
 ### Consultation
 
@@ -215,7 +348,7 @@ Les rôles disponibles : `admin`, `manager`, `member`
 
 ---
 
-## 📊 Routes Score (`/scores`)
+## Routes Score (`/scores`)
 
 | Méthode | Route | Auth | Description |
 |---------|-------|------|-------------|
@@ -241,7 +374,7 @@ Les rôles disponibles : `admin`, `manager`, `member`
 
 ---
 
-## 📈 Routes TrainingStat (`/training-stats`)
+## Routes TrainingStat (`/training-stats`)
 
 | Méthode | Route | Auth | Description |
 |---------|-------|------|-------------|
@@ -271,7 +404,7 @@ Les rôles disponibles : `admin`, `manager`, `member`
 
 ---
 
-## 👥 Routes SocialChallenge (`/social-challenges`)
+## Routes SocialChallenge (`/social-challenges`)
 
 | Méthode | Route | Auth | Description |
 |---------|-------|------|-------------|
@@ -300,7 +433,7 @@ Les rôles disponibles : `admin`, `manager`, `member`
 
 ---
 
-## 🔐 Codes de statut HTTP
+## Codes de statut HTTP
 
 | Code | Signification |
 |------|---------------|
@@ -315,7 +448,7 @@ Les rôles disponibles : `admin`, `manager`, `member`
 
 ---
 
-## 🧪 Tester les routes
+## Tester les routes
 
 ### Avec cURL
 
@@ -340,7 +473,7 @@ curl http://localhost:3000/gyms/getAll \
 
 ---
 
-## 📝 Notes importantes
+## Notes importantes
 
 ### Validation des données
 - Tous les endpoints avec body utilisent Zod pour la validation
@@ -364,12 +497,10 @@ Plusieurs routes incluent automatiquement les relations :
 
 ---
 
-## 🚀 Base URL
+## Base URL
 
 **Développement :** `http://localhost:3000`
 
 **Production :** À définir selon le déploiement
 
 ---
-
-📅 Dernière mise à jour : 14 décembre 2025
