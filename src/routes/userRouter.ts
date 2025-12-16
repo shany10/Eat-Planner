@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { validateMiddleware, authMiddleware, roleMiddleware } from "../middlewares";
-import { createUserBody, CreateUserInput, updateUserBody, UpdateUserInput } from "../schemas";
+import { createUserBody, CreateUserInput, updateUserBody, UpdateUserInput, authUserBody } from "../schemas";
 import { IUser, UserModel } from "../models";
 import { signAccessToken } from "../utils/jwt";
 
@@ -23,13 +23,8 @@ userRouter.post('/create', authMiddleware, validateMiddleware({ body: createUser
     res.status(201).send(message);
 })
 
-userRouter.post('/auth', async (req, res): Promise<void> => {
+userRouter.post('/auth', validateMiddleware({ body: authUserBody }), async (req, res): Promise<void> => {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-        res.status(400).json({ error: 'Email and password are required' });
-        return;
-    }
 
     const user: IUser | null = await UserModel.findOne({ email }).select('+password').exec();
     if (!user) {

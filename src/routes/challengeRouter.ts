@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { Types } from "mongoose";
 import { validateMiddleware, authMiddleware } from "../middlewares";
-import { createChallengeBody, CreateChallengeInput, updateChallengeBody, joinChallengeBody } from "../schemas";
+import { createChallengeBody, CreateChallengeInput, updateChallengeBody, joinChallengeBody, completeChallengeBody } from "../schemas";
 import { ChallengeModel, GymModel } from "../models";
+import { addPointsForChallenge } from "../utils/scoreService";
 
 const challengeRouter = Router();
 
@@ -21,7 +22,7 @@ challengeRouter.get('/filter', async (req, res): Promise<void> => {
             .populate('exerciseType', 'name difficulty')
             .populate('gym', 'name')
             .exec();
-            
+
         res.status(200).json(challenges);
     } catch (error) {
         res.status(500).json({ error: "Erreur lors du filtrage des défis" });
@@ -43,10 +44,10 @@ challengeRouter.post('/create', authMiddleware, validateMiddleware({ body: creat
                 res.status(404).json({ error: "Salle non trouvée" });
                 return;
             }
-            
+
             if (gym.owner.toString() !== req.user.id) {
-                 res.status(403).json({ error: "Seul le propriétaire peut créer un défi pour cette salle" });
-                 return;
+                res.status(403).json({ error: "Seul le propriétaire peut créer un défi pour cette salle" });
+                return;
             }
         }
 
@@ -74,7 +75,7 @@ challengeRouter.post('/:id/join', authMiddleware, validateMiddleware({ body: joi
         const { userId } = req.body;
         const challenge = await ChallengeModel.findById(id).exec();
         if (!challenge) { res.status(404).json({ error: "Défi non trouvé" }); return; }
-        
+
         if (!challenge.participants.some(p => p.toString() === userId)) {
             challenge.participants.push(new Types.ObjectId(userId));
             await challenge.save();
@@ -97,6 +98,40 @@ challengeRouter.delete('/:id', authMiddleware, async (req, res): Promise<void> =
         if (!deleted) { res.status(404).json({ error: "Défi non trouvé" }); return; }
         res.status(204).send();
     } catch (error) { res.status(500).json({ error: "Erreur delete" }); }
+});
+
+challengeRouter.post('/:id/complete', authMiddleware, validateMiddleware({ body: completeChallengeBody }), async (req, res): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { userId } = req.body;
+
+        if (id && !Types.ObjectId.isValid(id)) {
+            res.status(400).json({ error: "ID de défi invalide" });
+            return;
+        }
+
+        const challenge = await ChallengeModel.findById(id).exec();
+
+        if (!challenge) {
+            res.status(404).json({ error: "Défi non trouvé" });
+            return;
+        }
+
+        const isParticipant = challenge.participants.some(p => p.toString() === userId);
+        if (!isParticipant && challenge.creator.toString() !== userId) {
+            res.status(403).json({ error: "Vous ne participez pas à ce défi" });
+            return;
+        }
+
+        await addPointsForChallenge(userId, challenge.difficulty, false);
+
+        res.status(200).json({
+            message: "Défi complété avec succès",
+            pointsEarned: challenge.difficulty === 'beginner' ? 10 : challenge.difficulty === 'intermediate' ? 20 : 30
+        });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur lors de la complétion du défi" });
+    }
 });
 
 export { challengeRouter };

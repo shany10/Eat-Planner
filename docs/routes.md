@@ -321,6 +321,9 @@ GET /badgeRule/badge?name=Ultra Marathon
 |---------|-------|------|-------------|
 | POST | `/create` | 🔒 | Créer un défi |
 | POST | `/:id/join` | 🔒 | Rejoindre un défi |
+| POST | `/:id/complete` | 🔒 | Compléter un défi et gagner des points |
+| PATCH | `/update/:id` | 🔒 | Mettre à jour un défi |
+| DELETE | `/:id` | 🔒 | Supprimer un défi |
 
 **Body `/create` :**
 ```json
@@ -346,6 +349,31 @@ GET /badgeRule/badge?name=Ultra Marathon
 }
 ```
 
+**Body `/:id/complete` :**
+```json
+{
+  "userId": "507f1f77bcf86cd799439011"
+}
+```
+
+**Réponse `/:id/complete` :**
+```json
+{
+  "message": "Défi complété avec succès",
+  "pointsEarned": 20
+}
+```
+
+**🎯 Calcul des points par difficulté :**
+- **beginner** : 10 points
+- **intermediate** : 20 points
+- **advanced** : 30 points
+
+**✅ Validations :**
+- L'`userId` doit être un ObjectId MongoDB valide (24 caractères hexadécimaux)
+- L'utilisateur doit être participant ou créateur du défi
+- Les points sont automatiquement ajoutés au score de l'utilisateur
+
 ---
 
 ## Routes Score (`/scores`)
@@ -354,6 +382,7 @@ GET /badgeRule/badge?name=Ultra Marathon
 |---------|-------|------|-------------|
 | GET | `/leaderboard` | - | Top 10 des meilleurs scores |
 | GET | `/user/:userId` | - | Score d'un utilisateur |
+| POST | `/add-points` | 🔒 | Ajouter manuellement des points (admin) |
 
 **Réponse `/leaderboard` :**
 ```json
@@ -367,10 +396,44 @@ GET /badgeRule/badge?name=Ultra Marathon
       "email": "marie@example.com"
     },
     "totalPoints": 1500,
-    "challengesCompleted": 10
+    "challengesCompleted": 10,
+    "badgesEarned": 3
   }
 ]
 ```
+
+**Réponse `/user/:userId` :**
+```json
+{
+  "_id": "507f...",
+  "user": "507f1f77bcf86cd799439011",
+  "totalPoints": 145,
+  "challengesCompleted": 5,
+  "badgesEarned": 2,
+  "createdAt": "2025-12-16T10:00:00Z",
+  "updatedAt": "2025-12-16T15:30:00Z"
+}
+```
+
+**Body `/add-points` :**
+```json
+{
+  "userId": "507f1f77bcf86cd799439011",
+  "points": 50
+}
+```
+
+**Réponse `/add-points` :**
+```json
+{
+  "message": "Points ajoutés avec succès",
+  "points": 50
+}
+```
+
+**✅ Validations :**
+- L'`userId` doit être un ObjectId MongoDB valide
+- Les `points` doivent être un nombre entier ≥ 1
 
 ---
 
@@ -410,6 +473,7 @@ GET /badgeRule/badge?name=Ultra Marathon
 |---------|-------|------|-------------|
 | POST | `/invite` | 🔒 | Inviter à un défi social |
 | PATCH | `/:id/status` | 🔒 | Modifier le statut (accepter/refuser) |
+| POST | `/:id/complete` | 🔒 | Compléter un défi social et gagner des points avec bonus |
 | GET | `/invitations/:userId` | 🔒 | Invitations en attente d'un utilisateur |
 
 **Body `/invite` :**
@@ -417,8 +481,7 @@ GET /badgeRule/badge?name=Ultra Marathon
 {
   "challenge": "507f1f77bcf86cd799439011",
   "inviter": "507f1f77bcf86cd799439011",
-  "invitee": "507f1f77bcf86cd799439011",
-  "status": "pending"
+  "invitee": "507f1f77bcf86cd799439011"
 }
 ```
 
@@ -429,7 +492,39 @@ GET /badgeRule/badge?name=Ultra Marathon
 }
 ```
 
-**Valeurs `status` :** `pending`, `accepted`, `declined`
+**Valeurs `status` :** `pending`, `accepted`, `declined`, `completed`
+
+**Réponse `/:id/complete` :**
+```json
+{
+  "message": "Défi social complété avec succès",
+  "pointsEarned": 35,
+  "breakdown": {
+    "basePoints": 20,
+    "socialBonus": 15
+  }
+}
+```
+
+**🎯 Calcul des points pour défis sociaux :**
+
+Les défis sociaux donnent un **bonus de +15 points** en plus des points de base :
+
+| Difficulté | Points de base | Bonus social | Total |
+|------------|----------------|--------------|-------|
+| beginner | 10 | +15 | **25 points** |
+| intermediate | 20 | +15 | **35 points** |
+| advanced | 30 | +15 | **45 points** |
+
+**✨ Avantages :**
+- Les **deux participants** (inviteur + invité) reçoivent les points
+- Le bonus social encourage la collaboration
+- Le défi doit être au statut `accepted` avant d'être complété
+
+**✅ Validations :**
+- Les ObjectIds doivent être valides (24 caractères hexadécimaux)
+- Le statut doit être `pending`, `accepted`, `declined` ou `completed`
+- Pour compléter, le défi doit être accepté (status = `accepted`)
 
 ---
 
