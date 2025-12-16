@@ -1,6 +1,7 @@
 export * from "./userRouter";
 export * from "./gymRouter";
 export * from "./badgeRouter";
+export * from "./badgeRuleRouter";
 export * from "./exerciseTypeRouter";
 export * from "./socialRouter";
 export * from "./scoreRouter";

@@ -10,7 +10,9 @@ export const createGymBody = z.object({
   description: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email("Email invalide").optional(),
-  exerciseTypes: z.array(z.string()).optional().default([])
+  exerciseTypes: z.array(
+    z.string().regex(/^[0-9a-fA-F]{24}$/, "ID d'exercice invalide (doit être un ObjectId MongoDB)")
+  ).optional().default([])
 });
 
 export const updateGymBody = createGymBody
