@@ -16,7 +16,7 @@ userRouter.get('/get/:id', authMiddleware, async (req, res): Promise<void> => {
     res.status(200).json(list);
 })
 
-userRouter.post('/create', authMiddleware, validateMiddleware({ body: createUserBody }), async (req, res): Promise<void> => {
+userRouter.post('/create', validateMiddleware({ body: createUserBody }), async (req, res): Promise<void> => {
     const input = req.body as CreateUserInput;
     const created = await UserModel.create(input);
     const message = created && typeof created === "object" ? "user created" : "error";

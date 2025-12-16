@@ -3,7 +3,7 @@ export * from "./gymRouter";
 export * from "./badgeRouter";
 export * from "./badgeRuleRouter";
 export * from "./exerciseTypeRouter";
-export * from "./socialChallengeRouter";
+export * from "./socialRouter";
 export * from "./scoreRouter";
 export * from "./trainingStatRouter";
 export * from "./challengeRouter";

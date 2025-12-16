@@ -7,6 +7,22 @@ import { addPointsForChallenge } from "../utils/scoreService";
 
 const challengeRouter = Router();
 
+// ✅ 1. Route GET ALL (AJOUTÉE ICI, AVANT /:id)
+challengeRouter.get('/getAll', async (req, res): Promise<void> => {
+    try {
+        const challenges = await ChallengeModel.find()
+            .populate('creator', 'firstname lastname email')
+            .populate('exerciseType', 'name difficulty')
+            .populate('gym', 'name')
+            .sort({ createdAt: -1 }) // Trie par le plus récent
+            .exec();
+        res.status(200).json(challenges);
+    } catch (error) {
+        res.status(500).json({ error: "Erreur lors de la récupération des défis" });
+    }
+});
+
+// 2. Route FILTER
 challengeRouter.get('/filter', async (req, res): Promise<void> => {
     try {
         const { difficulty, exerciseType, duration, gymId } = req.query;
@@ -29,6 +45,7 @@ challengeRouter.get('/filter', async (req, res): Promise<void> => {
     }
 });
 
+// 3. Route CREATE
 challengeRouter.post('/create', authMiddleware, validateMiddleware({ body: createChallengeBody }), async (req, res): Promise<void> => {
     try {
         const input = req.body as CreateChallengeInput;
@@ -58,6 +75,7 @@ challengeRouter.post('/create', authMiddleware, validateMiddleware({ body: creat
     }
 });
 
+// 4. Route GET BY ID
 challengeRouter.get('/:id', async (req, res): Promise<void> => {
     try {
         const challenge = await ChallengeModel.findById(req.params.id)
@@ -69,6 +87,7 @@ challengeRouter.get('/:id', async (req, res): Promise<void> => {
     } catch (error) { res.status(500).json({ error: "Erreur récupération" }); }
 });
 
+// 5. Route JOIN
 challengeRouter.post('/:id/join', authMiddleware, validateMiddleware({ body: joinChallengeBody }), async (req, res): Promise<void> => {
     try {
         const { id } = req.params;
@@ -84,6 +103,7 @@ challengeRouter.post('/:id/join', authMiddleware, validateMiddleware({ body: joi
     } catch (error) { res.status(500).json({ error: "Erreur join" }); }
 });
 
+// 6. Route UPDATE
 challengeRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: updateChallengeBody }), async (req, res): Promise<void> => {
     try {
         const updated = await ChallengeModel.findByIdAndUpdate(req.params.id, req.body, { new: true }).exec();
@@ -92,6 +112,7 @@ challengeRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: 
     } catch (error) { res.status(500).json({ error: "Erreur update" }); }
 });
 
+// 7. Route DELETE
 challengeRouter.delete('/:id', authMiddleware, async (req, res): Promise<void> => {
     try {
         const deleted = await ChallengeModel.findByIdAndDelete(req.params.id).exec();
