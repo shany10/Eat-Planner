@@ -49,7 +49,6 @@ export const addPointsForMultipleParticipants = async (
     isSocialChallenge: boolean = false
 ): Promise<void> => {
     try {
-        // Traitement parallèle pour tous les participants
         const promises = participantIds.map(participantId => 
             addPointsForChallenge(participantId, difficulty, isSocialChallenge)
         );

@@ -6,7 +6,6 @@ import { addPointsBody } from "../schemas/scoreSchema";
 
 const scoreRouter = Router();
 
-// Leaderboard Top 10
 scoreRouter.get('/leaderboard', async (req, res): Promise<void> => {
     try {
         const top = await ScoreModel.find()
@@ -19,7 +18,6 @@ scoreRouter.get('/leaderboard', async (req, res): Promise<void> => {
     }
 });
 
-// Score d'un utilisateur précis
 scoreRouter.get('/user/:userId', async (req, res): Promise<void> => {
     try {
         const score = await ScoreModel.findOne({ user: req.params.userId });
@@ -30,7 +28,6 @@ scoreRouter.get('/user/:userId', async (req, res): Promise<void> => {
     }
 });
 
-// Route pour ajouter manuellement des points (admin ou système)
 scoreRouter.post('/add-points', authMiddleware, validateMiddleware({ body: addPointsBody }), async (req, res): Promise<void> => {
     try {
         const { userId, points } = req.body;

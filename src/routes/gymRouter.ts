@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { z } from "zod";
 import {
   validateMiddleware,
   authMiddleware,
@@ -9,6 +8,7 @@ import {
   createGymBody,
   updateGymBody,
   approveGymBody,
+  exerciseTypesBody,
   CreateGymInput,
 } from "../schemas";
 import { GymModel, UserModel } from "../models";
@@ -43,6 +43,46 @@ gymRouter.get("/approved", async (req, res): Promise<void> => {
   }
 });
 
+gymRouter.get("/pending", async (req, res): Promise<void> => {
+  try {
+    const gyms = await GymModel.find({ approved: false })
+      .populate("owner", "firstname lastname email")
+      .populate("exerciseTypes", "name difficulty")
+      .exec();
+    res.status(200).json(gyms);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la récupération des salles en attente" });
+  }
+});
+
+gymRouter.get(
+  "/admin/stats",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  async (req, res): Promise<void> => {
+    try {
+      const totalGyms = await GymModel.countDocuments().exec();
+      const approvedGyms = await GymModel.countDocuments({ approved: true }).exec();
+      const pendingGyms = await GymModel.countDocuments({ approved: false }).exec();
+
+      const stats = {
+        total: totalGyms,
+        approved: approvedGyms,
+        pending: pendingGyms,
+        approvalRate: totalGyms > 0 ? ((approvedGyms / totalGyms) * 100).toFixed(2) + '%' : '0%'
+      };
+
+      res.status(200).json(stats);
+    } catch (error) {
+      res
+        .status(500)
+        .json({ error: "Erreur lors de la récupération des statistiques" });
+    }
+  }
+);
+
 gymRouter.get("/:id", async (req, res): Promise<void> => {
   try {
     const gym = await GymModel.findById(req.params.id)
@@ -69,14 +109,10 @@ gymRouter.post(
   async (req, res): Promise<void> => {
     try {
       const input = req.body as CreateGymInput;
-      if (!req.user) {
-        res.status(401).json({ error: "Utilisateur non authentifié" });
-        return;
-      }
-      const currentUser = await UserModel.findById(req.user.id).exec();
+      const currentUser = await UserModel.findById(req.user!.id).exec();
       
       if (!currentUser) { 
-        res.status(401).json({ error: "User introuvable" }); 
+        res.status(401).json({ error: "Utilisateur introuvable" }); 
         return; 
       }
 
@@ -89,6 +125,9 @@ gymRouter.post(
         if (!assignedOwner) { 
           res.status(400).json({ error: "Propriétaire assigné introuvable" }); 
           return; 
+        } else if (!["admin", "manager"].includes(assignedOwner.role)) {
+          res.status(400).json({ error: "Le propriétaire assigné doit être un admin ou un manager" });
+          return;
         }
       } else {
         gymData.owner = currentUser.id;
@@ -139,11 +178,7 @@ gymRouter.patch(
 gymRouter.patch(
   "/:id/exerciseTypes",
   authMiddleware,
-  validateMiddleware({
-    body: z.object({
-      exerciseTypes: z.array(z.string()),
-    }),
-  }),
+  validateMiddleware({ body: exerciseTypesBody }),
   async (req, res): Promise<void> => {
     try {
       const { id } = req.params;

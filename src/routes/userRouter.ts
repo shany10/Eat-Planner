@@ -32,7 +32,6 @@ userRouter.post('/auth', validateMiddleware({ body: authUserBody }), async (req,
         return;
     }
 
-    // Vérif si le compte est actif
     if (!user.active) {
         res.status(403).json({ error: 'Account disabled. Contact administrator.' });
         return;
@@ -47,7 +46,6 @@ userRouter.post('/auth', validateMiddleware({ body: authUserBody }), async (req,
     res.json({ ok: true, token, id: user.id });
 });
 
-// Route pour activer/desa un utilisateur (admin only)
 userRouter.patch(
   '/toggle-active/:id',
   authMiddleware,
@@ -79,7 +77,6 @@ userRouter.patch(
   }
 );
 
-// Route pour voir le statut user
 userRouter.get(
   '/status/:id',
   authMiddleware,

@@ -25,5 +25,10 @@ export const approveGymBody = z.object({
   approved: z.boolean(),
 });
 
+export const exerciseTypesBody = z.object({
+  exerciseTypes: z.array(z.string()),
+});
+
 export type CreateGymInput = z.infer<typeof createGymBody>;
 export type UpdateGymInput = z.infer<typeof updateGymBody>;
+export type ExerciseTypesInput = z.infer<typeof exerciseTypesBody>;

@@ -6,17 +6,14 @@ import { BadgeService } from "../utils/badgeService";
 
 const trainingStatRouter = Router();
 
-//Créer une stat + Gain de points automatique
 trainingStatRouter.post('/create', authMiddleware, validateMiddleware({ body: createTrainingStatBody }), async (req, res): Promise<void> => {
     try {
         const input = req.body as CreateTrainingStatInput;
         const created = await TrainingStatModel.create(input);
 
-        // Si l'entraînement est marqué comme terminé
         if (created.completed) {
             const points = input.duration * 10; // Logique : 10 points par minute
             
-            // Mise à jour (ou création) du Score
             await ScoreModel.findOneAndUpdate(
                 { user: input.user },
                 { 
@@ -26,7 +23,6 @@ trainingStatRouter.post('/create', authMiddleware, validateMiddleware({ body: cr
                 { upsert: true, new: true }
             );
             
-            // Vérification des badges
             await BadgeService.checkAndAwardAllBadges(input.user);
         }
         res.status(201).json({ message: "Séance enregistrée", trainingStat: created });
@@ -35,7 +31,6 @@ trainingStatRouter.post('/create', authMiddleware, validateMiddleware({ body: cr
     }
 });
 
-// Récupérer l'historique d'un utilisateur
 trainingStatRouter.get('/user/:userId', authMiddleware, async (req, res): Promise<void> => {
     try {
         const history = await TrainingStatModel.find({ user: req.params.userId })
@@ -47,7 +42,6 @@ trainingStatRouter.get('/user/:userId', authMiddleware, async (req, res): Promis
     }
 });
 
-// Mettre à jour une stat 
 trainingStatRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: updateTrainingStatBody }), async (req, res): Promise<void> => {
     try {
         const updates = req.body as UpdateTrainingStatInput;
@@ -57,7 +51,6 @@ trainingStatRouter.patch('/update/:id', authMiddleware, validateMiddleware({ bod
     } catch(error) { res.status(500).json({ error: "Erreur mise à jour" }); }
 });
 
-//Supprimer une stat
 trainingStatRouter.delete('/:id', authMiddleware, async (req, res): Promise<void> => {
     try {
         await TrainingStatModel.findByIdAndDelete(req.params.id);

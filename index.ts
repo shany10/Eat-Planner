@@ -1,5 +1,4 @@
 import express from 'express';
-//import cors from 'cors';
 import { 
   userRouter, 
   gymRouter, 
@@ -9,15 +8,12 @@ import {
   trainingStatRouter, 
   socialRouter, 
   scoreRouter,
-  badgeRuleRouter
-  
+  badgeRuleRouter  
 } from './src/routes';
 import { connectMongoose } from "./src/db/mangoose";
 import "dotenv/config";
 
 const app = express();
-
-//app.use(cors()); 
 
 app.use(express.json());
 
@@ -30,7 +26,6 @@ app.get('/', (req, res) => {
     res.send('TSPark API - Fitness Challenge Platform');
 });
 
-// Enregistrement de toutes les routes
 app.use('/user', userRouter);
 app.use('/gym', gymRouter);
 app.use('/badge', badgeRouter);
@@ -41,7 +36,6 @@ app.use('/social', socialRouter);
 app.use('/score', scoreRouter);
 app.use('/badgeRule', badgeRuleRouter);
 
-// Utilisation du port depuis .env
 const port = process.env.NODE_PORT || 3000;
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
