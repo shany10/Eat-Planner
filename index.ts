@@ -8,7 +8,8 @@ import {
   trainingStatRouter, 
   socialRouter, 
   scoreRouter,
-  badgeRuleRouter  
+  badgeRuleRouter,
+  rewardRouter
 } from './src/routes';
 import { connectMongoose } from "./src/db/mangoose";
 import "dotenv/config";
@@ -35,6 +36,7 @@ app.use('/trainingStat', trainingStatRouter);
 app.use('/social', socialRouter);
 app.use('/score', scoreRouter);
 app.use('/badgeRule', badgeRuleRouter);
+app.use('/reward', rewardRouter);
 
 const port = process.env.NODE_PORT || 3000;
 app.listen(port, () => {

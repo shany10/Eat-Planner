@@ -16,81 +16,101 @@ userRouter.get('/get/:id', authMiddleware, roleMiddleware(["admin"]), async (req
     res.status(200).json(list);
 })
 
-userRouter.post('/create', validateMiddleware({ body: createUserBody }), async (req, res): Promise<void> => {
+userRouter.post(
+  "/create",
+  validateMiddleware({ body: createUserBody }),
+  async (req, res): Promise<void> => {
     const input = req.body as CreateUserInput;
     const created = await UserModel.create(input);
-    const message = created && typeof created === "object" ? "user created" : "error";
+    const message =
+      created && typeof created === "object" ? "user created" : "error";
     res.status(201).send(message);
-})
+  }
+);
 
-userRouter.post('/auth', validateMiddleware({ body: authUserBody }), async (req, res): Promise<void> => {
+userRouter.post(
+  "/auth",
+  validateMiddleware({ body: authUserBody }),
+  async (req, res): Promise<void> => {
     const { email, password } = req.body;
 
-    const user: IUser | null = await UserModel.findOne({ email }).select('+password').exec();
+    const user: IUser | null = await UserModel.findOne({ email })
+      .select("+password")
+      .exec();
     if (!user) {
-        res.status(401).json({ error: 'Invalid email or password' });
-        return;
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
     }
 
     if (!user.active) {
-        res.status(403).json({ error: 'Account disabled. Contact administrator.' });
-        return;
+      res
+        .status(403)
+        .json({ error: "Account disabled. Contact administrator." });
+      return;
     }
 
     const isValid = await user.verifyPassword(password);
     if (!isValid) {
-        res.status(401).json({ error: 'Invalid email or password' });
-        return;
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
     }
     const token = signAccessToken({ sub: user.id });
     res.json({ ok: true, token, id: user.id });
-});
+  }
+);
 
 userRouter.patch(
-  '/toggle-active/:id',
+  "/toggle-active/:id",
   authMiddleware,
   roleMiddleware(["admin"]),
   async (req, res): Promise<void> => {
     try {
       const { id } = req.params;
-      
+
       const user = await UserModel.findById(id).exec();
       if (!user) {
-        res.status(404).json({ error: 'Utilisateur non trouvé' });
+        res.status(404).json({ error: "Utilisateur non trouvé" });
         return;
       }
 
       user.active = !user.active;
       await user.save();
 
-      res.status(200).json({ 
-        message: user.active ? 'Utilisateur activé' : 'Utilisateur désactivé',
+      res.status(200).json({
+        message: user.active ? "Utilisateur activé" : "Utilisateur désactivé",
         user: {
           id: user.id,
           email: user.email,
-          active: user.active
-        }
+          active: user.active,
+        },
       });
     } catch (error) {
-      res.status(500).json({ error: 'Erreur lors de la modification du statut' });
+      res
+        .status(500)
+        .json({ error: "Erreur lors de la modification du statut" });
     }
   }
 );
 
 userRouter.get(
-  '/status/:id',
+  "/status/:id",
   authMiddleware,
   roleMiddleware(["admin"]),
   async (req, res): Promise<void> => {
     try {
-      const user = await UserModel.findById(req.params.id, 'firstname lastname email role active').exec();
+      const user = await UserModel.findById(
+        req.params.id,
+        "firstname lastname email role active"
+      ).exec();
       if (!user) {
-        res.status(404).json({ error: 'Utilisateur non trouvé' });
+        res.status(404).json({ error: "Utilisateur non trouvé" });
         return;
       }
       res.status(200).json(user);
     } catch (error) {
-      res.status(500).json({ error: 'Erreur lors de la récupération du statut' });
+      res
+        .status(500)
+        .json({ error: "Erreur lors de la récupération du statut" });
     }
   }
 );
@@ -99,30 +119,35 @@ userRouter.patch('/update/:id', authMiddleware, userOwnershipMiddleware(), valid
     const id = req.params.id;
     const updates = req.body as UpdateUserInput;
     if (updates.password) {
-        const user = await UserModel.findById(id).select('+password');
-        if (!user) res.status(404).json({ error: 'User not found' });
-        else {
-            user.password = updates.password;
-            Object.assign(user, updates);
-            await user.save();
-            res.json({ ok: true, id: user.id });
-        }
+      const user = await UserModel.findById(id).select("+password");
+      if (!user) res.status(404).json({ error: "User not found" });
+      else {
+        user.password = updates.password;
+        Object.assign(user, updates);
+        await user.save();
+        res.json({ ok: true, id: user.id });
+      }
     }
-    const updated = await UserModel.findByIdAndUpdate(id, updates, { new: true }).exec();
-    if (!updated) res.status(404).json({ error: 'User not found' });
+    const updated = await UserModel.findByIdAndUpdate(id, updates, {
+      new: true,
+    }).exec();
+    if (!updated) res.status(404).json({ error: "User not found" });
     else res.json(updated);
-});
+  }
+);
 
 userRouter.delete('/delete/:id', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
     const { id } = req.params;
     const deleted = await UserModel.findByIdAndDelete(id).exec();
     if (!deleted) res.status(404).send("user not found");
     else res.status(204).send();
-})
+  }
+);
 
 userRouter.delete('/deleteAll', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
     await UserModel.deleteMany({});
     res.status(204).send();
-})
+  }
+);
 
 export { userRouter };

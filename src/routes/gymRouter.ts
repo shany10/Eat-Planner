@@ -10,6 +10,7 @@ import {
   updateGymBody,
   approveGymBody,
   exerciseTypesBody,
+  difficultyLevelsBody,
   CreateGymInput,
 } from "../schemas";
 import { GymModel, UserModel } from "../models";
@@ -111,10 +112,10 @@ gymRouter.post(
     try {
       const input = req.body as CreateGymInput;
       const currentUser = await UserModel.findById(req.user!.id).exec();
-      
-      if (!currentUser) { 
-        res.status(401).json({ error: "Utilisateur introuvable" }); 
-        return; 
+
+      if (!currentUser) {
+        res.status(401).json({ error: "Utilisateur introuvable" });
+        return;
       }
 
       const isAdmin = currentUser.role === "admin";
@@ -123,9 +124,9 @@ gymRouter.post(
       if (isAdmin) {
         gymData.approved = true;
         const assignedOwner = await UserModel.findById(input.owner).exec();
-        if (!assignedOwner) { 
-          res.status(400).json({ error: "Propriétaire assigné introuvable" }); 
-          return; 
+        if (!assignedOwner) {
+          res.status(400).json({ error: "Propriétaire assigné introuvable" });
+          return;
         } else if (!["admin", "manager"].includes(assignedOwner.role)) {
           res.status(400).json({ error: "Le propriétaire assigné doit être un admin ou un manager" });
           return;
@@ -136,9 +137,9 @@ gymRouter.post(
       }
 
       const gym = await GymModel.create(gymData);
-      res.status(201).json({ 
+      res.status(201).json({
         message: isAdmin ? "Salle créée et approuvée" : "Salle créée, en attente de validation",
-        gym 
+        gym
       });
     } catch (error) {
       res.status(500).json({ error: "Erreur création salle" });
@@ -176,6 +177,7 @@ gymRouter.patch(
   }
 );
 
+
 gymRouter.patch(
   "/:id/exerciseTypes",
   authMiddleware,
@@ -203,6 +205,46 @@ gymRouter.patch(
       res.status(200).json({ message: "Exercices attribués", gym: populatedGym });
     } catch (error) {
       res.status(500).json({ error: "Erreur lors de l'attribution" });
+    }
+  }
+);
+
+
+gymRouter.patch(
+  "/:id/difficultyLevels",
+  authMiddleware,
+  validateMiddleware({ body: difficultyLevelsBody }),
+  async (req, res): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { difficultyLevels } = req.body;
+
+      const gym = await GymModel.findById(id).exec();
+      if (!gym) {
+        res.status(404).json({ error: "Salle non trouvée" });
+        return;
+      }
+
+      const user = await UserModel.findById(req.user?.id).exec();
+      if (!user) {
+        res.status(404).json({ error: "Utilisateur non trouvé" });
+        return;
+      }
+
+      const isOwner = gym.owner.toString() === req.user?.id;
+      const isAdmin = user.role === "admin";
+
+      if (!isOwner && !isAdmin) {
+        res.status(403).json({ error: "Accès refusé" });
+        return;
+      }
+
+      gym.difficultyLevels = difficultyLevels;
+      await gym.save();
+
+      res.status(200).json({ message: "Niveaux attribués", gym });
+    } catch (error) {
+      res.status(500).json({ error: "Erreur lors de l'attribution des niveaux" });
     }
   }
 );

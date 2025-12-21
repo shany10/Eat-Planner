@@ -12,7 +12,7 @@ trainingStatRouter.post('/create', authMiddleware, validateMiddleware({ body: cr
         const created = await TrainingStatModel.create(input);
 
         if (created.completed) {
-            const points = input.duration * 10; // Logique : 10 points par minute
+            const points = input.duration * 10; 
             
             await ScoreModel.findOneAndUpdate(
                 { user: input.user },
@@ -35,7 +35,7 @@ trainingStatRouter.get('/user/:userId', authMiddleware, async (req, res): Promis
     try {
         const history = await TrainingStatModel.find({ user: req.params.userId })
             .populate('challenge', 'title description difficulty')
-            .sort({ sessionDate: -1 }); // Du plus récent au plus ancien
+            .sort({ sessionDate: -1 }); 
         res.json(history);
     } catch(error) { 
         res.status(500).json({ error: "Erreur récupération" }); 
