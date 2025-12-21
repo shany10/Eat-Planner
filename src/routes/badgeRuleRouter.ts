@@ -94,16 +94,12 @@ badgeRuleRouter.get(
   }
 );
 
-<<<<<<< HEAD
-badgeRuleRouter.post('/create', authMiddleware, roleMiddleware(["admin"]), validateMiddleware({ body: createBadgeRuleBody }), async (req, res): Promise<void> => {
-=======
 badgeRuleRouter.post(
   "/create",
   authMiddleware,
   roleMiddleware(["admin"]),
   validateMiddleware({ body: createBadgeRuleBody }),
   async (req, res): Promise<void> => {
->>>>>>> 973afa047cdb325e9c057621fd9306fcdbb7f6a1
     try {
       const input = req.body as CreateBadgeRuleInput;
       const created = await BadgeRuleModel.create(input);
@@ -116,16 +112,12 @@ badgeRuleRouter.post(
   }
 );
 
-<<<<<<< HEAD
-badgeRuleRouter.patch('/update/:id', authMiddleware, roleMiddleware(["admin"]), validateMiddleware({ body: updateBadgeRuleBody }), async (req, res): Promise<void> => {
-=======
 badgeRuleRouter.patch(
   "/update/:id",
   authMiddleware,
   roleMiddleware(["admin"]),
   validateMiddleware({ body: updateBadgeRuleBody }),
   async (req, res): Promise<void> => {
->>>>>>> 973afa047cdb325e9c057621fd9306fcdbb7f6a1
     try {
       const id = req.params.id;
       const updates = req.body as UpdateBadgeRuleInput;
@@ -145,15 +137,11 @@ badgeRuleRouter.patch(
   }
 );
 
-<<<<<<< HEAD
-badgeRuleRouter.patch('/toggle/:id', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
-=======
 badgeRuleRouter.patch(
   "/toggle/:id",
   authMiddleware,
   roleMiddleware(["admin"]),
   async (req, res): Promise<void> => {
->>>>>>> 973afa047cdb325e9c057621fd9306fcdbb7f6a1
     try {
       const id = req.params.id;
       const rule = await BadgeRuleModel.findById(id).exec();
@@ -177,15 +165,11 @@ badgeRuleRouter.patch(
   }
 );
 
-<<<<<<< HEAD
-badgeRuleRouter.delete('/delete/:id', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
-=======
 badgeRuleRouter.delete(
   "/delete/:id",
   authMiddleware,
   roleMiddleware(["admin"]),
   async (req, res): Promise<void> => {
->>>>>>> 973afa047cdb325e9c057621fd9306fcdbb7f6a1
     try {
       const { id } = req.params;
       const deleted = await BadgeRuleModel.findByIdAndDelete(id).exec();
@@ -202,15 +186,11 @@ badgeRuleRouter.delete(
   }
 );
 
-<<<<<<< HEAD
-badgeRuleRouter.delete('/deleteAll', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
-=======
 badgeRuleRouter.delete(
   "/deleteAll",
   authMiddleware,
   roleMiddleware(["admin"]),
   async (req, res): Promise<void> => {
->>>>>>> 973afa047cdb325e9c057621fd9306fcdbb7f6a1
     try {
       await BadgeRuleModel.deleteMany({});
       res.status(204).send();
