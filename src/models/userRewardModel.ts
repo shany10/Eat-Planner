@@ -5,7 +5,7 @@ export interface IUserReward extends Document {
     reward: Types.ObjectId;
     earnedAt: Date;
     sourceType: "challenge" | "socialChallenge" | "points" | "manual";
-    sourceId?: Types.ObjectId; // ID du défi/socialChallenge source
+    sourceId?: Types.ObjectId; 
     created_at: Date;
     updated_at: Date;
 }
@@ -25,9 +25,9 @@ const userRewardSchema = new Schema<IUserReward>({
     strict: true
 });
 
-// Index pour récupérer les récompenses d'un utilisateur
+
 userRewardSchema.index({ user: 1 });
-// Index unique pour éviter les doublons (même récompense pour le même défi)
+
 userRewardSchema.index({ user: 1, reward: 1, sourceId: 1 }, { unique: true, sparse: true });
 
 export const UserRewardModel = model<IUserReward>("UserReward", userRewardSchema);

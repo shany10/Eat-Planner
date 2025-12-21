@@ -58,13 +58,13 @@ socialRouter.post('/:id/complete', authMiddleware, async (req, res): Promise<voi
         const inviterId = socialChallenge.inviter.toString();
         const inviteeId = socialChallenge.invitee.toString();
 
-        // Attribution des points aux deux participants
+       
         await Promise.all([
             addPointsForChallenge(inviterId, challenge.difficulty, true),
             addPointsForChallenge(inviteeId, challenge.difficulty, true)
         ]);
 
-        // A12: Attribution des récompenses aux deux participants
+      
         await Promise.all([
             RewardService.awardForSocialComplete(inviterId, socialChallengeId, challenge.difficulty),
             RewardService.awardForSocialComplete(inviteeId, socialChallengeId, challenge.difficulty)
@@ -74,7 +74,7 @@ socialRouter.post('/:id/complete', authMiddleware, async (req, res): Promise<voi
         await socialChallenge.save();
 
         const basePoints = challenge.difficulty === 'beginner' ? 10 : challenge.difficulty === 'intermediate' ? 20 : 30;
-        const totalPoints = basePoints + 15; // 15 est le bonus social
+        const totalPoints = basePoints + 15; 
 
         res.status(200).json({ 
             message: "Défi social complété avec succès", 

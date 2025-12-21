@@ -21,9 +21,9 @@ const challengeShareSchema = new Schema<IChallengeShare>({
     strict: true
 });
 
-// Index pour récupérer rapidement les partages reçus par un utilisateur
+
 challengeShareSchema.index({ sharedWith: 1, seen: 1 });
-// Index pour éviter les doublons (même défi partagé 2 fois à la même personne par le même utilisateur)
+
 challengeShareSchema.index({ challenge: 1, sharedBy: 1, sharedWith: 1 }, { unique: true });
 
 export const ChallengeShareModel = model<IChallengeShare>("ChallengeShare", challengeShareSchema);

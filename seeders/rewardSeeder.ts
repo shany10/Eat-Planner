@@ -2,7 +2,7 @@ import { RewardModel } from "../src/models";
 
 export const rewardSeeder = async () => {
     const rewards = [
-        // Récompenses pour défis standard
+       
         {
             name: "Premier Défi",
             description: "Complétez votre premier défi",
@@ -42,7 +42,7 @@ export const rewardSeeder = async () => {
             conditionDifficulty: "advanced",
             isActive: true
         },
-        // Récompenses pour défis sociaux
+        
         {
             name: "Esprit d'Équipe",
             description: "Complétez votre premier défi social",
@@ -62,7 +62,7 @@ export const rewardSeeder = async () => {
             conditionDifficulty: "advanced",
             isActive: true
         },
-        // Récompenses basées sur les points
+       
         {
             name: "Centurion",
             description: "Atteignez 100 points",

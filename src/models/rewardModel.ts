@@ -6,10 +6,10 @@ export interface IReward extends Document {
     type: "trophy" | "medal" | "item" | "title";
     iconUrl: string;
     rarity: "common" | "rare" | "epic" | "legendary";
-    // Conditions d'attribution
+    
     conditionType: "challengeComplete" | "socialComplete" | "pointsThreshold" | "manual";
-    conditionValue?: number; // ex: nombre de points requis
-    conditionDifficulty?: "beginner" | "intermediate" | "advanced"; // difficulté du défi requis
+    conditionValue?: number; 
+    conditionDifficulty?: "beginner" | "intermediate" | "advanced";
     isActive: boolean;
     created_at: Date;
     updated_at: Date;

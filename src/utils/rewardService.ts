@@ -3,16 +3,14 @@ import { Types } from "mongoose";
 
 export class RewardService {
     
-    /**
-     * Attribue les récompenses appropriées après complétion d'un défi standard
-     */
+ 
     static async awardForChallengeComplete(
         userId: string | Types.ObjectId,
         challengeId: string | Types.ObjectId,
         difficulty: "beginner" | "intermediate" | "advanced"
     ): Promise<void> {
         try {
-            // Trouver les récompenses actives pour complétion de défi
+            
             const rewards = await RewardModel.find({
                 isActive: true,
                 conditionType: "challengeComplete",
@@ -32,23 +30,21 @@ export class RewardService {
                 );
             }
 
-            // Vérifier aussi les récompenses basées sur les points
+            
             await this.checkPointsRewards(userId);
         } catch (error) {
             console.error("Erreur lors de l'attribution des récompenses (challenge):", error);
         }
     }
 
-    /**
-     * Attribue les récompenses appropriées après complétion d'un défi social
-     */
+   
     static async awardForSocialComplete(
         userId: string | Types.ObjectId,
         socialChallengeId: string | Types.ObjectId,
         difficulty: "beginner" | "intermediate" | "advanced"
     ): Promise<void> {
         try {
-            // Trouver les récompenses actives pour complétion de défi social
+           
             const rewards = await RewardModel.find({
                 isActive: true,
                 conditionType: "socialComplete",
@@ -68,16 +64,13 @@ export class RewardService {
                 );
             }
 
-            // Vérifier aussi les récompenses basées sur les points
+            
             await this.checkPointsRewards(userId);
         } catch (error) {
             console.error("Erreur lors de l'attribution des récompenses (social):", error);
         }
     }
 
-    /**
-     * Vérifie et attribue les récompenses basées sur le seuil de points
-     */
     static async checkPointsRewards(userId: string | Types.ObjectId): Promise<void> {
         try {
             const score = await ScoreModel.findOne({ user: userId }).exec();
@@ -102,9 +95,7 @@ export class RewardService {
         }
     }
 
-    /**
-     * Attribution manuelle d'une récompense par un admin
-     */
+    
     static async awardManually(
         userId: string,
         rewardId: string
@@ -123,9 +114,7 @@ export class RewardService {
         }
     }
 
-    /**
-     * Fonction interne pour attribuer une récompense (évite les doublons)
-     */
+    
     private static async grantReward(
         userId: string | Types.ObjectId,
         rewardId: string | Types.ObjectId,
@@ -139,7 +128,7 @@ export class RewardService {
                 ? (typeof sourceId === 'string' ? new Types.ObjectId(sourceId) : sourceId) 
                 : undefined;
 
-            // Vérifier si déjà attribuée (pour points et manual, on vérifie juste user+reward)
+           
             const existingQuery: Record<string, unknown> = { 
                 user: userObjectId, 
                 reward: rewardObjectId 
@@ -153,7 +142,7 @@ export class RewardService {
                 return { success: false, message: "Récompense déjà attribuée" };
             }
 
-            // Pour les récompenses basées sur les points, vérifier sans sourceId
+            
             if (sourceType === "points") {
                 const existingPoints = await UserRewardModel.findOne({
                     user: userObjectId,
@@ -177,7 +166,7 @@ export class RewardService {
             
             return { success: true, message: `Récompense "${reward?.name}" attribuée` };
         } catch (error: unknown) {
-            // Ignorer les erreurs de doublon
+        
             if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
                 return { success: false, message: "Récompense déjà attribuée" };
             }
@@ -185,9 +174,7 @@ export class RewardService {
         }
     }
 
-    /**
-     * Récupérer les récompenses d'un utilisateur
-     */
+ 
     static async getUserRewards(userId: string) {
         return UserRewardModel.find({ user: userId })
             .populate('reward')

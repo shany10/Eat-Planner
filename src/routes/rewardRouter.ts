@@ -6,9 +6,7 @@ import { RewardService } from "../utils/rewardService";
 
 const rewardRouter = Router();
 
-// ==================== Routes Admin ====================
 
-// Récupérer toutes les récompenses (admin)
 rewardRouter.get('/getAll', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
     try {
         const rewards = await RewardModel.find().sort({ created_at: -1 }).exec();
@@ -18,7 +16,6 @@ rewardRouter.get('/getAll', authMiddleware, roleMiddleware(["admin"]), async (re
     }
 });
 
-// Récupérer les récompenses actives (public pour affichage)
 rewardRouter.get('/active', async (req, res): Promise<void> => {
     try {
         const rewards = await RewardModel.find({ isActive: true }).exec();
@@ -28,7 +25,7 @@ rewardRouter.get('/active', async (req, res): Promise<void> => {
     }
 });
 
-// Récupérer une récompense par ID
+
 rewardRouter.get('/get/:id', authMiddleware, async (req, res): Promise<void> => {
     try {
         const reward = await RewardModel.findById(req.params.id).exec();
@@ -42,7 +39,7 @@ rewardRouter.get('/get/:id', authMiddleware, async (req, res): Promise<void> => 
     }
 });
 
-// Créer une récompense (admin)
+
 rewardRouter.post('/create', authMiddleware, roleMiddleware(["admin"]), validateMiddleware({ body: createRewardBody }), async (req, res): Promise<void> => {
     try {
         const input = req.body as CreateRewardInput;
@@ -57,7 +54,7 @@ rewardRouter.post('/create', authMiddleware, roleMiddleware(["admin"]), validate
     }
 });
 
-// Modifier une récompense (admin)
+
 rewardRouter.patch('/update/:id', authMiddleware, roleMiddleware(["admin"]), validateMiddleware({ body: updateRewardBody }), async (req, res): Promise<void> => {
     try {
         const updates = req.body as UpdateRewardInput;
@@ -72,7 +69,7 @@ rewardRouter.patch('/update/:id', authMiddleware, roleMiddleware(["admin"]), val
     }
 });
 
-// Activer/Désactiver une récompense (admin)
+
 rewardRouter.patch('/toggle/:id', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
     try {
         const reward = await RewardModel.findById(req.params.id).exec();
@@ -91,7 +88,7 @@ rewardRouter.patch('/toggle/:id', authMiddleware, roleMiddleware(["admin"]), asy
     }
 });
 
-// Supprimer une récompense (admin)
+
 rewardRouter.delete('/delete/:id', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
     try {
         const deleted = await RewardModel.findByIdAndDelete(req.params.id).exec();
@@ -99,7 +96,7 @@ rewardRouter.delete('/delete/:id', authMiddleware, roleMiddleware(["admin"]), as
             res.status(404).json({ error: "Récompense non trouvée" });
             return;
         }
-        // Supprimer aussi les attributions liées
+      
         await UserRewardModel.deleteMany({ reward: req.params.id });
         res.status(204).send();
     } catch (error) {
@@ -107,7 +104,7 @@ rewardRouter.delete('/delete/:id', authMiddleware, roleMiddleware(["admin"]), as
     }
 });
 
-// Supprimer toutes les récompenses (admin)
+
 rewardRouter.delete('/deleteAll', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
     try {
         await RewardModel.deleteMany({});
@@ -118,7 +115,7 @@ rewardRouter.delete('/deleteAll', authMiddleware, roleMiddleware(["admin"]), asy
     }
 });
 
-// Attribution manuelle d'une récompense (admin)
+
 rewardRouter.post('/:id/award', authMiddleware, roleMiddleware(["admin"]), validateMiddleware({ body: awardRewardBody }), async (req, res): Promise<void> => {
     try {
         const rewardId = req.params.id;
@@ -141,9 +138,7 @@ rewardRouter.post('/:id/award', authMiddleware, roleMiddleware(["admin"]), valid
     }
 });
 
-// ==================== Routes Utilisateur ====================
 
-// Récupérer mes récompenses
 rewardRouter.get('/my', authMiddleware, async (req, res): Promise<void> => {
     try {
         if (!req.user) {
@@ -158,7 +153,7 @@ rewardRouter.get('/my', authMiddleware, async (req, res): Promise<void> => {
     }
 });
 
-// Récupérer les récompenses d'un utilisateur spécifique
+
 rewardRouter.get('/user/:userId', authMiddleware, async (req, res): Promise<void> => {
     try {
         const userId = req.params.userId;

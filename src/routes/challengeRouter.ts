@@ -18,10 +18,7 @@ import { RewardService } from "../utils/rewardService";
 
 const challengeRouter = Router();
 
-/**
- * Fonction utilitaire pour valider que exerciseType ∈ gym.exerciseTypes
- * Retourne null si valide, sinon retourne un message d'erreur
- */
+
 async function validateExerciseTypeInGym(gymId: string, exerciseTypeId: string): Promise<string | null> {
     const gym = await GymModel.findById(gymId).exec();
     if (!gym) {
@@ -75,7 +72,7 @@ challengeRouter.get('/filter', async (req, res): Promise<void> => {
     }
 });
 
-// Route pour récupérer les défis partagés avec l'utilisateur connecté
+
 challengeRouter.get('/shared/received', authMiddleware, async (req, res): Promise<void> => {
     try {
         if (!req.user) {
@@ -109,7 +106,7 @@ challengeRouter.get('/shared/received', authMiddleware, async (req, res): Promis
     }
 });
 
-// Route pour récupérer les défis que l'utilisateur a partagés
+
 challengeRouter.get('/shared/sent', authMiddleware, async (req, res): Promise<void> => {
     try {
         if (!req.user) {
@@ -156,7 +153,7 @@ challengeRouter.post('/create', authMiddleware, validateMiddleware({ body: creat
                 return;
             }
 
-            // P5: Validation que exerciseType ∈ gym.exerciseTypes
+          
             const validationError = await validateExerciseTypeInGym(input.gym, input.exerciseType);
             if (validationError) {
                 res.status(400).json({ error: validationError });
@@ -182,7 +179,7 @@ challengeRouter.get('/:id', async (req, res): Promise<void> => {
     } catch (error) { res.status(500).json({ error: "Erreur récupération" }); }
 });
 
-// C2: Route pour partager un défi avec un ou plusieurs utilisateurs
+
 challengeRouter.post('/:id/share', authMiddleware, validateMiddleware({ body: shareChallengeBody }), async (req, res): Promise<void> => {
     try {
         const { id } = req.params;
@@ -193,23 +190,23 @@ challengeRouter.post('/:id/share', authMiddleware, validateMiddleware({ body: sh
             return;
         }
 
-        // Vérifier que le défi existe
+      
         const challenge = await ChallengeModel.findById(id).exec();
         if (!challenge) {
             res.status(404).json({ error: "Défi non trouvé" });
             return;
         }
 
-        // Normaliser sharedWith en tableau
+        
         const recipients = Array.isArray(input.sharedWith) ? input.sharedWith : [input.sharedWith];
 
-        // Vérifier qu'on ne se partage pas à soi-même
+       
         if (recipients.includes(req.user.id)) {
             res.status(400).json({ error: "Vous ne pouvez pas partager un défi avec vous-même" });
             return;
         }
 
-        // Vérifier que tous les destinataires existent
+       
         const existingUsers = await UserModel.find({ _id: { $in: recipients } }).select('_id').exec();
         const existingUserIds = existingUsers.map(u => (u._id as Types.ObjectId).toString());
         const invalidUsers = recipients.filter(r => !existingUserIds.includes(r));
@@ -219,7 +216,7 @@ challengeRouter.post('/:id/share', authMiddleware, validateMiddleware({ body: sh
             return;
         }
 
-        // Créer les partages (ignorer les doublons grâce à l'index unique)
+     
         const sharePromises = recipients.map(async (recipientId) => {
             try {
                 return await ChallengeShareModel.create({
@@ -229,7 +226,7 @@ challengeRouter.post('/:id/share', authMiddleware, validateMiddleware({ body: sh
                     message: input.message
                 });
             } catch (error: unknown) {
-                // Ignorer les erreurs de doublon (code 11000)
+             
                 if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
                     return { skipped: true, recipientId };
                 }
@@ -256,7 +253,7 @@ challengeRouter.post('/:id/share', authMiddleware, validateMiddleware({ body: sh
     }
 });
 
-// Route pour marquer un partage comme vu
+
 challengeRouter.patch('/shared/:shareId/seen', authMiddleware, validateMiddleware({ body: markShareSeenBody }), async (req, res): Promise<void> => {
     try {
         const { shareId } = req.params;
@@ -273,7 +270,7 @@ challengeRouter.patch('/shared/:shareId/seen', authMiddleware, validateMiddlewar
             return;
         }
 
-        // Seul le destinataire peut marquer comme vu
+     
         if (share.sharedWith.toString() !== req.user.id) {
             res.status(403).json({ error: "Vous n'êtes pas autorisé à modifier ce partage" });
             return;
@@ -308,18 +305,18 @@ challengeRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: 
         const updates = req.body as UpdateChallengeInput;
         const challengeId = req.params.id;
 
-        // Récupérer le challenge existant pour vérifier les valeurs actuelles
+  
         const existingChallenge = await ChallengeModel.findById(challengeId).exec();
         if (!existingChallenge) {
             res.status(404).json({ error: "Défi non trouvé" });
             return;
         }
 
-        // Déterminer les valeurs finales de gym et exerciseType
+       
         const finalGymId = updates.gym !== undefined ? updates.gym : existingChallenge.gym?.toString();
         const finalExerciseTypeId = updates.exerciseType !== undefined ? updates.exerciseType : existingChallenge.exerciseType.toString();
 
-        // P5: Si un gym est défini (existant ou nouveau), valider la cohérence
+       
         if (finalGymId && finalExerciseTypeId) {
             const validationError = await validateExerciseTypeInGym(finalGymId, finalExerciseTypeId);
             if (validationError) {
@@ -368,7 +365,7 @@ challengeRouter.post('/:id/complete', authMiddleware, validateMiddleware({ body:
 
         await addPointsForChallenge(userId, challenge.difficulty, false);
         
-        // A12: Attribution des récompenses
+       
         await RewardService.awardForChallengeComplete(userId, id, challenge.difficulty);
 
         res.status(200).json({

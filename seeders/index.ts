@@ -58,10 +58,10 @@ async function seedDatabase() {
     await connectMongoose(MONGO_URI);
     console.log("✅ Connected to MongoDB\n");
 
-    // Clear existing data
+ 
     await clearDatabase();
 
-    // Seed in order (respecting dependencies)
+    
     const users = await userSeeder();
     const exerciseTypes = await exerciseTypeSeeder();
     const badges = await badgeSeeder();
@@ -95,5 +95,5 @@ async function seedDatabase() {
   }
 }
 
-// Run seeder
+
 seedDatabase();
