@@ -3,6 +3,7 @@ import { authMiddleware, validateMiddleware } from "../middlewares";
 import { createSocialChallengeBody, updateSocialChallengeStatusBody } from "../schemas/socialChallengeSchema";
 import { SocialChallengeModel, ChallengeModel } from "../models";
 import { addPointsForChallenge } from "../utils/scoreService";
+import { RewardService } from "../utils/rewardService";
 
 const socialRouter = Router();
 
@@ -24,8 +25,14 @@ socialRouter.get('/invitations/:userId', authMiddleware, async (req, res): Promi
 
 socialRouter.post('/:id/complete', authMiddleware, async (req, res): Promise<void> => {
     try {
-        const { id } = req.params;
-        const socialChallenge = await SocialChallengeModel.findById(id).populate('challenge').exec();
+        const socialChallengeId = req.params.id;
+
+        if (!socialChallengeId) {
+            res.status(400).json({ error: "ID du défi social requis" });
+            return;
+        }
+
+        const socialChallenge = await SocialChallengeModel.findById(socialChallengeId).populate('challenge').exec();
         
         if (!socialChallenge) {
             res.status(404).json({ error: "Défi social non trouvé" });
@@ -48,9 +55,19 @@ socialRouter.post('/:id/complete', authMiddleware, async (req, res): Promise<voi
             return;
         }
 
+        const inviterId = socialChallenge.inviter.toString();
+        const inviteeId = socialChallenge.invitee.toString();
+
+        // Attribution des points aux deux participants
         await Promise.all([
-            addPointsForChallenge(socialChallenge.inviter, challenge.difficulty, true),
-            addPointsForChallenge(socialChallenge.invitee, challenge.difficulty, true)
+            addPointsForChallenge(inviterId, challenge.difficulty, true),
+            addPointsForChallenge(inviteeId, challenge.difficulty, true)
+        ]);
+
+        // A12: Attribution des récompenses aux deux participants
+        await Promise.all([
+            RewardService.awardForSocialComplete(inviterId, socialChallengeId, challenge.difficulty),
+            RewardService.awardForSocialComplete(inviteeId, socialChallengeId, challenge.difficulty)
         ]);
 
         socialChallenge.status = 'completed';
