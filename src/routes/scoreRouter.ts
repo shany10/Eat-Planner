@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { ScoreModel } from "../models";
-import { authMiddleware, validateMiddleware } from "../middlewares";
+import { authMiddleware, validateMiddleware, roleMiddleware } from "../middlewares";
 import { addPointsForChallenge } from "../utils/scoreService";
 import { addPointsBody } from "../schemas/scoreSchema";
 
@@ -28,7 +28,7 @@ scoreRouter.get('/user/:userId', async (req, res): Promise<void> => {
     }
 });
 
-scoreRouter.post('/add-points', authMiddleware, validateMiddleware({ body: addPointsBody }), async (req, res): Promise<void> => {
+scoreRouter.post('/add-points', authMiddleware, roleMiddleware(["admin"]), validateMiddleware({ body: addPointsBody }), async (req, res): Promise<void> => {
     try {
         const { userId, points } = req.body;
 

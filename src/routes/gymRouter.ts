@@ -3,6 +3,7 @@ import {
   validateMiddleware,
   authMiddleware,
   roleMiddleware,
+  gymOwnershipMiddleware,
 } from "../middlewares";
 import {
   createGymBody,
@@ -178,6 +179,8 @@ gymRouter.patch(
 gymRouter.patch(
   "/:id/exerciseTypes",
   authMiddleware,
+  roleMiddleware(["admin", "manager"]),
+  gymOwnershipMiddleware(),
   validateMiddleware({ body: exerciseTypesBody }),
   async (req, res): Promise<void> => {
     try {
@@ -187,20 +190,6 @@ gymRouter.patch(
       const gym = await GymModel.findById(id).exec();
       if (!gym) {
         res.status(404).json({ error: "Salle non trouvée" });
-        return;
-      }
-
-      const user = await UserModel.findById(req.user?.id).exec();
-      if (!user) {
-        res.status(404).json({ error: "Utilisateur non trouvé" });
-        return;
-      }
-
-      const isOwner = gym.owner.toString() === req.user?.id;
-      const isAdmin = user.role === "admin";
-
-      if (!isOwner && !isAdmin) {
-        res.status(403).json({ error: "Accès refusé" });
         return;
       }
 
@@ -221,35 +210,21 @@ gymRouter.patch(
 gymRouter.patch(
   "/:id",
   authMiddleware,
+  roleMiddleware(["admin", "manager"]),
+  gymOwnershipMiddleware(),
   validateMiddleware({ body: updateGymBody }),
   async (req, res): Promise<void> => {
     try {
       const { id } = req.params;
       const updates = req.body;
 
-      const gym = await GymModel.findById(id).exec();
-      if (!gym) {
-        res.status(404).json({ error: "Salle non trouvée" });
-        return;
-      }
-
-      const user = await UserModel.findById(req.user?.id).exec();
-      if (!user) {
-        res.status(404).json({ error: "Utilisateur non trouvé" });
-        return;
-      }
-
-      const isOwner = gym.owner.toString() === req.user?.id;
-      const isAdmin = user.role === "admin";
-
-      if (!isOwner && !isAdmin) {
-        res.status(403).json({ error: "Accès refusé" });
-        return;
-      }
-
       const updatedGym = await GymModel.findByIdAndUpdate(id, updates, {
         new: true,
       }).exec();
+      if (!updatedGym) {
+        res.status(404).json({ error: "Salle non trouvée" });
+        return;
+      }
       res.status(200).json({ message: "Salle mise à jour", gym: updatedGym });
     } catch (error) {
       res
@@ -259,31 +234,16 @@ gymRouter.patch(
   }
 );
 
-gymRouter.delete("/:id", authMiddleware, async (req, res): Promise<void> => {
-  try {
-    const { id } = req.params;
+gymRouter.delete(
+  "/:id",
+  authMiddleware,
+  roleMiddleware(["admin", "manager"]),
+  gymOwnershipMiddleware(),
+  async (req, res): Promise<void> => {
+    try {
+      const { id } = req.params;
 
-    const gym = await GymModel.findById(id).exec();
-    if (!gym) {
-      res.status(404).json({ error: "Salle non trouvée" });
-      return;
-    }
-
-    const user = await UserModel.findById(req.user?.id).exec();
-    if (!user) {
-      res.status(404).json({ error: "Utilisateur non trouvé" });
-      return;
-    }
-
-    const isOwner = gym.owner.toString() === req.user?.id;
-    const isAdmin = user.role === "admin";
-
-    if (!isOwner && !isAdmin) {
-      res.status(403).json({ error: "Accès refusé" });
-      return;
-    }
-
-    await GymModel.findByIdAndDelete(id).exec();
+      await GymModel.findByIdAndDelete(id).exec();
     res.status(204).send();
   } catch (error) {
     res

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { Types } from "mongoose";
-import { validateMiddleware, authMiddleware } from "../middlewares";
+import { validateMiddleware, authMiddleware, roleMiddleware } from "../middlewares";
 import { createChallengeBody, CreateChallengeInput, updateChallengeBody, joinChallengeBody, completeChallengeBody } from "../schemas";
 import { ChallengeModel, GymModel } from "../models";
 import { addPointsForChallenge } from "../utils/scoreService";
@@ -98,7 +98,7 @@ challengeRouter.post('/:id/join', authMiddleware, validateMiddleware({ body: joi
     } catch (error) { res.status(500).json({ error: "Erreur join" }); }
 });
 
-challengeRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: updateChallengeBody }), async (req, res): Promise<void> => {
+challengeRouter.patch('/update/:id', authMiddleware, roleMiddleware(["admin", "manager"]), validateMiddleware({ body: updateChallengeBody }), async (req, res): Promise<void> => {
     try {
         const updated = await ChallengeModel.findByIdAndUpdate(req.params.id, req.body, { new: true }).exec();
         if (!updated) { res.status(404).json({ error: "Défi non trouvé" }); return; }
@@ -106,7 +106,7 @@ challengeRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: 
     } catch (error) { res.status(500).json({ error: "Erreur update" }); }
 });
 
-challengeRouter.delete('/:id', authMiddleware, async (req, res): Promise<void> => {
+challengeRouter.delete('/:id', authMiddleware, roleMiddleware(["admin", "manager"]), async (req, res): Promise<void> => {
     try {
         const deleted = await ChallengeModel.findByIdAndDelete(req.params.id).exec();
         if (!deleted) { res.status(404).json({ error: "Défi non trouvé" }); return; }

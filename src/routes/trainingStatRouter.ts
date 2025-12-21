@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware, validateMiddleware } from "../middlewares";
+import { authMiddleware, validateMiddleware, roleMiddleware } from "../middlewares";
 import { createTrainingStatBody, CreateTrainingStatInput, updateTrainingStatBody, UpdateTrainingStatInput } from "../schemas";
 import { TrainingStatModel, ScoreModel } from "../models";
 import { BadgeService } from "../utils/badgeService";
@@ -51,7 +51,7 @@ trainingStatRouter.patch('/update/:id', authMiddleware, validateMiddleware({ bod
     } catch(error) { res.status(500).json({ error: "Erreur mise à jour" }); }
 });
 
-trainingStatRouter.delete('/:id', authMiddleware, async (req, res): Promise<void> => {
+trainingStatRouter.delete('/:id', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
     try {
         await TrainingStatModel.findByIdAndDelete(req.params.id);
         res.status(204).send();

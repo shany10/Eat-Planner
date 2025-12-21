@@ -1,17 +1,17 @@
 import { Router } from "express";
-import { validateMiddleware, authMiddleware, roleMiddleware } from "../middlewares";
+import { validateMiddleware, authMiddleware, roleMiddleware, userOwnershipMiddleware } from "../middlewares";
 import { createUserBody, CreateUserInput, updateUserBody, UpdateUserInput, authUserBody } from "../schemas";
 import { IUser, UserModel } from "../models";
 import { signAccessToken } from "../utils/jwt";
 
 const userRouter = Router();
 
-userRouter.get('/getAll', authMiddleware, async (req, res): Promise<void> => {
+userRouter.get('/getAll', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
     const list = await UserModel.find().exec();
     res.status(200).json(list);
 })
 
-userRouter.get('/get/:id', authMiddleware, async (req, res): Promise<void> => {
+userRouter.get('/get/:id', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
     const list = await UserModel.findById(req.params.id).exec();
     res.status(200).json(list);
 })
@@ -95,7 +95,7 @@ userRouter.get(
   }
 );
 
-userRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: updateUserBody }), async (req, res): Promise<void> => {
+userRouter.patch('/update/:id', authMiddleware, userOwnershipMiddleware(), validateMiddleware({ body: updateUserBody }), async (req, res): Promise<void> => {
     const id = req.params.id;
     const updates = req.body as UpdateUserInput;
     if (updates.password) {
@@ -113,14 +113,14 @@ userRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: updat
     else res.json(updated);
 });
 
-userRouter.delete('/delete/:id', authMiddleware, async (req, res): Promise<void> => {
+userRouter.delete('/delete/:id', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
     const { id } = req.params;
     const deleted = await UserModel.findByIdAndDelete(id).exec();
     if (!deleted) res.status(404).send("user not found");
     else res.status(204).send();
 })
 
-userRouter.delete('/deleteAll', authMiddleware, async (req, res): Promise<void> => {
+userRouter.delete('/deleteAll', authMiddleware, roleMiddleware(["admin"]), async (req, res): Promise<void> => {
     await UserModel.deleteMany({});
     res.status(204).send();
 })
