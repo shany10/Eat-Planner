@@ -1,8 +1,4 @@
 import { Router } from "express";
-<<<<<<< HEAD
-import { authMiddleware, validateMiddleware, roleMiddleware } from "../middlewares";
-import { createBadgeRuleBody, CreateBadgeRuleInput, updateBadgeRuleBody, UpdateBadgeRuleInput } from "../schemas";
-=======
 import {
   authMiddleware,
   validateMiddleware,
@@ -14,7 +10,6 @@ import {
   updateBadgeRuleBody,
   UpdateBadgeRuleInput,
 } from "../schemas";
->>>>>>> 973afa047cdb325e9c057621fd9306fcdbb7f6a1
 import { BadgeRuleModel } from "../models";
 
 const badgeRuleRouter = Router();
