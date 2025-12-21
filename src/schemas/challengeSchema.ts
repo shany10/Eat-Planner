@@ -3,8 +3,8 @@ import { z } from "zod";
 export const createChallengeBody = z.object({
   title: z.string().min(1, "Le titre est requis"),
   description: z.string().min(1, "La description est requise"),
-  creator: z.string().min(1, "L'ID du créateur est requis"),
-  exerciseType: z.string().min(1, "Le type d'exercice est requis"),
+  creator: z.string().regex(/^[0-9a-fA-F]{24}$/, "ID créateur invalide (doit être un ObjectId valide)"),
+  exerciseType: z.string().regex(/^[0-9a-fA-F]{24}$/, "ID type d'exercice invalide (doit être un ObjectId valide)"),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]),
   duration: z.number().int().min(1, "La durée doit être au moins 1 jour"),
   objectives: z.string().min(1, "Les objectifs sont requis"),
