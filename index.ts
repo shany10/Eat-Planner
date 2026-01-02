@@ -1,16 +1,5 @@
 import express from 'express';
-import { 
-  userRouter, 
-  gymRouter, 
-  badgeRouter, 
-  exerciseTypeRouter, 
-  challengeRouter,      
-  trainingStatRouter, 
-  socialRouter, 
-  scoreRouter,
-  badgeRuleRouter,
-  rewardRouter
-} from './src/routes';
+import { userRouter, } from './src/routes';
 import { connectMongoose } from "./src/db/mangoose";
 import "dotenv/config";
 
@@ -28,15 +17,6 @@ app.get('/', (req, res) => {
 });
 
 app.use('/user', userRouter);
-app.use('/gym', gymRouter);
-app.use('/badge', badgeRouter);
-app.use('/exerciseType', exerciseTypeRouter);
-app.use('/challenge', challengeRouter);
-app.use('/trainingStat', trainingStatRouter);
-app.use('/social', socialRouter);
-app.use('/score', scoreRouter);
-app.use('/badgeRule', badgeRuleRouter);
-app.use('/reward', rewardRouter);
 
 const port = process.env.NODE_PORT || 3000;
 app.listen(port, () => {

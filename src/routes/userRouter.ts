@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { validateMiddleware, authMiddleware, roleMiddleware, userOwnershipMiddleware } from "../middlewares";
+import { validateMiddleware, authMiddleware, roleMiddleware } from "../middlewares";
 import { createUserBody, CreateUserInput, updateUserBody, UpdateUserInput, authUserBody } from "../schemas";
 import { IUser, UserModel } from "../models";
 import { signAccessToken } from "../utils/jwt";
@@ -115,7 +115,7 @@ userRouter.get(
   }
 );
 
-userRouter.patch('/update/:id', authMiddleware, userOwnershipMiddleware(), validateMiddleware({ body: updateUserBody }), async (req, res): Promise<void> => {
+userRouter.patch('/update/:id', authMiddleware, validateMiddleware({ body: updateUserBody }), async (req, res): Promise<void> => {
     const id = req.params.id;
     const updates = req.body as UpdateUserInput;
     if (updates.password) {
