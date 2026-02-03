@@ -5,6 +5,8 @@ services:
       - "3000:3000"
     env_file:
       - ./.env
+    environment:
+      - CHOKIDAR_USEPOLLING=true  # Indispensable pour détecter les changements backend sur Windows
     depends_on:
       - mongo
     volumes:
@@ -18,7 +20,9 @@ services:
     env_file:
       - ./.env  
     environment:
-      NODE_ENV: "development"
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true    # Nécessaire pour le Hot Reload de Nuxt
+      - CHOKIDAR_USEPOLLING=true  # Ajouté pour forcer la détection de Vite (Nuxt 4)
     volumes:
       - ./frontend:/app
       - frontend_node_modules:/app/node_modules

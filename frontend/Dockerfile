@@ -1,18 +1,19 @@
 FROM node:20-alpine
 
+# Installation de pnpm
+RUN npm install -g pnpm
+
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copie des fichiers de dépendances
+COPY package.json pnpm-lock.yaml* ./
 
-# Install dependencies
-RUN npm install
+# Installation des dépendances (version Linux)
+RUN pnpm install
 
-# Copy app files
+# Copie du reste du code
 COPY . .
 
-# Expose port
 EXPOSE 3001
 
-# Start development server
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "run", "dev"]

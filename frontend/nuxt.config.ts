@@ -3,7 +3,7 @@ export default defineNuxtConfig({
 
   modules: ['@nuxt/eslint', '@nuxt/ui'],
 
-  pages: false,
+
 
   devtools: {
     enabled: true
