@@ -12,8 +12,8 @@ connectMongoose().catch(err => {
   process.exit(1);
 });
 
-app.get('/', (req, res) => {
-    res.send('TSPark API - Fitness Challenge Platform');
+app.get('/', (req, res) => {    
+    res.send('eat planner');
 });
 
 app.use('/user', userRouter);
