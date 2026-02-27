@@ -19,7 +19,7 @@ useHead({
         Test Tailwind
       </h1>
       <p class="text-xl text-gray-600">
-        Coucou avec Tailwind CSS
+        Coucou avec Tailwind CSS test hot reload
       </p>
       <UButton class="mt-4">
         Bouton Nuxt UI
