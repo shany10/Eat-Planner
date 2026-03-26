@@ -5,6 +5,7 @@ const JWT_SECRET: Secret = process.env.JWT_SECRET ?? "dev-secret";
 
 export interface AccessTokenPayload {
   sub: string;
+  role: "admin" | "manager" | "employee";
 }
 
 export function signAccessToken(payload: AccessTokenPayload, expiresIn = 1) {

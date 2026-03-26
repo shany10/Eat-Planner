@@ -4,7 +4,7 @@ import { verifyAccessToken } from "../utils/jwt";
 declare global {
   namespace Express {
     interface Request {
-      user?: { id: string };
+      user?: { id: string; role: "admin" | "manager" | "employee" };
     }
   }
 }
@@ -21,8 +21,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
 
   try {
     const payload = verifyAccessToken(token);
-    const user: { id: string } = { id: payload.sub };
-    req.user = user;
+    req.user = { id: payload.sub, role: payload.role };
     next();
   } catch (err) {
     return res.status(401).json({ error: "Invalid or expired token" });

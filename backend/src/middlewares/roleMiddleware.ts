@@ -1,26 +1,35 @@
 import { Request, Response, NextFunction } from "express";
-import { UserModel, IUser } from "../models";
 
-export function roleMiddleware(allowedRoles: string[]) {
-  return async (req: Request, res: Response, next: NextFunction) => {
+export type UserRole = "admin" | "manager" | "employee";
+
+
+export function roleMiddleware(allowedRoles: UserRole[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ error: "User not authenticated" });
     }
 
-    try {
-      const user: IUser | null = await UserModel.findById(req.user.id).exec();
-
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      if (!allowedRoles.includes(user.role)) {
-        return res.status(403).json({ error: "Access denied" });
-      }
-
-      next();
-    } catch (error) {
-      return res.status(500).json({ error: "Internal server error" });
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: "Access denied" });
     }
+
+    next();
+  };
+}
+
+export function ownerOrRole(allowedRoles: UserRole[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const isOwner = req.params.id === req.user.id;
+    const hasRole = allowedRoles.includes(req.user.role);
+
+    if (!isOwner && !hasRole) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    next();
   };
 }
