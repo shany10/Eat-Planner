@@ -1,59 +1,47 @@
 import { UserModel } from "../src/models";
 
 export const userSeeder = async () => {
+  const adminFirstname = process.env.ADMIN_FIRSTNAME ?? "Admin";
+  const adminLastname = process.env.ADMIN_LASTNAME ?? "System";
+  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@eatplanner.local";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin123!";
+
   const users = [
     {
-      firstname: "Admin",
-      lastname: "System",
-      email: "admin@gym.com",
-      password: "Admin123!",
+      firstname: adminFirstname,
+      lastname: adminLastname,
+      email: adminEmail,
+      password: adminPassword,
       role: "admin",
       active: true
     },
     {
       firstname: "Jean",
       lastname: "Manager",
-      email: "jean.manager@gym.com",
+      email: "jean.manager@eatplanner.local",
       password: "Manager123!",
       role: "manager",
       active: true
     },
     {
-      firstname: "Marie",
-      lastname: "Dupont",
-      email: "marie.dupont@gym.com",
-      password: "Member123!",
-      role: "member",
-      active: true
-    },
-    {
-      firstname: "Pierre",
-      lastname: "Martin",
-      email: "pierre.martin@gym.com",
-      password: "Member123!",
-      role: "member",
-      active: true
-    },
-    {
-      firstname: "Sophie",
-      lastname: "Bernard",
-      email: "sophie.bernard@gym.com",
-      password: "Member123!",
-      role: "member",
+      firstname: "Camille",
+      lastname: "Cuisine",
+      email: "camille.manager@eatplanner.local",
+      password: "Manager123!",
+      role: "manager",
       active: true
     }
   ];
 
-  console.log("🌱 Seeding users...");
-  
- 
+  console.log("Seeding users...");
+
   const createdUsers = [];
   for (const userData of users) {
     const user = await UserModel.create(userData);
     createdUsers.push(user);
   }
-  
-  console.log(`✅ ${createdUsers.length} users created`);
-  
+
+  console.log(`${createdUsers.length} users created`);
+
   return createdUsers;
 };
