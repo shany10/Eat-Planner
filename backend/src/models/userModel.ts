@@ -6,8 +6,15 @@ export interface IUser extends Document {
   lastname: string;
   email: string;
   password: string;
-  role: "admin" | "manager" | "member";
+  authProvider: "local" | "google";
+  providerId?: string;
+  role: "admin" | "manager";
   active: boolean;
+  twoFactorEnabled: boolean;
+  twoFactorSecret?: string | null;
+  twoFactorTempSecret?: string | null;
+  passwordResetTokenHash?: string | null;
+  passwordResetTokenExpiresAt?: Date | null;
   created_at: Date;
   updated_at: Date;
   verifyPassword(candidate: string): Promise<boolean>;
@@ -18,8 +25,15 @@ const userSchema = new Schema<IUser>({
   lastname: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ["admin", "manager", "member"], required: true },
-  active: { type: Boolean, default: true }
+  authProvider: { type: String, enum: ["local", "google"], default: "local", required: true },
+  providerId: { type: String, sparse: true },
+  role: { type: String, enum: ["admin", "manager"], default: "manager", required: true },
+  active: { type: Boolean, default: true },
+  twoFactorEnabled: { type: Boolean, default: false },
+  twoFactorSecret: { type: String, default: null, select: false },
+  twoFactorTempSecret: { type: String, default: null, select: false },
+  passwordResetTokenHash: { type: String, default: null, select: false },
+  passwordResetTokenExpiresAt: { type: Date, default: null, select: false }
 }, {
   timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
   strict: true

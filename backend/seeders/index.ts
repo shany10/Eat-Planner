@@ -4,46 +4,45 @@ import { userSeeder } from "./userSeeder";
 import { UserModel } from "../src/models";
 
 if (!process.env.MONGODB_URI) {
-  console.error("❌ MONGODB_URI is not defined in environment variables.");
+  console.error("MONGODB_URI is not defined in environment variables.");
   process.exit(1);
 }
 
 const MONGO_URI = process.env.MONGODB_URI;
 
 async function clearDatabase() {
-  console.log("\n🗑️  Clearing existing data...");
-  
+  console.log("\nClearing existing data...");
+
   await UserModel.deleteMany({});
-  
-  console.log("✅ Database cleared\n");
+
+  console.log("Database cleared\n");
 }
 
 async function seedDatabase() {
   try {
-    console.log("🚀 Starting database seeding...\n");
-    console.log(`📡 Connecting to MongoDB: ${MONGO_URI}`);
-    
+    console.log("Starting database seeding...\n");
+    console.log(`Connecting to MongoDB: ${MONGO_URI}`);
+
     await connectMongoose(MONGO_URI);
-    console.log("✅ Connected to MongoDB\n");
+    console.log("Connected to MongoDB\n");
 
     await clearDatabase();
-    
+
     const users = await userSeeder();
 
-    console.log("\n✨ Database seeding completed successfully!");
-    console.log("\n📊 Summary:");
-    console.log(`   - Users: ${users.length}`); 
-    console.log("\n👤 Test accounts:");
-    console.log("   Admin: admin@gym.com / Admin123!");
-    console.log("   Manager: jean.manager@gym.com / Manager123!");
-    console.log("   Member: marie.dupont@gym.com / Member123!");
-
+    console.log("\nDatabase seeding completed successfully!");
+    console.log("\nSummary:");
+    console.log(`   - Users: ${users.length}`);
+    console.log("\nTest accounts:");
+    console.log(`   Admin: ${process.env.ADMIN_EMAIL ?? "admin@eatplanner.local"} / ${process.env.ADMIN_PASSWORD ?? "Admin123!"}`);
+    console.log("   Manager: jean.manager@eatplanner.local / Manager123!");
+    console.log("   Manager: camille.manager@eatplanner.local / Manager123!");
   } catch (error) {
-    console.error("\n❌ Error seeding database:", error);
+    console.error("\nError seeding database:", error);
     process.exit(1);
   } finally {
     await closeMongoose();
-    console.log("\n📡 Disconnected from MongoDB");
+    console.log("\nDisconnected from MongoDB");
     process.exit(0);
   }
 }
