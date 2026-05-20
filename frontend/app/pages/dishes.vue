@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getFetchErrorMessage } from '~/utils/fetch-error'
 import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
 import StatCard from '~/components/common/StatCard.vue'
 import DishForm from '~/components/dishes/DishForm.vue'
@@ -13,6 +14,7 @@ definePageMeta({
 
 const dishStore = useDishStore()
 const ingredientStore = useIngredientStore()
+const appToast = useAppToast()
 
 const editingDish = ref<Dish | null>(null)
 const errorMessage = ref('')
@@ -101,8 +103,9 @@ async function loadPage() {
   errorMessage.value = ''
   try {
     await Promise.all([dishStore.load(), ingredientStore.load()])
-  } catch (error: any) {
-    errorMessage.value = error?.data?.message || error?.statusMessage || 'Impossible de charger les plats'
+  } catch (error) {
+    errorMessage.value = getFetchErrorMessage(error, 'Impossible de charger les plats')
+    appToast.error('Chargement impossible', errorMessage.value)
   } finally {
     loading.value = false
   }
@@ -113,19 +116,24 @@ async function saveDish(payload: DishPayload) {
     if (editingDish.value) {
       await dishStore.update(editingDish.value._id, payload)
       editingDish.value = null
+      appToast.success('Plat mis a jour', `${payload.name} a ete modifie.`)
     } else {
       await dishStore.create(payload)
+      appToast.success('Plat ajoute', `${payload.name} est maintenant dans la carte.`)
     }
-  } catch (error: any) {
-    errorMessage.value = error?.data?.message || error?.statusMessage || 'Echec lors de l enregistrement du plat'
+  } catch (error) {
+    errorMessage.value = getFetchErrorMessage(error, 'Echec lors de l enregistrement du plat')
+    appToast.error('Enregistrement impossible', errorMessage.value)
   }
 }
 
 async function removeDish(item: Dish) {
   try {
     await dishStore.remove(item._id)
-  } catch (error: any) {
-    errorMessage.value = error?.data?.message || error?.statusMessage || 'Suppression impossible'
+    appToast.success('Plat supprime', `${item.name} a ete retire de la carte.`)
+  } catch (error) {
+    errorMessage.value = getFetchErrorMessage(error, 'Suppression impossible')
+    appToast.error('Suppression impossible', errorMessage.value)
   }
 }
 
@@ -137,127 +145,64 @@ onMounted(loadPage)
 </script>
 
 <template>
-  <div class="space-y-8">
-    <section class="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,#eff6ff_0%,#fef3c7_48%,#f8fafc_100%)] p-8 shadow-sm dark:border-slate-800 dark:bg-[linear-gradient(135deg,#0f172a_0%,#172554_48%,#020617_100%)]">
-      <div class="pointer-events-none absolute inset-0">
-        <div class="absolute -left-12 top-0 h-40 w-40 rounded-full bg-sky-300/20 dark:bg-sky-500/10" />
-        <div class="absolute right-0 top-10 h-52 w-52 rounded-full bg-amber-300/20 dark:bg-amber-500/10" />
-      </div>
-
-      <div class="relative grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <div class="max-w-3xl">
-          <p class="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
+  <div class="space-y-5">
+    <section class="app-page-header app-page-header--compact">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p class="app-eyebrow">
             Carte rentable
           </p>
-          <div class="mt-4 flex flex-wrap gap-2 text-xs">
-            <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1 font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
-              {{ activeDishCount }} plat(s) actif(s)
-            </span>
-            <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1 font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
-              {{ ingredientStore.items.length }} ingredient(s) disponible(s)
-            </span>
-            <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1 font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
-              {{ loading ? 'Calcul en cours' : 'Carte a jour' }}
-            </span>
-          </div>
-
-          <h1 class="mt-5 text-4xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
+          <h1 class="app-title mt-2">
             Recettes et prix de vente
           </h1>
-          <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">
-            Chaque plat relie sa recette, son cout matiere, sa part de charges et son prix conseille. C est ici que le produit commence vraiment a raconter sa rentabilite.
+          <p class="app-subtitle mt-2">
+            La carte, les prix et le formulaire arrivent tout de suite pour eviter l effet page trop longue.
           </p>
-
-          <div class="mt-6 flex flex-wrap gap-3">
-            <a
-              href="#dish-form"
-              class="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-            >
-              Ajouter un plat
-            </a>
-            <NuxtLink
-              to="/ingredients"
-              class="rounded-full border border-slate-300 bg-white/70 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-white dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:bg-slate-950"
-            >
-              Gerer les ingredients
-            </NuxtLink>
-          </div>
         </div>
 
-        <div class="rounded-[1.75rem] border border-slate-900/10 bg-slate-950 p-6 text-white shadow-[0_25px_60px_-35px_rgba(15,23,42,0.85)] dark:border-white/10">
-          <p class="text-xs uppercase tracking-[0.3em] text-white/60">
-            Vue pricing
-          </p>
-
-          <div class="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p class="text-xs uppercase tracking-[0.22em] text-white/55">
-                Plats
-              </p>
-              <p class="mt-3 text-2xl font-semibold tracking-tight text-white">
-                {{ dishCount }}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-white/70">
-                References sur la carte
-              </p>
-            </div>
-
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p class="text-xs uppercase tracking-[0.22em] text-white/55">
-                Couverture
-              </p>
-              <p class="mt-3 text-2xl font-semibold tracking-tight text-white">
-                {{ recipeCoverage }}%
-              </p>
-              <p class="mt-2 text-sm leading-6 text-white/70">
-                Plats avec lecture recette exploitable
-              </p>
-            </div>
-
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p class="text-xs uppercase tracking-[0.22em] text-white/55">
-                Food cost
-              </p>
-              <p class="mt-3 text-2xl font-semibold tracking-tight text-white">
-                {{ formatCurrency(averageFoodCost) }}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-white/70">
-                Moyenne sur les plats calcules
-              </p>
-            </div>
-          </div>
-
-          <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p class="text-sm font-semibold text-white">
-              Signal pricing
-            </p>
-            <p class="mt-2 text-sm leading-6 text-white/70">
-              {{ pricingSignal }}
-            </p>
-          </div>
+        <div class="flex flex-wrap gap-2">
+          <a
+            href="#dish-form"
+            class="btn-primary"
+          >
+            Ajouter un plat
+          </a>
+          <NuxtLink
+            to="/ingredients"
+            class="btn-secondary"
+          >
+            Ingredients
+          </NuxtLink>
         </div>
+      </div>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <span class="app-pill">{{ activeDishCount }} plat(s) actif(s)</span>
+        <span class="app-pill">{{ ingredientStore.items.length }} ingredient(s)</span>
+        <span class="app-pill">{{ recipeCoverage }}% recettes</span>
+        <span class="app-pill">{{ loading ? 'Calcul en cours' : 'Carte a jour' }}</span>
       </div>
     </section>
 
     <p
       v-if="errorMessage"
-      class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+      class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
     >
       {{ errorMessage }}
     </p>
 
     <template v-if="loading">
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div
           v-for="index in 4"
           :key="index"
-          class="h-36 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800"
+          class="h-24 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800"
         />
       </div>
     </template>
 
     <template v-else>
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           v-for="stat in stats"
           :key="stat.title"
@@ -267,77 +212,23 @@ onMounted(loadPage)
         />
       </div>
 
-      <section class="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
-            Ce qu un bon plat raconte
-          </p>
-          <h2 class="mt-3 text-2xl font-semibold tracking-tight">
-            Une fiche plus lisible pour un produit plus pro
-          </h2>
-          <div class="mt-5 grid gap-3">
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                1. Une recette claire
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Quelques ingredients bien doses suffisent deja pour faire monter la perception de qualite.
-              </p>
-            </div>
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                2. Un objectif de marge
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                La marge cible donne une direction claire au prix conseille affiche ensuite.
-              </p>
-            </div>
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                3. Un volume journalier
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Ce repere aide les previsions a devenir credibles plus vite.
-              </p>
-            </div>
+      <div class="app-section">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p class="app-eyebrow">
+              Signal pricing
+            </p>
+            <p class="app-section-title mt-1">
+              {{ pricingSignal }}
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span class="app-pill">Food cost {{ formatCurrency(averageFoodCost) }}</span>
+            <span class="app-pill">Prix moyen {{ formatCurrency(averageSuggestedPrice) }}</span>
+            <span class="app-pill">{{ dishCount }} plat(s)</span>
           </div>
         </div>
-
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
-            Focus marge
-          </p>
-          <h2 class="mt-3 text-2xl font-semibold tracking-tight">
-            Les signaux a surveiller
-          </h2>
-          <div class="mt-5 grid gap-3">
-            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
-                Prix conseille moyen
-              </p>
-              <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ formatCurrency(averageSuggestedPrice) }}
-              </p>
-            </div>
-            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
-                Food cost moyen
-              </p>
-              <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ formatCurrency(averageFoodCost) }}
-              </p>
-            </div>
-            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
-                Lecture produit
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Une carte bien structuree facilite ensuite les ventes, la prevision et la lecture du dashboard.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      </div>
 
       <EmptyStateCard
         v-if="ingredientStore.items.length === 0"
@@ -348,28 +239,44 @@ onMounted(loadPage)
         action-to="/ingredients"
       />
 
-      <section
-        v-else
-        id="dish-form"
-        class="scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-      >
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
-              Formulaire
-            </p>
-            <h2 class="mt-3 text-xl font-semibold">
-              Fiche plat
-            </h2>
+      <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <div class="app-section">
+          <div class="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <p class="app-eyebrow">
+                Table
+              </p>
+              <h2 class="app-section-title mt-1">
+                Vue carte
+              </h2>
+            </div>
+            <span class="app-pill">{{ dishStore.items.length }} plat(s)</span>
           </div>
-          <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
-            {{ editingDish ? 'Edition en cours' : 'Nouveau plat' }}
-          </span>
+          <DishTable
+            :items="dishStore.items"
+            @edit="editingDish = $event"
+            @remove="removeDish"
+          />
         </div>
-        <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          Renseigne la categorie, la marge cible et une recette simple. Meme une premiere version rend l interface beaucoup plus convaincante.
-        </p>
-        <div class="mt-5">
+
+        <div
+          v-if="ingredientStore.items.length > 0"
+          id="dish-form"
+          class="app-section scroll-mt-28"
+        >
+          <div class="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <p class="app-eyebrow">
+                Formulaire
+              </p>
+              <h2 class="app-section-title mt-1">
+                {{ editingDish ? 'Modifier plat' : 'Nouveau plat' }}
+              </h2>
+            </div>
+            <span class="app-pill">
+              {{ editingDish ? 'Edition' : 'Creation' }}
+            </span>
+          </div>
           <DishForm
             :ingredient-options="ingredientStore.items"
             :initial-value="editingDish"
@@ -378,25 +285,6 @@ onMounted(loadPage)
             @cancel="editingDish = null"
           />
         </div>
-      </section>
-
-      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div class="mb-5 flex items-center justify-between gap-4">
-          <div>
-            <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
-              Table
-            </p>
-            <h2 class="mt-3 text-xl font-semibold">
-              Vue carte
-            </h2>
-          </div>
-          <span class="text-sm text-slate-500">{{ dishStore.items.length }} plat(s)</span>
-        </div>
-        <DishTable
-          :items="dishStore.items"
-          @edit="editingDish = $event"
-          @remove="removeDish"
-        />
       </section>
     </template>
   </div>

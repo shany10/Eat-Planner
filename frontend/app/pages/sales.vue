@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getFetchErrorMessage } from '~/utils/fetch-error'
 import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
 import StatCard from '~/components/common/StatCard.vue'
 import SaleForm from '~/components/sales/SaleForm.vue'
@@ -13,6 +14,7 @@ definePageMeta({
 
 const saleStore = useSaleStore()
 const dishStore = useDishStore()
+const appToast = useAppToast()
 const errorMessage = ref('')
 const loading = ref(true)
 
@@ -76,8 +78,9 @@ async function loadPage() {
   errorMessage.value = ''
   try {
     await Promise.all([saleStore.load(), dishStore.load()])
-  } catch (error: any) {
-    errorMessage.value = error?.data?.message || error?.statusMessage || 'Impossible de charger les ventes'
+  } catch (error) {
+    errorMessage.value = getFetchErrorMessage(error, 'Impossible de charger les ventes')
+    appToast.error('Chargement impossible', errorMessage.value)
   } finally {
     loading.value = false
   }
@@ -90,16 +93,20 @@ async function saveSale(payload: {
 }) {
   try {
     await saleStore.create(payload)
-  } catch (error: any) {
-    errorMessage.value = error?.data?.message || error?.statusMessage || 'Echec lors de l enregistrement de la vente'
+    appToast.success('Vente enregistree', `Ticket du ${formatDate(payload.serviceDate)} ajoute.`)
+  } catch (error) {
+    errorMessage.value = getFetchErrorMessage(error, 'Echec lors de l enregistrement de la vente')
+    appToast.error('Enregistrement impossible', errorMessage.value)
   }
 }
 
 async function removeSale(item: Sale) {
   try {
     await saleStore.remove(item._id)
-  } catch (error: any) {
-    errorMessage.value = error?.data?.message || error?.statusMessage || 'Suppression impossible'
+    appToast.success('Vente supprimee', `Ticket du ${formatDate(item.serviceDate)} retire.`)
+  } catch (error) {
+    errorMessage.value = getFetchErrorMessage(error, 'Suppression impossible')
+    appToast.error('Suppression impossible', errorMessage.value)
   }
 }
 
@@ -123,127 +130,64 @@ onMounted(loadPage)
 </script>
 
 <template>
-  <div class="space-y-8">
-    <section class="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,#fee2e2_0%,#fffbeb_45%,#f8fafc_100%)] p-8 shadow-sm dark:border-slate-800 dark:bg-[linear-gradient(135deg,#0f172a_0%,#3f1d38_45%,#020617_100%)]">
-      <div class="pointer-events-none absolute inset-0">
-        <div class="absolute -left-12 top-0 h-40 w-40 rounded-full bg-rose-300/20 dark:bg-rose-500/10" />
-        <div class="absolute right-0 top-10 h-52 w-52 rounded-full bg-amber-300/20 dark:bg-amber-500/10" />
-      </div>
-
-      <div class="relative grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <div class="max-w-3xl">
-          <p class="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
+  <div class="space-y-5">
+    <section class="app-page-header app-page-header--compact">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p class="app-eyebrow">
             Historique commercial
           </p>
-          <div class="mt-4 flex flex-wrap gap-2 text-xs">
-            <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1 font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
-              {{ ticketCount }} ticket(s)
-            </span>
-            <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1 font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
-              {{ dishStore.items.length }} plat(s) disponible(s)
-            </span>
-            <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1 font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
-              {{ loading ? 'Historique en chargement' : 'Flux a jour' }}
-            </span>
-          </div>
-
-          <h1 class="mt-5 text-4xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
-            Saisie des ventes
+          <h1 class="app-title mt-2">
+            Ventes
           </h1>
-          <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">
-            Les ventes alimentent la prevision de production. Meme une saisie simple donne deja un vrai rythme au produit et rend la partie connectee beaucoup plus credible.
+          <p class="app-subtitle mt-2">
+            Les tickets et la saisie restent au premier niveau pour que le flux commercial soit lisible rapidement.
           </p>
-
-          <div class="mt-6 flex flex-wrap gap-3">
-            <a
-              href="#sale-form"
-              class="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-            >
-              Ajouter une vente
-            </a>
-            <NuxtLink
-              to="/dishes"
-              class="rounded-full border border-slate-300 bg-white/70 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-white dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:bg-slate-950"
-            >
-              Gerer les plats
-            </NuxtLink>
-          </div>
         </div>
 
-        <div class="rounded-[1.75rem] border border-slate-900/10 bg-slate-950 p-6 text-white shadow-[0_25px_60px_-35px_rgba(15,23,42,0.85)] dark:border-white/10">
-          <p class="text-xs uppercase tracking-[0.3em] text-white/60">
-            Vue commerciale
-          </p>
-
-          <div class="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p class="text-xs uppercase tracking-[0.22em] text-white/55">
-                CA cumule
-              </p>
-              <p class="mt-3 text-2xl font-semibold tracking-tight text-white">
-                {{ formatCurrency(totalRevenue) }}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-white/70">
-                Tous tickets enregistres
-              </p>
-            </div>
-
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p class="text-xs uppercase tracking-[0.22em] text-white/55">
-                CA du jour
-              </p>
-              <p class="mt-3 text-2xl font-semibold tracking-tight text-white">
-                {{ formatCurrency(todayRevenue) }}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-white/70">
-                Signal rapide sur la journee
-              </p>
-            </div>
-
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p class="text-xs uppercase tracking-[0.22em] text-white/55">
-                Ticket moyen
-              </p>
-              <p class="mt-3 text-2xl font-semibold tracking-tight text-white">
-                {{ formatCurrency(averageTicket) }}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-white/70">
-                Repere commercial instantane
-              </p>
-            </div>
-          </div>
-
-          <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p class="text-sm font-semibold text-white">
-              Signal ventes
-            </p>
-            <p class="mt-2 text-sm leading-6 text-white/70">
-              {{ salesSignal }}
-            </p>
-          </div>
+        <div class="flex flex-wrap gap-2">
+          <a
+            href="#sale-form"
+            class="btn-primary"
+          >
+            Ajouter une vente
+          </a>
+          <NuxtLink
+            to="/dishes"
+            class="btn-secondary"
+          >
+            Plats
+          </NuxtLink>
         </div>
+      </div>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <span class="app-pill">{{ ticketCount }} ticket(s)</span>
+        <span class="app-pill">{{ dishStore.items.length }} plat(s)</span>
+        <span class="app-pill">CA jour {{ formatCurrency(todayRevenue) }}</span>
+        <span class="app-pill">{{ loading ? 'Chargement' : 'Flux a jour' }}</span>
       </div>
     </section>
 
     <p
       v-if="errorMessage"
-      class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+      class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
     >
       {{ errorMessage }}
     </p>
 
     <template v-if="loading">
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div
           v-for="index in 4"
           :key="index"
-          class="h-36 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800"
+          class="h-24 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800"
         />
       </div>
     </template>
 
     <template v-else>
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           v-for="stat in stats"
           :key="stat.title"
@@ -253,83 +197,23 @@ onMounted(loadPage)
         />
       </div>
 
-      <section class="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
-            Rythme recommande
-          </p>
-          <h2 class="mt-3 text-2xl font-semibold tracking-tight">
-            Une saisie simple mais reguliere
-          </h2>
-          <div class="mt-5 grid gap-3">
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                1. Enregistrer la date
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Un historique propre commence par une date de service fiable.
-              </p>
-            </div>
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                2. Saisir les lignes utiles
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Quelques plats et quantites suffisent deja a nourrir les previsions.
-              </p>
-            </div>
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                3. Garder un rythme quotidien
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                La constance donne beaucoup plus de valeur que des tickets parfaits mais trop rares.
-              </p>
-            </div>
+      <div class="app-section">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p class="app-eyebrow">
+              Signal ventes
+            </p>
+            <p class="app-section-title mt-1">
+              {{ salesSignal }}
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <span class="app-pill">Total {{ formatCurrency(totalRevenue) }}</span>
+            <span class="app-pill">Ticket moyen {{ formatCurrency(averageTicket) }}</span>
+            <span class="app-pill">{{ totalUnitsSold }} portion(s)</span>
           </div>
         </div>
-
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
-            Lecture commerciale
-          </p>
-          <h2 class="mt-3 text-2xl font-semibold tracking-tight">
-            Les signaux a lire vite
-          </h2>
-          <div class="mt-5 grid gap-3">
-            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
-                Derniere vente
-              </p>
-              <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ latestSale ? formatCurrency(latestSale.totalAmount) : 'Aucune' }}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ latestSale ? formatDate(latestSale.serviceDate) : 'Ajoute un ticket pour lancer le flux commercial.' }}
-              </p>
-            </div>
-            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
-                Quantites vendues
-              </p>
-              <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
-                {{ totalUnitsSold }}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Volume total saisi sur les tickets.
-              </p>
-            </div>
-            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
-                Lecture produit
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Ces donnees rendent ensuite le dashboard et la prevision beaucoup plus vivants.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      </div>
 
       <EmptyStateCard
         v-if="dishStore.items.length === 0"
@@ -342,51 +226,48 @@ onMounted(loadPage)
         secondary-to="/ingredients"
       />
 
-      <section
-        v-else
-        id="sale-form"
-        class="scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-      >
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
-              Formulaire
-            </p>
-            <h2 class="mt-3 text-xl font-semibold">
-              Nouveau ticket
-            </h2>
+      <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+        <div class="app-section">
+          <div class="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <p class="app-eyebrow">
+                Table
+              </p>
+              <h2 class="app-section-title mt-1">
+                Tickets enregistres
+              </h2>
+            </div>
+            <span class="app-pill">{{ saleStore.items.length }} vente(s)</span>
           </div>
-          <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
-            Saisie rapide
-          </span>
+          <SaleTable
+            :items="saleStore.items"
+            @remove="removeSale"
+          />
         </div>
-        <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          Enregistre les informations utiles sans alourdir le geste. L objectif ici est la regularite, pas un ticket parfait a chaque fois.
-        </p>
-        <div class="mt-5">
+
+        <div
+          v-if="dishStore.items.length > 0"
+          id="sale-form"
+          class="app-section scroll-mt-28"
+        >
+          <div class="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <p class="app-eyebrow">
+                Formulaire
+              </p>
+              <h2 class="app-section-title mt-1">
+                Nouveau ticket
+              </h2>
+            </div>
+            <span class="app-pill">
+              Saisie rapide
+            </span>
+          </div>
           <SaleForm
             :dishes="dishStore.items"
             @submit="saveSale"
           />
         </div>
-      </section>
-
-      <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div class="mb-5 flex items-center justify-between gap-4">
-          <div>
-            <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
-              Table
-            </p>
-            <h2 class="mt-3 text-xl font-semibold">
-              Tickets enregistres
-            </h2>
-          </div>
-          <span class="text-sm text-slate-500">{{ saleStore.items.length }} vente(s)</span>
-        </div>
-        <SaleTable
-          :items="saleStore.items"
-          @remove="removeSale"
-        />
       </section>
     </template>
   </div>

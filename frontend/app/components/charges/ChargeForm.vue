@@ -51,13 +51,27 @@ function submit() {
         v-model="form.category"
         class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
       >
-        <option value="staff">Salaires</option>
-        <option value="utilities">Energie</option>
-        <option value="rent">Loyer</option>
-        <option value="equipment">Materiel</option>
-        <option value="insurance">Assurance</option>
-        <option value="subscriptions">Abonnements</option>
-        <option value="other">Autre</option>
+        <option value="staff">
+          Salaires
+        </option>
+        <option value="utilities">
+          Energie
+        </option>
+        <option value="rent">
+          Loyer
+        </option>
+        <option value="equipment">
+          Materiel
+        </option>
+        <option value="insurance">
+          Assurance
+        </option>
+        <option value="subscriptions">
+          Abonnements
+        </option>
+        <option value="other">
+          Autre
+        </option>
       </select>
       <input
         v-model="form.amount"
@@ -71,8 +85,12 @@ function submit() {
         v-model="form.period"
         class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
       >
-        <option value="daily">Journalier</option>
-        <option value="monthly">Mensuel</option>
+        <option value="daily">
+          Journalier
+        </option>
+        <option value="monthly">
+          Mensuel
+        </option>
       </select>
     </div>
 

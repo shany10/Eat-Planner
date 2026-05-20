@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getFetchErrorMessage } from '~/utils/fetch-error'
 import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
 import ForecastBoard from '~/components/forecasts/ForecastBoard.vue'
 import { useForecastStore } from '~/stores/forecasts'
@@ -8,15 +9,20 @@ definePageMeta({
 })
 
 const forecastStore = useForecastStore()
+const appToast = useAppToast()
 const selectedDate = ref(new Date().toISOString().slice(0, 10))
 const errorMessage = ref('')
 
-async function loadForecast() {
+async function loadForecast(showSuccess = false) {
   errorMessage.value = ''
   try {
     await forecastStore.load(selectedDate.value)
-  } catch (error: any) {
-    errorMessage.value = error?.data?.message || error?.statusMessage || 'Impossible de charger la prevision'
+    if (showSuccess) {
+      appToast.success('Prevision calculee', `Projection mise a jour pour le ${selectedDate.value}.`)
+    }
+  } catch (error) {
+    errorMessage.value = getFetchErrorMessage(error, 'Impossible de charger la prevision')
+    appToast.error('Calcul impossible', errorMessage.value)
   }
 }
 
@@ -24,59 +30,49 @@ onMounted(loadForecast)
 </script>
 
 <template>
-  <div class="space-y-8">
-    <section class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
-        Production intelligente
-      </p>
-      <h1 class="mt-3 text-3xl font-semibold tracking-tight">
-        Previsions de vente et besoins matieres
-      </h1>
-      <p class="mt-3 max-w-2xl text-slate-600 dark:text-slate-300">
-        Version MVP : la prevision s appuie sur l historique recent et le comportement du meme jour de semaine.
-      </p>
-      <div class="mt-6">
-        <a
-          href="#forecast-controls"
-          class="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-        >
-          Calculer une prevision
-        </a>
-      </div>
-    </section>
-
-    <div
-      id="forecast-controls"
-      class="scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-    >
-      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+  <div class="space-y-5">
+    <section class="app-page-header app-page-header--compact">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 class="text-xl font-semibold">
-            Generer une date de production
-          </h2>
-          <p class="mt-1 text-sm text-slate-500">
-            Change la date pour recalculer les quantites conseillees.
+          <p class="app-eyebrow">
+            Production intelligente
+          </p>
+          <h1 class="app-title mt-2">
+            Previsions et besoins matieres
+          </h1>
+          <p class="app-subtitle mt-2">
+            La date de calcul est accessible tout de suite, puis la production conseillee arrive juste dessous.
           </p>
         </div>
-        <div class="flex gap-2">
+
+        <div
+          id="forecast-controls"
+          class="scroll-mt-28 flex flex-col gap-2 sm:flex-row"
+        >
           <input
             v-model="selectedDate"
-            class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+            class="app-input sm:w-44"
             type="date"
           >
           <button
-            class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white dark:bg-white dark:text-slate-900"
-            @click="loadForecast"
+            class="btn-primary"
+            @click="loadForecast(true)"
           >
             Recalculer
           </button>
         </div>
       </div>
-    </div>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <span class="app-pill">{{ forecastStore.forecast?.targetDate || selectedDate }}</span>
+        <span class="app-pill">{{ forecastStore.forecast?.dishes.length || 0 }} plat(s)</span>
+        <span class="app-pill">{{ forecastStore.forecast?.ingredientNeeds.length || 0 }} besoin(s)</span>
+      </div>
+    </section>
 
     <p
       v-if="errorMessage"
-      class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+      class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
     >
       {{ errorMessage }}
     </p>

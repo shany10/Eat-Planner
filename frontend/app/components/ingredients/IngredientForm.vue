@@ -61,12 +61,24 @@ function submit() {
         v-model="form.unit"
         class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
       >
-        <option value="g">g</option>
-        <option value="kg">kg</option>
-        <option value="ml">ml</option>
-        <option value="cl">cl</option>
-        <option value="l">l</option>
-        <option value="piece">piece</option>
+        <option value="g">
+          g
+        </option>
+        <option value="kg">
+          kg
+        </option>
+        <option value="ml">
+          ml
+        </option>
+        <option value="cl">
+          cl
+        </option>
+        <option value="l">
+          l
+        </option>
+        <option value="piece">
+          piece
+        </option>
       </select>
 
       <input

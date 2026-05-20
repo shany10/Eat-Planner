@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getFetchErrorMessage } from '~/utils/fetch-error'
 import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
 import StatCard from '~/components/common/StatCard.vue'
 import ForecastBoard from '~/components/forecasts/ForecastBoard.vue'
@@ -20,6 +21,7 @@ const dishStore = useDishStore()
 const chargeStore = useChargeStore()
 const saleStore = useSaleStore()
 const forecastStore = useForecastStore()
+const appToast = useAppToast()
 
 const users = ref<ManagedUser[]>([])
 const loading = ref(true)
@@ -223,8 +225,9 @@ async function loadDashboard() {
 
     await Promise.all(tasks)
     lastUpdatedAt.value = new Date()
-  } catch (error: any) {
-    errorMessage.value = error?.data?.message || error?.statusMessage || 'Impossible de charger le dashboard'
+  } catch (error) {
+    errorMessage.value = getFetchErrorMessage(error, 'Impossible de charger le dashboard')
+    appToast.error('Dashboard indisponible', errorMessage.value)
   } finally {
     loading.value = false
   }
@@ -234,136 +237,69 @@ onMounted(loadDashboard)
 </script>
 
 <template>
-  <div class="space-y-8">
-    <section class="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,#fff7ed_0%,#ecfeff_48%,#f8fafc_100%)] p-8 shadow-sm dark:border-slate-800 dark:bg-[linear-gradient(135deg,#0f172a_0%,#082f49_45%,#020617_100%)]">
-      <div class="pointer-events-none absolute inset-0">
-        <div class="absolute -left-10 top-0 h-40 w-40 rounded-full bg-orange-300/20 dark:bg-orange-500/10" />
-        <div class="absolute right-0 top-10 h-56 w-56 rounded-full bg-cyan-300/20 dark:bg-cyan-500/10" />
-        <div class="absolute bottom-0 left-1/3 h-36 w-36 rounded-full bg-emerald-300/20 dark:bg-emerald-500/10" />
+  <div class="space-y-5">
+    <section class="app-page-header app-page-header--compact">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p class="app-eyebrow">
+            {{ isAdmin ? 'Supervision plateforme' : 'Dashboard' }}
+          </p>
+          <h1 class="app-title mt-2">
+            Bonjour {{ firstName }}
+          </h1>
+          <p class="app-subtitle mt-2">
+            {{ isAdmin
+              ? 'Etat des comptes, securite et signaux de gestion visibles sans detour.'
+              : 'Les chiffres utiles, les alertes et les raccourcis sont remontes en premier.' }}
+          </p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <NuxtLink
+            :to="isAdmin ? '/admin' : (ingredientStore.items.length === 0 ? '/ingredients' : saleStore.items.length === 0 ? '/sales' : '/forecasts')"
+            class="btn-primary"
+          >
+            {{ isAdmin ? 'Panel admin' : (ingredientStore.items.length === 0 ? 'Ajouter ingredients' : saleStore.items.length === 0 ? 'Saisir ventes' : 'Previsions') }}
+          </NuxtLink>
+          <NuxtLink
+            :to="profile?.twoFactorEnabled ? '/account' : '/security'"
+            class="btn-secondary"
+          >
+            {{ profile?.twoFactorEnabled ? 'Mon compte' : 'Activer 2FA' }}
+          </NuxtLink>
+        </div>
       </div>
 
-      <div class="relative grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <div class="max-w-3xl">
-          <p class="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
-            {{ isAdmin ? 'Supervision plateforme' : 'Pilotage restaurant' }}
-          </p>
-
-          <div class="mt-4 flex flex-wrap gap-2 text-xs">
-            <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1 font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
-              {{ roleLabel }}
-            </span>
-            <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1 font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
-              {{ securityLabel }}
-            </span>
-            <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1 font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-200">
-              {{ lastUpdatedAt ? 'Dashboard synchronise' : 'Chargement des donnees' }}
-            </span>
-          </div>
-
-          <h1 class="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
-            Bonjour {{ firstName }}, {{ isAdmin ? 'voici une vue plus propre de la supervision.' : 'voici un cockpit plus clair pour ton activite.' }}
-          </h1>
-
-          <p class="mt-4 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300">
-            {{ isAdmin
-              ? 'Le role admin doit comprendre tout de suite l etat des acces, la securite et la sante generale de la plateforme.'
-              : 'Apres connexion, tu dois voir tout de suite ou tu en es, quoi faire maintenant et ce qui demande ton attention.' }}
-          </p>
-
-          <div class="mt-6 flex flex-wrap gap-3">
-            <NuxtLink
-              :to="isAdmin ? '/admin' : (ingredientStore.items.length === 0 ? '/ingredients' : saleStore.items.length === 0 ? '/sales' : '/forecasts')"
-              class="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-            >
-              {{ isAdmin ? 'Ouvrir le panel admin' : (ingredientStore.items.length === 0 ? 'Commencer la base' : saleStore.items.length === 0 ? 'Saisir les ventes' : 'Voir la prevision') }}
-            </NuxtLink>
-            <NuxtLink
-              :to="profile?.twoFactorEnabled ? '/account' : '/security'"
-              class="rounded-full border border-slate-300 bg-white/70 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-white dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:bg-slate-950"
-            >
-              {{ profile?.twoFactorEnabled ? 'Voir mon compte' : 'Activer la 2FA' }}
-            </NuxtLink>
-          </div>
-        </div>
-
-        <div class="rounded-[1.75rem] border border-slate-900/10 bg-slate-950 p-6 text-white shadow-[0_25px_60px_-35px_rgba(15,23,42,0.85)] dark:border-white/10">
-          <p class="text-xs uppercase tracking-[0.3em] text-white/60">
-            A retenir aujourd hui
-          </p>
-
-          <div class="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p class="text-xs uppercase tracking-[0.22em] text-white/55">
-                {{ isAdmin ? 'Comptes' : 'Setup' }}
-              </p>
-              <p class="mt-3 text-2xl font-semibold tracking-tight text-white">
-                {{ isAdmin ? users.length : `${setupProgress}%` }}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-white/70">
-                {{ isAdmin ? 'Vue equipe et acces' : 'Parcours produit complete' }}
-              </p>
-            </div>
-
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p class="text-xs uppercase tracking-[0.22em] text-white/55">
-                {{ isAdmin ? '2FA' : 'Projection' }}
-              </p>
-              <p class="mt-3 text-2xl font-semibold tracking-tight text-white">
-                {{ isAdmin ? `${twoFactorCoverage}%` : forecastStore.forecast?.totals.totalProjectedPlates || 0 }}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-white/70">
-                {{ isAdmin ? 'Couverture securite equipe' : 'Portions prevues aujourd hui' }}
-              </p>
-            </div>
-
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p class="text-xs uppercase tracking-[0.22em] text-white/55">
-                {{ isAdmin ? 'Inactifs' : 'CA recent' }}
-              </p>
-              <p class="mt-3 text-2xl font-semibold tracking-tight text-white">
-                {{ isAdmin ? inactiveUserCount : formatCurrency(saleStore.recentRevenue) }}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-white/70">
-                {{ isAdmin ? 'Comptes a revoir' : '7 derniers tickets' }}
-              </p>
-            </div>
-          </div>
-
-          <div class="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p class="text-sm font-semibold text-white">
-              Signal rapide
-            </p>
-            <p class="mt-2 text-lg font-medium text-white">
-              {{ latestSale ? `Derniere vente le ${formatDate(latestSale.serviceDate)}` : 'Aucune vente recente pour le moment.' }}
-            </p>
-            <p class="mt-2 text-sm leading-6 text-white/70">
-              {{ latestSale ? formatCurrency(latestSale.totalAmount) : 'Ajoute des ventes pour rendre le dashboard plus vivant.' }}
-            </p>
-          </div>
-        </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <span class="app-pill">{{ roleLabel }}</span>
+        <span class="app-pill">{{ securityLabel }}</span>
+        <span class="app-pill">{{ lastUpdatedAt ? 'Synchronise' : 'Chargement' }}</span>
+        <span class="app-pill">
+          {{ latestSale ? `Derniere vente ${formatDate(latestSale.serviceDate)}` : 'Aucune vente recente' }}
+        </span>
       </div>
     </section>
 
     <p
       v-if="errorMessage"
-      class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+      class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
     >
       {{ errorMessage }}
     </p>
 
     <template v-if="loading">
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <div
           v-for="index in 4"
           :key="index"
-          class="h-36 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800"
+          class="h-24 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800"
         />
       </div>
     </template>
 
     <div
       v-else
-      class="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+      class="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
     >
       <StatCard
         v-for="stat in stats"
@@ -376,53 +312,53 @@ onMounted(loadDashboard)
 
     <section
       v-if="!loading"
-      class="grid gap-4 xl:grid-cols-[1.08fr_0.92fr]"
+      class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]"
     >
-      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div class="flex items-center justify-between gap-4">
+      <div class="app-section">
+        <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
+            <p class="app-eyebrow">
               Alertes
             </p>
-            <h2 class="mt-3 text-2xl font-semibold tracking-tight">
-              Ce qui merite ton attention
+            <h2 class="app-section-title mt-1">
+              A traiter
             </h2>
           </div>
-          <span class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
+          <span class="app-pill">
             {{ alerts.length }} point(s)
           </span>
         </div>
 
-        <div class="mt-5 grid gap-3">
+        <div class="mt-4 grid gap-2">
           <div
             v-if="alerts.length === 0"
-            class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900/40 dark:bg-emerald-950/25"
+            class="app-inset border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/25"
           >
             <p class="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-              Rien de critique pour l instant
+              Rien de critique
             </p>
-            <p class="mt-2 text-sm leading-6 text-emerald-800 dark:text-emerald-200">
-              Le dashboard est propre, tu peux te concentrer sur les prochaines actions utiles.
+            <p class="mt-1 text-sm text-emerald-800 dark:text-emerald-200">
+              Les donnees principales sont lisibles.
             </p>
           </div>
 
           <div
             v-for="alert in alerts"
             :key="`${alert.title}-${alert.to}`"
-            class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950"
+            class="app-inset"
           >
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-              <div class="max-w-2xl">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">
                   {{ alert.title }}
                 </p>
-                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
                   {{ alert.description }}
                 </p>
               </div>
               <NuxtLink
                 :to="alert.to"
-                class="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
+                class="btn-secondary min-w-fit"
               >
                 {{ alert.action }}
               </NuxtLink>
@@ -431,25 +367,25 @@ onMounted(loadDashboard)
         </div>
       </div>
 
-      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
+      <div class="app-section">
+        <p class="app-eyebrow">
           Actions rapides
         </p>
-        <h2 class="mt-3 text-2xl font-semibold tracking-tight">
-          Les raccourcis utiles apres connexion
+        <h2 class="app-section-title mt-1">
+          Raccourcis
         </h2>
 
-        <div class="mt-5 grid gap-3">
+        <div class="mt-4 grid gap-2">
           <NuxtLink
             v-for="action in actions"
             :key="action.to"
             :to="action.to"
-            class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+            class="app-inset block transition hover:border-slate-300 hover:bg-white dark:hover:border-slate-700 dark:hover:bg-slate-900"
           >
             <p class="text-sm font-semibold text-slate-900 dark:text-white">
               {{ action.label }}
             </p>
-            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
               {{ action.description }}
             </p>
           </NuxtLink>
@@ -459,156 +395,81 @@ onMounted(loadDashboard)
 
     <section
       v-if="!loading"
-      class="grid gap-4 xl:grid-cols-[1.02fr_0.98fr]"
+      class="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]"
     >
-      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="app-section">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
+            <p class="app-eyebrow">
               Progression
             </p>
-            <h2 class="mt-3 text-2xl font-semibold tracking-tight">
-              Parcours produit et niveau de maturite
+            <h2 class="app-section-title mt-1">
+              Donnees configurees
             </h2>
           </div>
-          <div class="rounded-2xl bg-slate-950 px-5 py-4 text-white dark:bg-white dark:text-slate-900">
-            <p class="text-xs uppercase tracking-[0.22em] text-white/60 dark:text-slate-500">
-              Setup
-            </p>
-            <p class="mt-2 text-2xl font-semibold">
-              {{ setupProgress }}%
-            </p>
-          </div>
+          <span class="app-pill">
+            Setup {{ setupProgress }}%
+          </span>
         </div>
 
-        <div class="mt-5 h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+        <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
           <div
             class="h-full rounded-full bg-[linear-gradient(90deg,#f97316,#14b8a6,#0f172a)] transition-all"
             :style="{ width: `${setupProgress}%` }"
           />
         </div>
 
-        <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           <NuxtLink
             v-for="step in setupSteps"
             :key="step.to"
             :to="step.to"
-            class="rounded-2xl border p-4 transition hover:-translate-y-0.5"
-            :class="step.ready
-              ? 'border-emerald-200 bg-emerald-50 hover:border-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:hover:border-emerald-800'
-              : 'border-slate-200 bg-slate-50 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700'"
+            class="app-inset transition hover:border-slate-300 dark:hover:border-slate-700"
           >
             <p class="text-sm font-semibold text-slate-900 dark:text-white">
               {{ step.title }}
             </p>
-            <p class="mt-3 text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            <p class="mt-1 text-xl font-semibold text-slate-900 dark:text-white">
               {{ step.count }}
             </p>
-            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              {{ step.helper }}
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              {{ step.ready ? 'Pret' : step.helper }}
             </p>
           </NuxtLink>
         </div>
       </div>
 
-      <div class="space-y-4">
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
-            Lecture rapide
-          </p>
-          <h2 class="mt-3 text-2xl font-semibold tracking-tight">
-            Signaux a lire en premier
-          </h2>
+      <div class="app-section">
+        <p class="app-eyebrow">
+          Lecture rapide
+        </p>
+        <h2 class="app-section-title mt-1">
+          Signaux metier
+        </h2>
 
-          <div class="mt-5 grid gap-3">
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
-                Food cost moyen
-              </p>
-              <p class="mt-2 text-2xl font-semibold">
-                {{ foodCostAverage.toFixed(2) }} EUR
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Lisible des qu une premiere base recettes existe.
-              </p>
-            </div>
-
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
-                Prix conseille moyen
-              </p>
-              <p class="mt-2 text-2xl font-semibold">
-                {{ suggestedPriceAverage.toFixed(2) }} EUR
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Un bon signal pour sentir si la base reste coherente.
-              </p>
-            </div>
-
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
-                Derniere vente
-              </p>
-              <p class="mt-2 text-2xl font-semibold">
-                {{ latestSale ? formatCurrency(latestSale.totalAmount) : 'Aucune' }}
-              </p>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {{ latestSale ? formatDate(latestSale.serviceDate) : 'Ajoute des tickets pour alimenter le cockpit.' }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div class="flex items-center justify-between gap-4">
-            <h2 class="text-xl font-semibold">
-              Focus prevision
-            </h2>
-            <NuxtLink
-              to="/forecasts"
-              class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              Voir les previsions
-            </NuxtLink>
-          </div>
-
-          <div
-            v-if="topForecastDishes.length > 0"
-            class="mt-5 grid gap-3"
-          >
-            <div
-              v-for="dish in topForecastDishes"
-              :key="dish.dishId"
-              class="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950"
-            >
-              <div class="flex items-start justify-between gap-4">
-                <div>
-                  <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                    {{ dish.dishName }}
-                  </p>
-                  <p class="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">
-                    {{ dish.category }}
-                  </p>
-                </div>
-                <span class="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white dark:bg-white dark:text-slate-900">
-                  {{ dish.recommendedQuantity }} portions
-                </span>
-              </div>
-              <p class="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                Revenu projete {{ formatCurrency(dish.projectedRevenue) }} pour un food cost estime a {{ formatCurrency(dish.projectedFoodCost) }}.
-              </p>
-            </div>
-          </div>
-
-          <div
-            v-else
-            class="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-950"
-          >
-            <p class="text-sm font-semibold text-slate-900 dark:text-white">
-              Pas encore assez de matiere pour une vraie priorite prevision.
+        <div class="mt-4 grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
+          <div class="app-inset">
+            <p class="text-sm text-slate-500">
+              Food cost moyen
             </p>
-            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Des plats relies a la base ingredients et quelques ventes donneront un rendu beaucoup plus convaincant.
+            <p class="mt-1 text-xl font-semibold">
+              {{ foodCostAverage.toFixed(2) }} EUR
+            </p>
+          </div>
+          <div class="app-inset">
+            <p class="text-sm text-slate-500">
+              Prix conseille moyen
+            </p>
+            <p class="mt-1 text-xl font-semibold">
+              {{ suggestedPriceAverage.toFixed(2) }} EUR
+            </p>
+          </div>
+          <div class="app-inset">
+            <p class="text-sm text-slate-500">
+              Projection
+            </p>
+            <p class="mt-1 text-xl font-semibold">
+              {{ forecastStore.forecast?.totals.totalProjectedPlates || 0 }} portions
             </p>
           </div>
         </div>
@@ -618,17 +479,57 @@ onMounted(loadDashboard)
     <EmptyStateCard
       v-if="!loading && ingredientStore.items.length === 0 && dishStore.items.length === 0"
       eyebrow="Base vide"
-      title="Le produit est pret, il manque encore les premieres donnees."
-      description="Commence par les ingredients pour rendre le dashboard concret. Ensuite les plats, les charges et les ventes donneront un vrai ressenti d application finie."
+      title="Le produit est pret, il manque les premieres donnees."
+      description="Commence par les ingredients, puis ajoute les plats et les ventes pour rendre toutes les pages vraiment vivantes."
       action-label="Ouvrir les ingredients"
       action-to="/ingredients"
       secondary-label="Aller aux plats"
       secondary-to="/dishes"
     />
 
-    <ForecastBoard
+    <div
       v-if="!loading"
-      :forecast="forecastStore.forecast"
-    />
+      class="space-y-3"
+    >
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <p class="app-eyebrow">
+            Prevision
+          </p>
+          <h2 class="app-section-title mt-1">
+            Donnees de production
+          </h2>
+        </div>
+        <NuxtLink
+          to="/forecasts"
+          class="btn-secondary"
+        >
+          Voir tout
+        </NuxtLink>
+      </div>
+
+      <div
+        v-if="topForecastDishes.length > 0"
+        class="grid gap-3 md:grid-cols-3"
+      >
+        <div
+          v-for="dish in topForecastDishes"
+          :key="dish.dishId"
+          class="app-card"
+        >
+          <p class="text-sm font-semibold text-slate-900 dark:text-white">
+            {{ dish.dishName }}
+          </p>
+          <p class="mt-1 text-sm text-slate-500">
+            {{ dish.recommendedQuantity }} portions conseillees
+          </p>
+          <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+            CA projete {{ formatCurrency(dish.projectedRevenue) }}
+          </p>
+        </div>
+      </div>
+
+      <ForecastBoard :forecast="forecastStore.forecast" />
+    </div>
   </div>
 </template>

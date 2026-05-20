@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getFetchErrorMessage } from '~/utils/fetch-error'
 import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
 import StatCard from '~/components/common/StatCard.vue'
 import type { ManagedUser } from '~/types/access'
@@ -9,6 +10,7 @@ definePageMeta({
 })
 
 const authStore = useAuthStore()
+const appToast = useAppToast()
 
 const users = ref<ManagedUser[]>([])
 const loading = ref(true)
@@ -45,8 +47,8 @@ function clearFeedback() {
   successMessage.value = ''
 }
 
-function getErrorMessage(error: any, fallback: string) {
-  return error?.data?.message || error?.statusMessage || fallback
+function getErrorMessage(error: unknown, fallback: string) {
+  return getFetchErrorMessage(error, fallback)
 }
 
 function resetCreateForm() {
@@ -89,8 +91,9 @@ async function loadPage() {
       authStore.loadProfile(),
       fetchUsers()
     ])
-  } catch (error: any) {
+  } catch (error) {
     errorMessage.value = getErrorMessage(error, 'Impossible de charger le panel admin')
+    appToast.error('Chargement impossible', errorMessage.value)
   } finally {
     loading.value = false
   }
@@ -101,6 +104,7 @@ async function createManager() {
   clearFeedback()
 
   try {
+    const managerEmail = createForm.email
     await $fetch('/api/admin/users', {
       method: 'POST',
       body: {
@@ -112,8 +116,10 @@ async function createManager() {
     resetCreateForm()
     await fetchUsers()
     successMessage.value = 'Manager cree avec succes.'
-  } catch (error: any) {
+    appToast.success('Manager cree', `${managerEmail} a ete ajoute.`)
+  } catch (error) {
     errorMessage.value = getErrorMessage(error, 'Impossible de creer le manager')
+    appToast.error('Creation impossible', errorMessage.value)
   } finally {
     createPending.value = false
   }
@@ -128,6 +134,7 @@ async function saveUser() {
   clearFeedback()
 
   try {
+    const userEmail = editForm.email
     const body: Record<string, unknown> = {
       firstname: editForm.firstname,
       lastname: editForm.lastname,
@@ -150,8 +157,10 @@ async function saveUser() {
       authStore.loadProfile()
     ])
     successMessage.value = 'Utilisateur mis a jour.'
-  } catch (error: any) {
+    appToast.success('Utilisateur mis a jour', `${userEmail} a ete modifie.`)
+  } catch (error) {
     errorMessage.value = getErrorMessage(error, 'Impossible de mettre a jour cet utilisateur')
+    appToast.error('Mise a jour impossible', errorMessage.value)
   } finally {
     savePending.value = false
   }
@@ -171,8 +180,10 @@ async function toggleActive(user: ManagedUser) {
       authStore.loadProfile()
     ])
     successMessage.value = user.active ? 'Utilisateur desactive.' : 'Utilisateur reactive.'
-  } catch (error: any) {
+    appToast.success(user.active ? 'Utilisateur desactive' : 'Utilisateur reactive', user.email)
+  } catch (error) {
     errorMessage.value = getErrorMessage(error, 'Impossible de modifier le statut de ce compte')
+    appToast.error('Changement de statut impossible', errorMessage.value)
   } finally {
     rowActionId.value = ''
   }
@@ -197,8 +208,10 @@ async function removeUser(user: ManagedUser) {
 
     await fetchUsers()
     successMessage.value = 'Utilisateur supprime.'
-  } catch (error: any) {
+    appToast.success('Utilisateur supprime', user.email)
+  } catch (error) {
     errorMessage.value = getErrorMessage(error, 'Impossible de supprimer cet utilisateur')
+    appToast.error('Suppression impossible', errorMessage.value)
   } finally {
     rowActionId.value = ''
   }
@@ -220,11 +233,11 @@ onMounted(loadPage)
 
 <template>
   <div class="space-y-8">
-    <section class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
+    <section class="app-page-header">
+      <p class="app-eyebrow">
         Administration
       </p>
-      <h1 class="mt-3 text-3xl font-semibold tracking-tight">
+      <h1 class="app-title mt-3">
         Panel admin
       </h1>
       <p class="mt-3 max-w-3xl text-slate-600 dark:text-slate-300">
@@ -233,13 +246,13 @@ onMounted(loadPage)
       <div class="mt-6 flex flex-wrap gap-3">
         <NuxtLink
           to="/account"
-          class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          class="btn-secondary"
         >
           Retour au compte
         </NuxtLink>
         <a
           href="#create-manager"
-          class="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          class="btn-primary"
         >
           Creer un manager
         </a>

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import BusinessNav from '~/components/layout/BusinessNav.vue'
 import { useAuthStore } from '~/stores/auth'
 
@@ -6,9 +6,20 @@ const authStore = useAuthStore()
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
+const hasMounted = ref(false)
+const themeButtonLabel = computed(() => (hasMounted.value && isDark.value ? 'Clair' : 'Sombre'))
+const themeButtonIcon = computed(() => (hasMounted.value && isDark.value ? 'i-lucide-sun' : 'i-lucide-moon'))
+const themeButtonAriaLabel = computed(() => (hasMounted.value && isDark.value ? 'Activer le mode clair' : 'Activer le mode sombre'))
+const appToast = useAppToast()
+
+onMounted(() => {
+  hasMounted.value = true
+})
 
 function toggleColorMode() {
-  colorMode.preference = isDark.value ? 'light' : 'dark'
+  const nextPreference = isDark.value ? 'light' : 'dark'
+  colorMode.preference = nextPreference
+  appToast.info(nextPreference === 'dark' ? 'Mode sombre active' : 'Mode clair active')
 }
 
 useHead({
@@ -22,68 +33,78 @@ useHead({
 </script>
 
 <template>
-  <div class="min-h-screen bg-[linear-gradient(180deg,#fffdf8_0%,#f8fafc_35%,#f8fafc_100%)] text-slate-900 dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_35%,#020617_100%)] dark:text-slate-100">
-    <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 dark:border-slate-800 dark:bg-slate-950/95">
-      <div class="flex items-center justify-between gap-4 px-4 py-4 lg:px-6">
-        <NuxtLink
-          to="/"
-          class="group flex items-center gap-3"
-        >
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-lg font-semibold text-white shadow-sm dark:bg-white dark:text-slate-900">
-            EP
-          </div>
-          <div>
-            <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
-              Eat Planner
-            </p>
-            <p class="text-sm font-medium text-slate-700 dark:text-slate-200">
-              Rentabilite & production
-            </p>
-          </div>
-        </NuxtLink>
-
-        <div class="flex items-center gap-2">
-          <button
-            class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            @click="toggleColorMode"
+  <UApp :toaster="{ position: 'top-right', expand: true, progress: true }">
+    <div class="app-shell">
+      <header class="app-topbar">
+        <div class="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <NuxtLink
+            to="/"
+            class="group flex min-w-0 items-center gap-3"
           >
-            {{ isDark ? 'Clair' : 'Sombre' }}
-          </button>
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-sm font-semibold text-white shadow-sm dark:bg-white dark:text-slate-950">
+              EP
+            </div>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-slate-950 dark:text-white">
+                Eat Planner
+              </p>
+              <p class="truncate text-xs text-slate-500 dark:text-slate-400">
+                Pilotage restaurant
+              </p>
+            </div>
+          </NuxtLink>
 
-          <template v-if="!isAuthenticated">
-            <NuxtLink to="/login">
-              <button class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+          <div class="flex shrink-0 items-center gap-2">
+            <button
+              class="btn-secondary !px-3"
+              :aria-label="themeButtonAriaLabel"
+              :title="themeButtonLabel"
+              @click="toggleColorMode"
+            >
+              <UIcon
+                :name="themeButtonIcon"
+                class="size-4"
+              />
+              <span class="hidden sm:inline">{{ themeButtonLabel }}</span>
+            </button>
+
+            <template v-if="!isAuthenticated">
+              <NuxtLink
+                to="/login"
+                class="btn-secondary"
+              >
                 Login
-              </button>
-            </NuxtLink>
-            <NuxtLink to="/register">
-              <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-slate-900">
+              </NuxtLink>
+              <NuxtLink
+                to="/register"
+                class="btn-primary"
+              >
                 Register
-              </button>
-            </NuxtLink>
-          </template>
-        </div>
-      </div>
-    </header>
-
-    <main v-if="isAuthenticated">
-      <div class="grid min-h-[calc(100vh-76px)] lg:grid-cols-[320px_minmax(0,1fr)]">
-        <div class="border-b border-slate-200 bg-white/95 dark:border-slate-800 dark:bg-slate-950/95 lg:border-b-0 lg:border-r">
-          <BusinessNav />
-        </div>
-        <div class="min-w-0 px-4 py-8 lg:px-8">
-          <div class="mx-auto w-full max-w-6xl">
-            <NuxtPage />
+              </NuxtLink>
+            </template>
           </div>
         </div>
-      </div>
-    </main>
+      </header>
 
-    <main
-      v-else
-      class="mx-auto max-w-7xl px-4 py-8"
-    >
-      <NuxtPage />
-    </main>
-  </div>
+      <main v-if="isAuthenticated">
+        <div class="mx-auto grid min-h-[calc(100vh-65px)] max-w-[1500px] lg:grid-cols-[280px_minmax(0,1fr)]">
+          <div class="app-sidebar">
+            <BusinessNav />
+          </div>
+          <div class="app-content">
+            <div class="mx-auto w-full max-w-6xl">
+              <NuxtPage />
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <main
+        v-else
+        class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8"
+      >
+        <NuxtPage />
+      </main>
+    </div>
+  </UApp>
 </template>

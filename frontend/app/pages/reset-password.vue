@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getFetchErrorMessage } from '~/utils/fetch-error'
 import { useAuthStore } from '~/stores/auth'
 
 definePageMeta({
@@ -7,6 +8,7 @@ definePageMeta({
 
 const route = useRoute()
 const authStore = useAuthStore()
+const appToast = useAppToast()
 
 const token = computed(() => {
   const value = route.query.token
@@ -22,8 +24,8 @@ const pending = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
-function getErrorMessage(error: any, fallback: string) {
-  return error?.data?.message || error?.statusMessage || fallback
+function getErrorMessage(error: unknown, fallback: string) {
+  return getFetchErrorMessage(error, fallback)
 }
 
 async function handleSubmit() {
@@ -32,11 +34,13 @@ async function handleSubmit() {
 
   if (!token.value) {
     errorMessage.value = 'Token de reinitialisation manquant'
+    appToast.error('Lien invalide', errorMessage.value)
     return
   }
 
   if (form.password !== form.confirmPassword) {
     errorMessage.value = 'Les deux mots de passe ne correspondent pas'
+    appToast.warning('Mots de passe differents', errorMessage.value)
     return
   }
 
@@ -48,10 +52,12 @@ async function handleSubmit() {
       password: form.password
     })
     successMessage.value = response.message
+    appToast.success('Mot de passe mis a jour', response.message)
     form.password = ''
     form.confirmPassword = ''
-  } catch (error: any) {
+  } catch (error) {
     errorMessage.value = getErrorMessage(error, 'Impossible de reinitialiser le mot de passe')
+    appToast.error('Reinitialisation impossible', errorMessage.value)
   } finally {
     pending.value = false
   }
@@ -94,7 +100,10 @@ async function handleSubmit() {
       @submit.prevent="handleSubmit"
     >
       <div>
-        <label for="reset-password" class="mb-1 block text-sm font-medium">Nouveau mot de passe</label>
+        <label
+          for="reset-password"
+          class="mb-1 block text-sm font-medium"
+        >Nouveau mot de passe</label>
         <input
           id="reset-password"
           v-model="form.password"
@@ -106,7 +115,10 @@ async function handleSubmit() {
       </div>
 
       <div>
-        <label for="reset-password-confirm" class="mb-1 block text-sm font-medium">Confirmer le mot de passe</label>
+        <label
+          for="reset-password-confirm"
+          class="mb-1 block text-sm font-medium"
+        >Confirmer le mot de passe</label>
         <input
           id="reset-password-confirm"
           v-model="form.confirmPassword"
@@ -128,7 +140,10 @@ async function handleSubmit() {
 
     <p class="mt-4 text-sm text-slate-600 dark:text-slate-300">
       Retour a la connexion ?
-      <NuxtLink to="/login" class="font-medium text-primary-700 underline">
+      <NuxtLink
+        to="/login"
+        class="font-medium text-primary-700 underline"
+      >
         Login
       </NuxtLink>
     </p>

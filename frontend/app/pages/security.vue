@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getFetchErrorMessage } from '~/utils/fetch-error'
 import QRCode from 'qrcode'
 import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
 import { useAuthStore } from '~/stores/auth'
@@ -15,6 +16,7 @@ type SetupState = {
 }
 
 const authStore = useAuthStore()
+const appToast = useAppToast()
 
 const loading = ref(true)
 const setupPending = ref(false)
@@ -29,8 +31,8 @@ const disableCode = ref('')
 const profile = computed(() => authStore.profile)
 const twoFactorEnabled = computed(() => Boolean(profile.value?.twoFactorEnabled))
 
-function getErrorMessage(error: any, fallback: string) {
-  return error?.data?.message || error?.statusMessage || fallback
+function getErrorMessage(error: unknown, fallback: string) {
+  return getFetchErrorMessage(error, fallback)
 }
 
 function clearFeedback() {
@@ -44,8 +46,9 @@ async function loadPage() {
 
   try {
     await authStore.loadProfile()
-  } catch (error: any) {
+  } catch (error) {
     errorMessage.value = getErrorMessage(error, 'Impossible de charger la securite du compte')
+    appToast.error('Chargement impossible', errorMessage.value)
   } finally {
     loading.value = false
   }
@@ -70,8 +73,10 @@ async function initializeTwoFactor() {
     }
 
     successMessage.value = 'Secret 2FA initialise. Scanne le QR code puis valide avec un code TOTP.'
-  } catch (error: any) {
+    appToast.success('Secret 2FA pret', 'Scanne le QR code puis valide avec ton code TOTP.')
+  } catch (error) {
     errorMessage.value = getErrorMessage(error, 'Impossible d initialiser la 2FA')
+    appToast.error('Initialisation impossible', errorMessage.value)
   } finally {
     setupPending.value = false
   }
@@ -86,8 +91,10 @@ async function enableTwoFactor() {
     setupState.value = null
     enableCode.value = ''
     successMessage.value = '2FA activee avec succes sur ce compte.'
-  } catch (error: any) {
+    appToast.success('2FA activee', 'Ton compte est mieux protege.')
+  } catch (error) {
     errorMessage.value = getErrorMessage(error, 'Impossible d activer la 2FA')
+    appToast.error('Activation impossible', errorMessage.value)
   } finally {
     enablePending.value = false
   }
@@ -102,8 +109,10 @@ async function disableTwoFactor() {
     disableCode.value = ''
     setupState.value = null
     successMessage.value = '2FA desactivee sur ce compte.'
-  } catch (error: any) {
+    appToast.success('2FA desactivee', 'La connexion ne demandera plus de code TOTP.')
+  } catch (error) {
     errorMessage.value = getErrorMessage(error, 'Impossible de desactiver la 2FA')
+    appToast.error('Desactivation impossible', errorMessage.value)
   } finally {
     disablePending.value = false
   }
@@ -111,11 +120,13 @@ async function disableTwoFactor() {
 
 async function copyText(value: string, label: string) {
   if (!import.meta.client || !navigator.clipboard) {
+    appToast.warning('Copie indisponible', 'Le presse-papiers n est pas accessible dans ce contexte.')
     return
   }
 
   await navigator.clipboard.writeText(value)
   successMessage.value = `${label} copie dans le presse-papiers.`
+  appToast.success('Copie effectuee', `${label} est dans le presse-papiers.`)
 }
 
 onMounted(loadPage)
@@ -123,11 +134,11 @@ onMounted(loadPage)
 
 <template>
   <div class="space-y-8">
-    <section class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <p class="text-xs uppercase tracking-[0.3em] text-slate-500">
+    <section class="app-page-header">
+      <p class="app-eyebrow">
         Compte
       </p>
-      <h1 class="mt-3 text-3xl font-semibold tracking-tight">
+      <h1 class="app-title mt-3">
         Securite et double authentification
       </h1>
       <p class="mt-3 max-w-2xl text-slate-600 dark:text-slate-300">
@@ -136,21 +147,21 @@ onMounted(loadPage)
       <div class="mt-6 flex flex-wrap gap-3">
         <NuxtLink
           to="/account"
-          class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          class="btn-secondary"
         >
           Retour au compte
         </NuxtLink>
         <a
           v-if="!twoFactorEnabled"
           href="#setup-2fa"
-          class="rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          class="btn-primary"
         >
           Activer la 2FA
         </a>
         <a
           v-else
           href="#disable-2fa"
-          class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          class="btn-secondary"
         >
           Desactiver la 2FA
         </a>

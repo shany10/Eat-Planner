@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getFetchErrorMessage } from '~/utils/fetch-error'
 import { useAuthStore } from '~/stores/auth'
 
 definePageMeta({
@@ -6,14 +7,15 @@ definePageMeta({
 })
 
 const authStore = useAuthStore()
+const appToast = useAppToast()
 
 const email = ref('')
 const pending = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
-function getErrorMessage(error: any, fallback: string) {
-  return error?.data?.message || error?.statusMessage || fallback
+function getErrorMessage(error: unknown, fallback: string) {
+  return getFetchErrorMessage(error, fallback)
 }
 
 async function handleSubmit() {
@@ -24,8 +26,10 @@ async function handleSubmit() {
   try {
     const response = await authStore.requestPasswordReset({ email: email.value })
     successMessage.value = response.message
-  } catch (error: any) {
+    appToast.success('Email envoye', response.message)
+  } catch (error) {
     errorMessage.value = getErrorMessage(error, 'Impossible d envoyer le mail de reinitialisation')
+    appToast.error('Envoi impossible', errorMessage.value)
   } finally {
     pending.value = false
   }
@@ -60,7 +64,10 @@ async function handleSubmit() {
       @submit.prevent="handleSubmit"
     >
       <div>
-        <label for="forgot-email" class="mb-1 block text-sm font-medium">Email</label>
+        <label
+          for="forgot-email"
+          class="mb-1 block text-sm font-medium"
+        >Email</label>
         <input
           id="forgot-email"
           v-model.trim="email"
@@ -81,7 +88,10 @@ async function handleSubmit() {
 
     <p class="mt-4 text-sm text-slate-600 dark:text-slate-300">
       Retour a la connexion ?
-      <NuxtLink to="/login" class="font-medium text-primary-700 underline">
+      <NuxtLink
+        to="/login"
+        class="font-medium text-primary-700 underline"
+      >
         Login
       </NuxtLink>
     </p>

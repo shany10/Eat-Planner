@@ -40,8 +40,11 @@ function createBlankLine() {
 }
 
 watchEffect(() => {
-  if (!form.items[0]?.dish && props.dishes[0]?._id) {
-    form.items[0].dish = props.dishes[0]._id
+  const firstItem = form.items[0]
+  const firstDishId = props.dishes[0]?._id
+
+  if (firstItem && !firstItem.dish && firstDishId) {
+    firstItem.dish = firstDishId
   }
 })
 
@@ -66,7 +69,7 @@ function submit() {
   emit('submit', {
     serviceDate: form.serviceDate,
     notes: form.notes,
-    items: form.items.map((item) => ({
+    items: form.items.map(item => ({
       dish: item.dish,
       quantity: Number(item.quantity),
       unitPrice: item.unitPrice ? Number(item.unitPrice) : undefined

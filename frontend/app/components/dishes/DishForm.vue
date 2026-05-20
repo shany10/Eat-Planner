@@ -54,7 +54,7 @@ watchEffect(() => {
   form.targetMarginRate = props.initialValue?.targetMarginRate ?? 0.72
   form.estimatedDailyServings = props.initialValue?.estimatedDailyServings ?? 15
   form.active = props.initialValue?.active ?? true
-  form.ingredients = props.initialValue?.ingredients?.map((line) => ({ ...line })) ?? [createBlankLine()]
+  form.ingredients = props.initialValue?.ingredients?.map(line => ({ ...line })) ?? [createBlankLine()]
 })
 
 function addLine() {
@@ -82,7 +82,7 @@ function submit() {
     targetMarginRate: Number(form.targetMarginRate),
     estimatedDailyServings: Number(form.estimatedDailyServings),
     active: form.active,
-    ingredients: form.ingredients.map((line) => ({
+    ingredients: form.ingredients.map(line => ({
       ingredient: line.ingredient,
       quantity: Number(line.quantity),
       unit: line.unit
@@ -182,12 +182,24 @@ function submit() {
             v-model="line.unit"
             class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
           >
-            <option value="g">g</option>
-            <option value="kg">kg</option>
-            <option value="ml">ml</option>
-            <option value="cl">cl</option>
-            <option value="l">l</option>
-            <option value="piece">piece</option>
+            <option value="g">
+              g
+            </option>
+            <option value="kg">
+              kg
+            </option>
+            <option value="ml">
+              ml
+            </option>
+            <option value="cl">
+              cl
+            </option>
+            <option value="l">
+              l
+            </option>
+            <option value="piece">
+              piece
+            </option>
           </select>
           <button
             type="button"
