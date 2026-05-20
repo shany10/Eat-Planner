@@ -1,0 +1,123 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Length 2126 >>
+stream
+BT
+/F1 12 Tf
+14 TL
+50 792 Td
+(Ameliorations priorisees - Eat Planner) Tj
+T*
+() Tj
+T*
+(Top 10 a plus fort impact) Tj
+T*
+(1. Ajouter un dashboard decisionnel: marge, ventes, charges, previsions, alertes.) Tj
+T*
+(2. Ajouter des recommandations automatiques concretes.) Tj
+T*
+(3. Ameliorer l algorithme de prevision avec saisonnalite et confiance.) Tj
+T*
+(4. Ajouter une gestion de stock minimale avec seuils d alerte.) Tj
+T*
+(5. Ajouter un historique des prix d achat par ingredient et fournisseur.) Tj
+T*
+(6. Ajouter des filtres par periode sur ventes, charges, marges et previsions.) Tj
+T*
+(7. Permettre l export CSV et PDF des rapports.) Tj
+T*
+(8. Ajouter des tests backend sur les calculs critiques.) Tj
+T*
+(9. Renforcer la securite et la partie admin.) Tj
+T*
+(10. Preparer un jeu de donnees de demo propre pour la soutenance.) Tj
+T*
+() Tj
+T*
+(Classement par difficulte) Tj
+T*
+(Facile) Tj
+T*
+(- Filtres par periode sur les ecrans metier.) Tj
+T*
+(- Export CSV des tableaux.) Tj
+T*
+(- Jeu de donnees de demonstration coherent.) Tj
+T*
+(- Meilleures validations et messages d erreur.) Tj
+T*
+(- Dashboard plus lisible avec indicateurs plus utiles.) Tj
+T*
+() Tj
+T*
+(Moyen) Tj
+T*
+(- Recommandations automatiques a partir des donnees existantes.) Tj
+T*
+(- Historique des prix d achat par ingredient.) Tj
+T*
+(- Gestion de stock minimale avec seuils d alerte.) Tj
+T*
+(- Journal d actions admin et utilisateur.) Tj
+T*
+(- Export PDF des rapports.) Tj
+T*
+() Tj
+T*
+(Difficile) Tj
+T*
+(- Algorithme de prevision plus pousse avec facteurs externes.) Tj
+T*
+(- Simulation multi-scenarios de prix de vente et de marge.) Tj
+T*
+(- Gestion de roles plus fine que admin / manager.) Tj
+T*
+(- Suite de tests plus complete.) Tj
+T*
+(- Analyse predictive plus poussee pour la production.) Tj
+T*
+() Tj
+T*
+(Mes 3 meilleurs choix pour la soutenance) Tj
+T*
+(1. Dashboard decisionnel) Tj
+T*
+(2. Recommandations automatiques) Tj
+T*
+(3. Gestion de stock + besoins matieres) Tj
+T*
+() Tj
+T*
+(Pourquoi ces choix) Tj
+T*
+(Ils donnent une impression immediate de produit plus complet, plus) Tj
+T*
+(intelligent et plus proche d un vrai outil de pilotage metier.) Tj
+ET
+endstream
+endobj
+3 0 obj
+<< /Type /Page /Parent 4 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R >> >> /Contents 2 0 R >>
+endobj
+4 0 obj
+<< /Type /Pages /Count 1 /Kids [3 0 R] >>
+endobj
+5 0 obj
+<< /Type /Catalog /Pages 4 0 R >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000079 00000 n 
+0000002257 00000 n 
+0000002383 00000 n 
+0000002440 00000 n 
+trailer
+<< /Size 6 /Root 5 0 R >>
+startxref
+2489
+%%EOF
