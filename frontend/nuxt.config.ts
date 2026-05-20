@@ -1,31 +1,35 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-export default defineNuxtConfig({
+const env = (globalThis as typeof globalThis & {
+  process?: {
+    env: Record<string, string | undefined>
+  }
+}).process?.env ?? {}
 
+export default defineNuxtConfig({
   modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt'],
 
-
   devtools: {
-    enabled: process.env.NODE_ENV === 'development' && process.env.NUXT_DEVTOOLS === 'true'
+    enabled: env.NODE_ENV === 'development' && env.NUXT_DEVTOOLS === 'true'
   },
 
   css: ['~/assets/css/tailwind.css'],
-
-  // css: ['~/assets/css/main.css'],
-
-  devServer: {
-    host: '0.0.0.0',
-    port: 3001
-  },
   colorMode: {
     preference: 'system',
     fallback: 'light',
     classSuffix: ''
   },
   runtimeConfig: {
-    backendBaseUrl: process.env.NUXT_BACKEND_BASE_URL || 'http://backend:3000',
+    backendBaseUrl: env.NUXT_BACKEND_BASE_URL || 'http://backend:3000',
     public: {
-      googleClientId: process.env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || ''
+      googleClientId: env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || ''
     }
+  },
+
+  // css: ['~/assets/css/main.css'],
+
+  devServer: {
+    host: '0.0.0.0',
+    port: 3001
   },
   compatibilityDate: '2025-01-15',
 

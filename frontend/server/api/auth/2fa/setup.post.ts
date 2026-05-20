@@ -1,4 +1,5 @@
 import { createError, getCookie } from 'h3'
+import { createBackendError } from '../../../utils/errors'
 
 type Setup2FaResponse = {
   ok: boolean
@@ -25,10 +26,7 @@ export default defineEventHandler(async (event) => {
         Authorization: `Bearer ${token}`
       }
     })
-  } catch (error: any) {
-    throw createError({
-      statusCode: error?.response?.status || 500,
-      statusMessage: error?.response?._data?.error || 'Unable to initialize 2FA setup'
-    })
+  } catch (error) {
+    throw createBackendError(error, 'Unable to initialize 2FA setup')
   }
 })

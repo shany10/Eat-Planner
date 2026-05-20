@@ -1,4 +1,4 @@
-import { createError } from 'h3'
+import { createBackendError } from '../../utils/errors'
 
 type Login2FaBody = {
   mfaToken: string
@@ -20,10 +20,7 @@ export default defineEventHandler(async (event) => {
       method: 'POST',
       body
     })
-  } catch (error: any) {
-    throw createError({
-      statusCode: error?.response?.status || 500,
-      statusMessage: error?.response?._data?.error || '2FA verification failed'
-    })
+  } catch (error) {
+    throw createBackendError(error, '2FA verification failed')
   }
 })

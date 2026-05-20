@@ -1,4 +1,4 @@
-import { createError } from 'h3'
+import { createBackendError } from '../../utils/errors'
 
 type ResetPasswordBody = {
   token: string
@@ -19,10 +19,7 @@ export default defineEventHandler(async (event) => {
       method: 'POST',
       body
     })
-  } catch (error: any) {
-    throw createError({
-      statusCode: error?.response?.status || 500,
-      statusMessage: error?.response?._data?.error || 'Unable to reset password'
-    })
+  } catch (error) {
+    throw createBackendError(error, 'Unable to reset password')
   }
 })

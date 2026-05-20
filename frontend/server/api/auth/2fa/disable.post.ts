@@ -1,4 +1,5 @@
 import { createError, getCookie } from 'h3'
+import { createBackendError } from '../../../utils/errors'
 
 type Disable2FaBody = {
   code: string
@@ -29,10 +30,7 @@ export default defineEventHandler(async (event) => {
         Authorization: `Bearer ${token}`
       }
     })
-  } catch (error: any) {
-    throw createError({
-      statusCode: error?.response?.status || 500,
-      statusMessage: error?.response?._data?.error || 'Unable to disable 2FA'
-    })
+  } catch (error) {
+    throw createBackendError(error, 'Unable to disable 2FA')
   }
 })
