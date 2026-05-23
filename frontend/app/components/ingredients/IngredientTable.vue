@@ -53,15 +53,23 @@ defineEmits<{
           <td class="px-4 py-3">
             <div class="flex justify-end gap-2">
               <button
-                class="rounded-lg border border-slate-300 px-3 py-1.5 dark:border-slate-700"
+                class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium dark:border-slate-700"
                 @click="$emit('edit', item)"
               >
+                <UIcon
+                  name="i-lucide-pencil"
+                  class="size-3.5"
+                />
                 Editer
               </button>
               <button
-                class="rounded-lg bg-red-600 px-3 py-1.5 text-white"
+                class="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white"
                 @click="$emit('remove', item)"
               >
+                <UIcon
+                  name="i-lucide-trash-2"
+                  class="size-3.5"
+                />
                 Supprimer
               </button>
             </div>

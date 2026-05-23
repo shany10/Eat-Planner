@@ -5,9 +5,11 @@ const props = withDefaults(defineProps<{
   suppliers: Supplier[]
   initialValue?: Partial<Ingredient> | null
   submitLabel?: string
+  showCancel?: boolean
 }>(), {
   initialValue: null,
-  submitLabel: 'Enregistrer l ingredient'
+  submitLabel: 'Enregistrer l ingredient',
+  showCancel: false
 })
 
 const emit = defineEmits<{
@@ -49,17 +51,17 @@ function submit() {
     class="grid gap-3"
     @submit.prevent="submit"
   >
-    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div class="grid gap-3 md:grid-cols-2">
       <input
         v-model="form.name"
-        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+        class="app-input"
         placeholder="Nom de l ingredient"
         required
       >
 
       <select
         v-model="form.unit"
-        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+        class="app-input"
       >
         <option value="g">
           g
@@ -83,7 +85,7 @@ function submit() {
 
       <input
         v-model="form.purchasePrice"
-        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+        class="app-input"
         placeholder="Prix achat unitaire"
         type="number"
         min="0"
@@ -92,7 +94,7 @@ function submit() {
 
       <select
         v-model="form.supplier"
-        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+        class="app-input"
       >
         <option value="">
           Sans fournisseur
@@ -118,14 +120,25 @@ function submit() {
 
       <div class="flex gap-2">
         <button
-          v-if="initialValue"
+          v-if="showCancel || initialValue"
           type="button"
-          class="rounded-xl border border-slate-300 px-4 py-2 text-sm dark:border-slate-700"
+          class="btn-secondary"
           @click="$emit('cancel')"
         >
+          <UIcon
+            name="i-lucide-x"
+            class="size-4"
+          />
           Annuler
         </button>
-        <button class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-slate-900">
+        <button
+          type="submit"
+          class="btn-primary"
+        >
+          <UIcon
+            name="i-lucide-save"
+            class="size-4"
+          />
           {{ submitLabel }}
         </button>
       </div>

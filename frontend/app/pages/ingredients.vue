@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { getFetchErrorMessage } from '~/utils/fetch-error'
-import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
+import AppModal from '~/components/common/AppModal.vue'
 import StatCard from '~/components/common/StatCard.vue'
 import IngredientForm from '~/components/ingredients/IngredientForm.vue'
 import IngredientTable from '~/components/ingredients/IngredientTable.vue'
-import SupplierForm from '~/components/suppliers/SupplierForm.vue'
-import SupplierTable from '~/components/suppliers/SupplierTable.vue'
-import type { Ingredient, Supplier } from '~/types/business'
+import type { Ingredient } from '~/types/business'
 import { useIngredientStore } from '~/stores/ingredients'
 import { useSupplierStore } from '~/stores/suppliers'
 
@@ -19,7 +17,7 @@ const supplierStore = useSupplierStore()
 const appToast = useAppToast()
 
 const editingIngredient = ref<Ingredient | null>(null)
-const editingSupplier = ref<Supplier | null>(null)
+const isIngredientModalOpen = ref(false)
 const errorMessage = ref('')
 const loading = ref(true)
 
@@ -29,11 +27,21 @@ type PageStat = {
   hint: string
 }
 
+type IngredientPayload = {
+  name: string
+  unit: Ingredient['unit']
+  purchasePrice: number
+  supplier?: string | null
+  active?: boolean
+}
+
 const ingredientCount = computed(() => ingredientStore.items.length)
 const activeIngredientCount = computed(() => ingredientStore.items.filter(item => item.active).length)
 const supplierCount = computed(() => supplierStore.items.length)
 const activeSupplierCount = computed(() => supplierStore.items.filter(item => item.active).length)
 const linkedIngredientCount = computed(() => ingredientStore.items.filter(item => Boolean(item.supplier)).length)
+const supplierlessIngredients = computed(() => ingredientStore.items.filter(item => !item.supplier).length)
+
 const ingredientCoverage = computed(() => {
   if (ingredientCount.value === 0) {
     return 0
@@ -50,40 +58,35 @@ const averagePurchasePrice = computed(() => {
   return ingredientStore.items.reduce((sum, item) => sum + item.purchasePrice, 0) / ingredientCount.value
 })
 
-const supplierlessIngredients = computed(() => ingredientStore.items.filter(item => !item.supplier).length)
-
 const stats = computed<PageStat[]>(() => [
-  { title: 'Ingredients actifs', value: activeIngredientCount.value, hint: 'Base exploitable tout de suite' },
-  { title: 'Fournisseurs actifs', value: activeSupplierCount.value, hint: 'Partenaires references' },
+  { title: 'Ingredients actifs', value: activeIngredientCount.value, hint: 'References utilisables' },
   { title: 'Ingredients relies', value: `${ingredientCoverage.value}%`, hint: 'Avec fournisseur associe' },
-  { title: 'Prix achat moyen', value: formatCurrency(averagePurchasePrice.value), hint: 'Lecture rapide de la base' }
+  { title: 'Sans fournisseur', value: supplierlessIngredients.value, hint: 'A completer plus tard' },
+  { title: 'Prix achat moyen', value: formatCurrency(averagePurchasePrice.value), hint: 'Repere matiere rapide' }
 ])
 
 const setupSignal = computed(() => {
   if (ingredientCount.value === 0) {
-    return 'Ajoute les premieres references pour lancer tout le reste du produit.'
+    return 'Ajoute les premieres matieres premieres pour debloquer les recettes et les prix conseilles.'
+  }
+
+  if (supplierCount.value === 0) {
+    return 'Les ingredients sont prets; tu peux ajouter les fournisseurs sur une page dediee quand tu veux structurer les achats.'
   }
 
   if (supplierlessIngredients.value > 0) {
-    return `${supplierlessIngredients.value} ingredient(s) n ont pas encore de fournisseur relie.`
+    return `${supplierlessIngredients.value} ingredient(s) restent sans fournisseur. La table est exploitable, mais les achats seront plus lisibles avec ces liens.`
   }
 
-  return 'La base matiere est suffisamment structuree pour soutenir recettes et achats.'
+  return 'La base matiere est proprement reliee aux fournisseurs.'
 })
 
-const nextAction = computed(() => {
-  if (supplierCount.value === 0) {
-    return {
-      label: 'Creer un fournisseur',
-      to: '/ingredients#supplier-form'
-    }
-  }
-
-  return {
-    label: 'Ajouter un ingredient',
-    to: '/ingredients#ingredient-form'
-  }
-})
+const modalTitle = computed(() => editingIngredient.value ? 'Modifier ingredient' : 'Nouvel ingredient')
+const modalDescription = computed(() =>
+  editingIngredient.value
+    ? 'Mets a jour le prix, l unite ou le fournisseur sans quitter la table.'
+    : 'Ajoute une matiere premiere; le fournisseur reste optionnel.'
+)
 
 async function loadPage() {
   loading.value = true
@@ -98,45 +101,35 @@ async function loadPage() {
   }
 }
 
-async function saveSupplier(payload: Omit<Supplier, '_id'>) {
-  try {
-    if (editingSupplier.value) {
-      await supplierStore.update(editingSupplier.value._id, payload)
-      editingSupplier.value = null
-      appToast.success('Fournisseur mis a jour', `${payload.name} a ete modifie.`)
-    } else {
-      await supplierStore.create(payload)
-      appToast.success('Fournisseur ajoute', `${payload.name} est maintenant dans la base.`)
-    }
-  } catch (error) {
-    errorMessage.value = getFetchErrorMessage(error, 'Echec lors de l enregistrement du fournisseur')
-    appToast.error('Enregistrement impossible', errorMessage.value)
-  }
+function openCreateIngredient() {
+  editingIngredient.value = null
+  isIngredientModalOpen.value = true
 }
 
-async function saveIngredient(payload: { name: string, unit: Ingredient['unit'], purchasePrice: number, supplier?: string | null, active?: boolean }) {
+function openEditIngredient(item: Ingredient) {
+  editingIngredient.value = item
+  isIngredientModalOpen.value = true
+}
+
+function closeIngredientModal() {
+  isIngredientModalOpen.value = false
+  editingIngredient.value = null
+}
+
+async function saveIngredient(payload: IngredientPayload) {
   try {
     if (editingIngredient.value) {
       await ingredientStore.update(editingIngredient.value._id, payload)
-      editingIngredient.value = null
       appToast.success('Ingredient mis a jour', `${payload.name} a ete modifie.`)
     } else {
       await ingredientStore.create(payload)
       appToast.success('Ingredient ajoute', `${payload.name} est maintenant disponible.`)
     }
+
+    closeIngredientModal()
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(error, 'Echec lors de l enregistrement de l ingredient')
     appToast.error('Enregistrement impossible', errorMessage.value)
-  }
-}
-
-async function removeSupplier(item: Supplier) {
-  try {
-    await supplierStore.remove(item._id)
-    appToast.success('Fournisseur supprime', `${item.name} a ete retire.`)
-  } catch (error) {
-    errorMessage.value = getFetchErrorMessage(error, 'Suppression impossible')
-    appToast.error('Suppression impossible', errorMessage.value)
   }
 }
 
@@ -163,29 +156,38 @@ onMounted(loadPage)
       <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p class="app-eyebrow">
-            Base produits
+            Matieres premieres
           </p>
           <h1 class="app-title mt-2">
-            Ingredients et fournisseurs
+            Ingredients
           </h1>
           <p class="app-subtitle mt-2">
-            Les donnees et les formulaires sont accessibles directement, sans grand bloc explicatif avant la table.
+            Une page centree sur la table ingredients, avec creation et edition en fenetre pour garder la lecture claire.
           </p>
         </div>
 
         <div class="flex flex-wrap gap-2">
-          <NuxtLink
-            :to="nextAction.to"
+          <button
+            type="button"
             class="btn-primary"
+            @click="openCreateIngredient"
           >
-            {{ nextAction.label }}
-          </NuxtLink>
-          <a
-            href="#ingredient-form"
+            <UIcon
+              name="i-lucide-plus"
+              class="size-4"
+            />
+            Ajouter un ingredient
+          </button>
+          <NuxtLink
+            to="/suppliers"
             class="btn-secondary"
           >
-            Ingredient
-          </a>
+            <UIcon
+              name="i-lucide-truck"
+              class="size-4"
+            />
+            Fournisseurs
+          </NuxtLink>
         </div>
       </div>
 
@@ -243,109 +245,76 @@ onMounted(loadPage)
         </div>
       </div>
 
-      <EmptyStateCard
-        v-if="supplierStore.items.length === 0 && ingredientStore.items.length === 0"
-        eyebrow="Premier setup"
-        title="Commence par enregistrer tes fournisseurs et tes ingredients."
-        description="Le fournisseur reste optionnel, donc tu peux aussi commencer directement par l ingredient si tu veux aller vite."
-        action-label="Creer un fournisseur"
-        action-to="/ingredients#supplier-form"
-        secondary-label="Creer un ingredient"
-        secondary-to="/ingredients#ingredient-form"
-      />
-
-      <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <div class="app-section">
-          <div class="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <p class="app-eyebrow">
-                Table
-              </p>
-              <h2 class="app-section-title mt-1">
-                Ingredients
-              </h2>
-            </div>
-            <span class="app-pill">{{ ingredientStore.items.length }} ligne(s)</span>
-          </div>
-          <IngredientTable
-            :items="ingredientStore.items"
-            @edit="editingIngredient = $event"
-            @remove="removeIngredient"
-          />
-        </div>
-
-        <div
-          id="ingredient-form"
-          class="app-section scroll-mt-28"
-        >
-          <div class="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <p class="app-eyebrow">
-                Formulaire
-              </p>
-              <h2 class="app-section-title mt-1">
-                {{ editingIngredient ? 'Modifier ingredient' : 'Nouvel ingredient' }}
-              </h2>
-            </div>
-            <span class="app-pill">
-              {{ editingIngredient ? 'Edition' : 'Creation' }}
-            </span>
-          </div>
-          <IngredientForm
-            :suppliers="supplierStore.items"
-            :initial-value="editingIngredient"
-            :submit-label="editingIngredient ? 'Mettre a jour' : 'Ajouter l ingredient'"
-            @submit="saveIngredient"
-            @cancel="editingIngredient = null"
-          />
+      <section
+        v-if="ingredientStore.items.length === 0"
+        class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-900/60"
+      >
+        <p class="app-eyebrow">
+          Premier setup
+        </p>
+        <h3 class="mt-3 text-lg font-semibold text-slate-950 dark:text-white">
+          Ajoute ton premier ingredient.
+        </h3>
+        <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+          La table reste vide pour le moment. Le bouton ouvre une fenetre propre, sans pousser la table plus bas dans la page.
+        </p>
+        <div class="mt-5 flex flex-wrap gap-3">
+          <button
+            type="button"
+            class="btn-primary"
+            @click="openCreateIngredient"
+          >
+            <UIcon
+              name="i-lucide-plus"
+              class="size-4"
+            />
+            Creer un ingredient
+          </button>
+          <NuxtLink
+            to="/suppliers"
+            class="btn-secondary"
+          >
+            Gerer les fournisseurs
+          </NuxtLink>
         </div>
       </section>
 
-      <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <div class="app-section">
-          <div class="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <p class="app-eyebrow">
-                Table
-              </p>
-              <h2 class="app-section-title mt-1">
-                Fournisseurs
-              </h2>
-            </div>
-            <span class="app-pill">{{ supplierStore.items.length }} ligne(s)</span>
+      <div class="app-section">
+        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="app-eyebrow">
+              Table
+            </p>
+            <h2 class="app-section-title mt-1">
+              Base ingredients
+            </h2>
           </div>
-          <SupplierTable
-            :items="supplierStore.items"
-            @edit="editingSupplier = $event"
-            @remove="removeSupplier"
-          />
+          <span class="app-pill">{{ ingredientStore.items.length }} ligne(s)</span>
         </div>
-
-        <div
-          id="supplier-form"
-          class="app-section scroll-mt-28"
-        >
-          <div class="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <p class="app-eyebrow">
-                Formulaire
-              </p>
-              <h2 class="app-section-title mt-1">
-                {{ editingSupplier ? 'Modifier fournisseur' : 'Nouveau fournisseur' }}
-              </h2>
-            </div>
-            <span class="app-pill">
-              {{ editingSupplier ? 'Edition' : 'Creation' }}
-            </span>
-          </div>
-          <SupplierForm
-            :initial-value="editingSupplier"
-            :submit-label="editingSupplier ? 'Mettre a jour' : 'Ajouter le fournisseur'"
-            @submit="saveSupplier"
-            @cancel="editingSupplier = null"
-          />
-        </div>
-      </section>
+        <IngredientTable
+          :items="ingredientStore.items"
+          @edit="openEditIngredient"
+          @remove="removeIngredient"
+        />
+      </div>
     </template>
+
+    <AppModal
+      :open="isIngredientModalOpen"
+      :title="modalTitle"
+      :description="modalDescription"
+      eyebrow="Ingredient"
+      size="lg"
+      @close="closeIngredientModal"
+    >
+      <IngredientForm
+        :suppliers="supplierStore.items"
+        :initial-value="editingIngredient"
+        :submit-label="editingIngredient ? 'Mettre a jour l ingredient' : 'Ajouter l ingredient'"
+        show-cancel
+        @submit="saveIngredient"
+        @cancel="closeIngredientModal"
+      />
+    </AppModal>
   </div>
 </template>
