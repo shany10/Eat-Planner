@@ -14,5 +14,34 @@ export const useForecastStore = defineStore('forecasts', () => {
     }
   }
 
-  return { forecast, pending, load }
+  async function save(date?: string) {
+    pending.value = true
+    try {
+      forecast.value = await $fetch<ForecastResponse>('/api/forecasts/daily', {
+        method: 'POST',
+        body: { date }
+      })
+      return forecast.value
+    } finally {
+      pending.value = false
+    }
+  }
+
+  async function correct(forecastId: string, dishId: string, correctionQuantity: number, correctionComment = '') {
+    pending.value = true
+    try {
+      forecast.value = await $fetch<ForecastResponse>(`/api/forecasts/${forecastId}/recommendations/${dishId}/correction`, {
+        method: 'PATCH',
+        body: {
+          correctionQuantity,
+          correctionComment
+        }
+      })
+      return forecast.value
+    } finally {
+      pending.value = false
+    }
+  }
+
+  return { forecast, pending, load, save, correct }
 })

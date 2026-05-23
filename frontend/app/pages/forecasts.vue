@@ -26,6 +26,33 @@ async function loadForecast(showSuccess = false) {
   }
 }
 
+async function saveForecast() {
+  errorMessage.value = ''
+  try {
+    await forecastStore.save(selectedDate.value)
+    appToast.success('Prevision sauvegardee', `Recommandations conservees pour le ${selectedDate.value}.`)
+  } catch (error) {
+    errorMessage.value = getFetchErrorMessage(error, 'Impossible de sauvegarder la prevision')
+    appToast.error('Sauvegarde impossible', errorMessage.value)
+  }
+}
+
+async function correctForecast(payload: {
+  forecastId: string
+  dishId: string
+  correctionQuantity: number
+  correctionComment: string
+}) {
+  errorMessage.value = ''
+  try {
+    await forecastStore.correct(payload.forecastId, payload.dishId, payload.correctionQuantity, payload.correctionComment)
+    appToast.success('Correction sauvegardee', 'La recommandation et les besoins matieres sont recalcules.')
+  } catch (error) {
+    errorMessage.value = getFetchErrorMessage(error, 'Impossible de corriger la prevision')
+    appToast.error('Correction impossible', errorMessage.value)
+  }
+}
+
 onMounted(loadForecast)
 </script>
 
@@ -55,16 +82,23 @@ onMounted(loadForecast)
             type="date"
           >
           <button
-            class="btn-primary"
+            class="btn-secondary"
             @click="loadForecast(true)"
           >
-            Recalculer
+            Previsualiser
+          </button>
+          <button
+            class="btn-primary"
+            @click="saveForecast"
+          >
+            Generer et sauvegarder
           </button>
         </div>
       </div>
 
       <div class="mt-4 flex flex-wrap gap-2">
         <span class="app-pill">{{ forecastStore.forecast?.targetDate || selectedDate }}</span>
+        <span class="app-pill">{{ forecastStore.forecast?.persisted ? 'Sauvegardee' : 'Simulation' }}</span>
         <span class="app-pill">{{ forecastStore.forecast?.dishes.length || 0 }} plat(s)</span>
         <span class="app-pill">{{ forecastStore.forecast?.ingredientNeeds.length || 0 }} besoin(s)</span>
       </div>
@@ -91,6 +125,7 @@ onMounted(loadForecast)
     <ForecastBoard
       v-else
       :forecast="forecastStore.forecast"
+      @correct="correctForecast"
     />
   </div>
 </template>

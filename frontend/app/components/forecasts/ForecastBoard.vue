@@ -1,9 +1,52 @@
 <script setup lang="ts">
 import type { ForecastResponse } from '~/types/business'
 
-defineProps<{
+const props = defineProps<{
   forecast: ForecastResponse | null
 }>()
+
+const emit = defineEmits<{
+  correct: [payload: { forecastId: string, dishId: string, correctionQuantity: number, correctionComment: string }]
+}>()
+
+const correctionForms = reactive<Record<string, { quantity: number, comment: string }>>({})
+
+watch(() => props.forecast, (forecast) => {
+  if (!forecast) {
+    return
+  }
+
+  for (const dish of forecast.dishes) {
+    correctionForms[dish.dishId] = {
+      quantity: dish.userCorrectionQuantity ?? dish.recommendedQuantity,
+      comment: dish.correctionComment ?? ''
+    }
+  }
+}, { immediate: true })
+
+function getProductionPrice(dish: ForecastResponse['dishes'][number]) {
+  return dish.actualPriceIncludingTax && dish.actualPriceIncludingTax > 0
+    ? dish.actualPriceIncludingTax
+    : dish.suggestedPriceIncludingTax ?? dish.suggestedPrice
+}
+
+function formatCurrency(value = 0) {
+  return `${value.toFixed(2)} EUR`
+}
+
+function submitCorrection(dish: ForecastResponse['dishes'][number]) {
+  if (!props.forecast?._id) {
+    return
+  }
+
+  const form = correctionForms[dish.dishId]
+  emit('correct', {
+    forecastId: props.forecast._id,
+    dishId: dish.dishId,
+    correctionQuantity: Number(form?.quantity ?? dish.recommendedQuantity),
+    correctionComment: form?.comment ?? ''
+  })
+}
 </script>
 
 <template>
@@ -24,7 +67,10 @@ defineProps<{
           <h3 class="text-lg font-semibold">
             Production conseillee
           </h3>
-          <span class="text-sm text-slate-500">{{ forecast.targetDate }}</span>
+          <div class="flex flex-wrap justify-end gap-2">
+            <span class="app-pill">{{ forecast.persisted ? 'Sauvegardee' : 'Simulation' }}</span>
+            <span class="text-sm text-slate-500">{{ forecast.targetDate }}</span>
+          </div>
         </div>
 
         <div class="mt-4 space-y-3">
@@ -43,6 +89,9 @@ defineProps<{
                 </h4>
                 <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
                   Baseline {{ dish.baselineQuantity }} - historique {{ dish.historyDaysUsed }} jours
+                </p>
+                <p class="mt-1 text-sm text-slate-500">
+                  {{ dish.comment }}
                 </p>
               </div>
 
@@ -64,8 +113,55 @@ defineProps<{
                 Confiance: {{ dish.confidence }}
               </span>
               <span class="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-800">
-                CA projete: {{ dish.projectedRevenue.toFixed(2) }} EUR
+                Initial: {{ dish.initialForecastQuantity ?? dish.recommendedQuantity }}
               </span>
+              <span class="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-800">
+                Reel: {{ dish.actualQuantitySold ?? 0 }}
+              </span>
+              <span class="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-800">
+                Ecart: {{ dish.productionGap ?? 0 }}
+              </span>
+              <span class="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-800">
+                CA projete: {{ formatCurrency(dish.projectedRevenue) }}
+              </span>
+              <span class="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-800">
+                Prix TTC: {{ formatCurrency(getProductionPrice(dish)) }}
+              </span>
+            </div>
+
+            <div
+              v-if="forecast.persisted && forecast._id"
+              class="mt-4 grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950"
+            >
+              <div class="grid gap-2 sm:grid-cols-[0.7fr_1fr_auto]">
+                <input
+                  v-model.number="correctionForms[dish.dishId]!.quantity"
+                  class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="Quantite corrigee"
+                >
+                <input
+                  v-model="correctionForms[dish.dishId]!.comment"
+                  class="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-900"
+                  type="text"
+                  maxlength="280"
+                  placeholder="Commentaire"
+                >
+                <button
+                  class="rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white dark:bg-white dark:text-slate-900"
+                  @click="submitCorrection(dish)"
+                >
+                  Corriger
+                </button>
+              </div>
+              <p
+                v-if="dish.correctedAt"
+                class="text-xs text-slate-500"
+              >
+                Correction sauvegardee le {{ new Date(dish.correctedAt).toLocaleString('fr-FR') }}
+              </p>
             </div>
           </div>
         </div>
