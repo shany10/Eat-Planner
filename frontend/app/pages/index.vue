@@ -60,6 +60,10 @@ const isAdmin = computed(() => profile.value?.role === 'admin')
 const firstName = computed(() => profile.value?.firstname || 'Equipe')
 const roleLabel = computed(() => isAdmin.value ? 'Admin principal' : 'Manager')
 const securityLabel = computed(() => profile.value?.twoFactorEnabled ? '2FA activee' : '2FA inactive')
+const restaurantName = computed(() => profile.value?.restaurantName || 'Mon restaurant')
+const pricingSettingsLabel = computed(() =>
+  `Marge ${Math.round((profile.value?.defaultMarginRate ?? 0.72) * 100)}% - TVA ${Math.round((profile.value?.vatRate ?? 0.1) * 100)}%`
+)
 
 const activeIngredients = computed(() => ingredientStore.items.filter(item => item.active).length)
 const activeDishes = computed(() => dishStore.items.filter(item => item.active).length)
@@ -90,7 +94,7 @@ const suggestedPriceAverage = computed(() => {
     return 0
   }
 
-  const total = dishStore.items.reduce((sum, dish) => sum + (dish.profitability?.suggestedPrice || 0), 0)
+  const total = dishStore.items.reduce((sum, dish) => sum + (dish.profitability?.suggestedPriceIncludingTax || dish.profitability?.suggestedPrice || 0), 0)
   return total / dishStore.items.length
 })
 
@@ -179,7 +183,7 @@ const actions = computed<DashboardAction[]>(() => isAdmin.value
       { to: '/forecasts', label: 'Voir la prevision', description: 'Projection et alertes du jour.' }
     ]
   : [
-      { to: '/ingredients', label: 'Consolider la base', description: 'Ingredients, fournisseurs, prix achat.' },
+      { to: '/ingredients', label: 'Consolider les ingredients', description: 'Matieres premieres et prix achat.' },
       { to: '/dishes', label: 'Mettre a jour les plats', description: 'Recettes, marges, prix conseilles.' },
       { to: '/sales', label: 'Saisir les ventes', description: 'Tickets et historique du jour.' },
       { to: '/forecasts', label: 'Lire la prevision', description: 'Besoins matieres et volumes.' }
@@ -272,7 +276,9 @@ onMounted(loadDashboard)
 
       <div class="mt-4 flex flex-wrap gap-2">
         <span class="app-pill">{{ roleLabel }}</span>
+        <span class="app-pill">{{ restaurantName }}</span>
         <span class="app-pill">{{ securityLabel }}</span>
+        <span class="app-pill">{{ pricingSettingsLabel }}</span>
         <span class="app-pill">{{ lastUpdatedAt ? 'Synchronise' : 'Chargement' }}</span>
         <span class="app-pill">
           {{ latestSale ? `Derniere vente ${formatDate(latestSale.serviceDate)}` : 'Aucune vente recente' }}
@@ -458,7 +464,7 @@ onMounted(loadDashboard)
           </div>
           <div class="app-inset">
             <p class="text-sm text-slate-500">
-              Prix conseille moyen
+              Prix conseille TTC moyen
             </p>
             <p class="mt-1 text-xl font-semibold">
               {{ suggestedPriceAverage.toFixed(2) }} EUR

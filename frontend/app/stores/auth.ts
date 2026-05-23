@@ -25,6 +25,12 @@ type ResetPasswordPayload = {
   password: string
 }
 
+type AccountSettingsPayload = {
+  restaurantName: string
+  defaultMarginRate: number
+  vatRate: number
+}
+
 type AccessAuthResponse = {
   ok: true
   token: string
@@ -101,6 +107,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     profile.value = await $fetch<AuthProfile>('/api/auth/me')
+    return profile.value
+  }
+
+  async function updateAccountSettings(payload: AccountSettingsPayload) {
+    profile.value = await $fetch<AuthProfile>('/api/auth/settings', {
+      method: 'PATCH',
+      body: payload
+    })
+
     return profile.value
   }
 
@@ -216,6 +231,7 @@ export const useAuthStore = defineStore('auth', () => {
     requestPasswordReset,
     resetPassword,
     loadProfile,
+    updateAccountSettings,
     setupTwoFactor,
     enableTwoFactor,
     disableTwoFactor,

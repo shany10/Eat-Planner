@@ -10,7 +10,13 @@ definePageMeta({
 const authStore = useAuthStore()
 const appToast = useAppToast()
 const loading = ref(true)
+const savingSettings = ref(false)
 const errorMessage = ref('')
+const settingsForm = reactive({
+  restaurantName: '',
+  defaultMarginPercent: 72,
+  vatPercent: 10
+})
 
 const profile = computed(() => authStore.profile)
 const fullName = computed(() => {
@@ -24,6 +30,12 @@ const fullName = computed(() => {
 const securityStatus = computed(() => {
   return profile.value?.twoFactorEnabled ? 'Activee' : 'Inactive'
 })
+
+watch(profile, (value) => {
+  settingsForm.restaurantName = value?.restaurantName || 'Mon restaurant'
+  settingsForm.defaultMarginPercent = Math.round((value?.defaultMarginRate ?? 0.72) * 100)
+  settingsForm.vatPercent = Math.round((value?.vatRate ?? 0.1) * 100)
+}, { immediate: true })
 
 function getErrorMessage(error: unknown, fallback: string) {
   return getFetchErrorMessage(error, fallback)
@@ -41,6 +53,34 @@ async function loadPage() {
   } finally {
     loading.value = false
   }
+}
+
+async function saveAccountSettings() {
+  if (!settingsForm.restaurantName.trim()) {
+    appToast.error('Nom manquant', 'Renseigne le nom du restaurant.')
+    return
+  }
+
+  savingSettings.value = true
+  errorMessage.value = ''
+
+  try {
+    await authStore.updateAccountSettings({
+      restaurantName: settingsForm.restaurantName.trim(),
+      defaultMarginRate: Number(settingsForm.defaultMarginPercent) / 100,
+      vatRate: Number(settingsForm.vatPercent) / 100
+    })
+    appToast.success('Parametres enregistres', 'La marge globale et la TVA sont a jour.')
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error, 'Impossible de mettre a jour les parametres')
+    appToast.error('Mise a jour impossible', errorMessage.value)
+  } finally {
+    savingSettings.value = false
+  }
+}
+
+function formatPercent(value?: number) {
+  return `${Math.round((value ?? 0) * 100)}%`
 }
 
 onMounted(loadPage)
@@ -65,6 +105,9 @@ onMounted(loadPage)
         >
           Gerer la 2FA
         </NuxtLink>
+        <span class="app-pill">{{ profile?.restaurantName || 'Mon restaurant' }}</span>
+        <span class="app-pill">Marge {{ formatPercent(profile?.defaultMarginRate) }}</span>
+        <span class="app-pill">TVA {{ formatPercent(profile?.vatRate) }}</span>
       </div>
     </section>
 
@@ -141,6 +184,70 @@ onMounted(loadPage)
         </div>
 
         <div class="space-y-4">
+          <form
+            class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+            @submit.prevent="saveAccountSettings"
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-xs uppercase tracking-[0.25em] text-slate-500">
+                  Restaurant
+                </p>
+                <h2 class="mt-2 text-xl font-semibold">
+                  Parametres de calcul
+                </h2>
+              </div>
+              <span class="app-pill">Compte</span>
+            </div>
+
+            <div class="mt-5 grid gap-3">
+              <label class="grid gap-2 text-sm">
+                <span class="text-slate-600 dark:text-slate-300">Nom du restaurant</span>
+                <input
+                  v-model="settingsForm.restaurantName"
+                  class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+                  type="text"
+                  required
+                >
+              </label>
+
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label class="grid gap-2 text-sm">
+                  <span class="text-slate-600 dark:text-slate-300">Marge globale (%)</span>
+                  <input
+                    v-model.number="settingsForm.defaultMarginPercent"
+                    class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+                    type="number"
+                    min="0"
+                    max="95"
+                    step="1"
+                    required
+                  >
+                </label>
+
+                <label class="grid gap-2 text-sm">
+                  <span class="text-slate-600 dark:text-slate-300">TVA (%)</span>
+                  <input
+                    v-model.number="settingsForm.vatPercent"
+                    class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    required
+                  >
+                </label>
+              </div>
+            </div>
+
+            <button
+              class="mt-5 w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-900"
+              :disabled="savingSettings"
+            >
+              {{ savingSettings ? 'Enregistrement...' : 'Enregistrer les parametres' }}
+            </button>
+          </form>
+
           <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h2 class="text-xl font-semibold">
               Raccourcis compte

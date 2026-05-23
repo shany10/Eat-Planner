@@ -9,6 +9,38 @@ defineEmits<{
   edit: [item: Dish]
   remove: [item: Dish]
 }>()
+
+function formatCurrency(value?: number) {
+  return `${(value ?? 0).toFixed(2)} EUR`
+}
+
+function formatPercent(value?: number | null) {
+  return `${Math.round((value ?? 0) * 100)}%`
+}
+
+function getMarginSourceLabel(item: Dish) {
+  if (item.profitability?.marginSource === 'account') {
+    return 'Globale'
+  }
+
+  if (item.profitability?.marginSource === 'dish') {
+    return 'Specifique'
+  }
+
+  return 'Systeme'
+}
+
+function getGapClass(item: Dish) {
+  const gap = item.profitability?.priceGapIncludingTax ?? 0
+
+  if (!item.profitability?.actualPriceIncludingTax) {
+    return 'text-slate-500 dark:text-slate-400'
+  }
+
+  return gap >= 0
+    ? 'text-emerald-700 dark:text-emerald-300'
+    : 'text-red-700 dark:text-red-300'
+}
 </script>
 
 <template>
@@ -41,12 +73,51 @@ defineEmits<{
           </p>
         </div>
 
-        <div class="grid gap-2 text-sm text-slate-600 dark:text-slate-300">
-          <div>Food cost: <strong>{{ item.profitability?.foodCost?.toFixed(2) || '0.00' }} EUR</strong></div>
-          <div>Charges / portion: <strong>{{ item.profitability?.chargeCost?.toFixed(2) || '0.00' }} EUR</strong></div>
-          <div>Prix conseille: <strong>{{ item.profitability?.suggestedPrice?.toFixed(2) || '0.00' }} EUR</strong></div>
-          <div>Marge cible: <strong>{{ Math.round((item.targetMarginRate || 0) * 100) }}%</strong></div>
-          <div>Portions / jour: <strong>{{ item.estimatedDailyServings }}</strong></div>
+        <div class="grid min-w-[280px] gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <div class="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
+            <span>Cout matiere</span>
+            <strong class="text-right">{{ formatCurrency(item.profitability?.foodCost) }}</strong>
+            <span>Charges / portion</span>
+            <strong class="text-right">{{ formatCurrency(item.profitability?.chargeCost) }}</strong>
+            <span>Cout total HT</span>
+            <strong class="text-right">{{ formatCurrency(item.profitability?.totalCost) }}</strong>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
+            <span>Marge {{ getMarginSourceLabel(item) }}</span>
+            <strong class="text-right">{{ formatPercent(item.profitability?.effectiveMarginRate ?? item.targetMarginRate) }}</strong>
+            <span>Prix conseille HT</span>
+            <strong class="text-right">{{ formatCurrency(item.profitability?.suggestedPriceExcludingTax) }}</strong>
+            <span>TVA</span>
+            <strong class="text-right">
+              {{ formatCurrency(item.profitability?.suggestedVatAmount) }}
+              <span class="text-xs font-normal text-slate-500">({{ formatPercent(item.profitability?.vatRate) }})</span>
+            </strong>
+            <span>Prix conseille TTC</span>
+            <strong class="text-right">{{ formatCurrency(item.profitability?.suggestedPriceIncludingTax ?? item.profitability?.suggestedPrice) }}</strong>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-950">
+            <span>Prix reel TTC</span>
+            <strong class="text-right">
+              {{ item.profitability?.actualPriceIncludingTax ? formatCurrency(item.profitability.actualPriceIncludingTax) : 'Non renseigne' }}
+            </strong>
+            <span>Ecart TTC</span>
+            <strong
+              class="text-right"
+              :class="getGapClass(item)"
+            >
+              {{ item.profitability?.actualPriceIncludingTax ? formatCurrency(item.profitability?.priceGapIncludingTax) : '-' }}
+              <span
+                v-if="item.profitability?.actualPriceIncludingTax"
+                class="text-xs font-normal"
+              >
+                ({{ formatPercent(item.profitability?.priceGapRate) }})
+              </span>
+            </strong>
+            <span>Portions / jour</span>
+            <strong class="text-right">{{ item.estimatedDailyServings }}</strong>
+          </div>
         </div>
       </div>
 

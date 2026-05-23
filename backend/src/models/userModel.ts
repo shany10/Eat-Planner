@@ -10,6 +10,9 @@ export interface IUser extends Document {
   providerId?: string;
   role: "admin" | "manager";
   active: boolean;
+  restaurantName: string;
+  defaultMarginRate: number;
+  vatRate: number;
   twoFactorEnabled: boolean;
   twoFactorSecret?: string | null;
   twoFactorTempSecret?: string | null;
@@ -29,6 +32,9 @@ const userSchema = new Schema<IUser>({
   providerId: { type: String, sparse: true },
   role: { type: String, enum: ["admin", "manager"], default: "manager", required: true },
   active: { type: Boolean, default: true },
+  restaurantName: { type: String, trim: true, default: "Mon restaurant" },
+  defaultMarginRate: { type: Number, min: 0, max: 0.95, default: 0.72 },
+  vatRate: { type: Number, min: 0, max: 1, default: 0.1 },
   twoFactorEnabled: { type: Boolean, default: false },
   twoFactorSecret: { type: String, default: null, select: false },
   twoFactorTempSecret: { type: String, default: null, select: false },

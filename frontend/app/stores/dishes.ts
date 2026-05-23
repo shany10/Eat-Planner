@@ -4,7 +4,8 @@ type DishPayload = {
   name: string
   category: string
   description?: string
-  targetMarginRate: number
+  targetMarginRate: number | null
+  actualPriceIncludingTax: number
   estimatedDailyServings: number
   active?: boolean
   ingredients: DishIngredientLine[]

@@ -11,6 +11,9 @@ export type AuthProfile = {
   active: boolean
   authProvider: AuthProvider
   twoFactorEnabled: boolean
+  restaurantName: string
+  defaultMarginRate: number
+  vatRate: number
 }
 
 export type ManagedUser = AuthProfile & {

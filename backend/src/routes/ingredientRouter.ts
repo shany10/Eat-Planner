@@ -2,11 +2,18 @@ import { Router } from "express";
 import { authMiddleware, roleMiddleware, validateMiddleware } from "../middlewares";
 import { createIngredientBody, CreateIngredientInput, updateIngredientBody, UpdateIngredientInput } from "../schemas";
 import { DishModel, IngredientModel, SupplierModel } from "../models";
+import { buildAccountScope, getOwnerPatch, loadRequestUser } from "../services/accountScopeService";
 
 const ingredientRouter = Router();
 
-ingredientRouter.get("/", authMiddleware, async (_req, res): Promise<void> => {
-  const ingredients = await IngredientModel.find()
+ingredientRouter.get("/", authMiddleware, async (req, res): Promise<void> => {
+  const user = await loadRequestUser(req);
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  const ingredients = await IngredientModel.find(buildAccountScope(user))
     .populate("supplier", "name")
     .sort({ name: 1 })
     .exec();
@@ -20,17 +27,28 @@ ingredientRouter.post(
   roleMiddleware(["admin", "manager"]),
   validateMiddleware({ body: createIngredientBody }),
   async (req, res): Promise<void> => {
+    const user = await loadRequestUser(req);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
     const payload = req.body as CreateIngredientInput;
 
     if (payload.supplier) {
-      const supplier = await SupplierModel.findById(payload.supplier).exec();
+      const supplier = await SupplierModel.findOne(
+        buildAccountScope(user, { _id: payload.supplier })
+      ).exec();
       if (!supplier) {
         res.status(404).json({ error: "Supplier not found" });
         return;
       }
     }
 
-    const ingredient = await IngredientModel.create(payload);
+    const ingredient = await IngredientModel.create({
+      ...payload,
+      owner: user._id
+    });
     res.status(201).json(ingredient);
   }
 );
@@ -41,19 +59,32 @@ ingredientRouter.patch(
   roleMiddleware(["admin", "manager"]),
   validateMiddleware({ body: updateIngredientBody }),
   async (req, res): Promise<void> => {
+    const user = await loadRequestUser(req);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
     const payload = req.body as UpdateIngredientInput;
 
     if (payload.supplier) {
-      const supplier = await SupplierModel.findById(payload.supplier).exec();
+      const supplier = await SupplierModel.findOne(
+        buildAccountScope(user, { _id: payload.supplier })
+      ).exec();
       if (!supplier) {
         res.status(404).json({ error: "Supplier not found" });
         return;
       }
     }
 
-    const ingredient = await IngredientModel.findByIdAndUpdate(req.params.id, payload, {
-      new: true
-    }).exec();
+    const ingredient = await IngredientModel.findOneAndUpdate(
+      buildAccountScope(user, { _id: req.params.id }),
+      {
+        ...payload,
+        ...getOwnerPatch(user)
+      },
+      { new: true }
+    ).exec();
 
     if (!ingredient) {
       res.status(404).json({ error: "Ingredient not found" });
@@ -69,13 +100,23 @@ ingredientRouter.delete(
   authMiddleware,
   roleMiddleware(["admin", "manager"]),
   async (req, res): Promise<void> => {
-    const usedByDish = await DishModel.findOne({ "ingredients.ingredient": req.params.id }).exec();
+    const user = await loadRequestUser(req);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const usedByDish = await DishModel.findOne(
+      buildAccountScope(user, { "ingredients.ingredient": req.params.id })
+    ).exec();
     if (usedByDish) {
       res.status(409).json({ error: "Ingredient is still used by a dish" });
       return;
     }
 
-    const deleted = await IngredientModel.findByIdAndDelete(req.params.id).exec();
+    const deleted = await IngredientModel.findOneAndDelete(
+      buildAccountScope(user, { _id: req.params.id })
+    ).exec();
     if (!deleted) {
       res.status(404).json({ error: "Ingredient not found" });
       return;

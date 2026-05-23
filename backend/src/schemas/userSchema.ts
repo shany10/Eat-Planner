@@ -9,6 +9,9 @@ export const createUserBody = z.object({
   password: z.string().min(8, "mot de passe trop court"),
   role: z.enum(["admin", "manager"]),
   active: z.boolean().optional().default(true),
+  restaurantName: z.string().min(2).max(100).optional().default("Mon restaurant"),
+  defaultMarginRate: z.number().min(0).max(0.95).optional().default(0.72),
+  vatRate: z.number().min(0).max(1).optional().default(0.1),
 });
 
 export const registerUserBody = createUserBody.pick({
@@ -21,6 +24,12 @@ export const registerUserBody = createUserBody.pick({
 export const updateUserBody = createUserBody
   .partial()
   .refine(obj => Object.keys(obj).length > 0, { message: "Au moins un champ est requis" });
+
+export const updateAccountSettingsBody = z.object({
+  restaurantName: z.string().min(2).max(100),
+  defaultMarginRate: z.number().min(0).max(0.95),
+  vatRate: z.number().min(0).max(1)
+});
 
 export const authUserBody = z.object({
   email: z.string().email("Email invalide"),
@@ -52,6 +61,7 @@ export const resetPasswordBody = z.object({
 export type CreateUserInput = z.infer<typeof createUserBody>;
 export type RegisterUserInput = z.infer<typeof registerUserBody>;
 export type UpdateUserInput = z.infer<typeof updateUserBody>;
+export type UpdateAccountSettingsInput = z.infer<typeof updateAccountSettingsBody>;
 export type AuthUserInput = z.infer<typeof authUserBody>;
 export type Verify2faInput = z.infer<typeof verify2faBody>;
 export type TotpCodeInput = z.infer<typeof totpCodeBody>;

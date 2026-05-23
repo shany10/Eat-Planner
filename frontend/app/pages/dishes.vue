@@ -5,6 +5,7 @@ import StatCard from '~/components/common/StatCard.vue'
 import DishForm from '~/components/dishes/DishForm.vue'
 import DishTable from '~/components/dishes/DishTable.vue'
 import type { Dish, DishIngredientLine } from '~/types/business'
+import { useAuthStore } from '~/stores/auth'
 import { useDishStore } from '~/stores/dishes'
 import { useIngredientStore } from '~/stores/ingredients'
 
@@ -12,6 +13,7 @@ definePageMeta({
   middleware: 'auth'
 })
 
+const authStore = useAuthStore()
 const dishStore = useDishStore()
 const ingredientStore = useIngredientStore()
 const appToast = useAppToast()
@@ -24,7 +26,8 @@ type DishPayload = {
   name: string
   category: string
   description?: string
-  targetMarginRate: number
+  targetMarginRate: number | null
+  actualPriceIncludingTax: number
   estimatedDailyServings: number
   active?: boolean
   ingredients: DishIngredientLine[]
@@ -50,7 +53,7 @@ const averageSuggestedPrice = computed(() => {
     return 0
   }
 
-  return dishStore.items.reduce((sum, item) => sum + (item.profitability?.suggestedPrice || 0), 0) / dishCount.value
+  return dishStore.items.reduce((sum, item) => sum + (item.profitability?.suggestedPriceIncludingTax || item.profitability?.suggestedPrice || 0), 0) / dishCount.value
 })
 
 const averageFoodCost = computed(() => {
@@ -72,13 +75,17 @@ const recipeCoverage = computed(() => {
 
 const topSuggestedDish = computed(() =>
   [...dishStore.items]
-    .sort((a, b) => (b.profitability?.suggestedPrice || 0) - (a.profitability?.suggestedPrice || 0))[0] ?? null
+    .sort((a, b) => (b.profitability?.suggestedPriceIncludingTax || b.profitability?.suggestedPrice || 0) - (a.profitability?.suggestedPriceIncludingTax || a.profitability?.suggestedPrice || 0))[0] ?? null
 )
+
+const defaultMarginRate = computed(() => authStore.profile?.defaultMarginRate ?? 0.72)
+const vatRate = computed(() => authStore.profile?.vatRate ?? 0.1)
+const restaurantName = computed(() => authStore.profile?.restaurantName || 'Mon restaurant')
 
 const stats = computed<PageStat[]>(() => [
   { title: 'Plats actifs', value: activeDishCount.value, hint: 'Carte exploitable' },
   { title: 'Plats rentables', value: profitableDishCount.value, hint: 'Marge brute positive' },
-  { title: 'Prix conseille moyen', value: formatCurrency(averageSuggestedPrice.value), hint: 'Repere pricing rapide' },
+  { title: 'Prix conseille TTC moyen', value: formatCurrency(averageSuggestedPrice.value), hint: 'Repere pricing rapide' },
   { title: 'Portions / jour', value: estimatedDailyServings.value, hint: 'Capacite estimee totale' }
 ])
 
@@ -102,7 +109,7 @@ async function loadPage() {
   loading.value = true
   errorMessage.value = ''
   try {
-    await Promise.all([dishStore.load(), ingredientStore.load()])
+    await Promise.all([authStore.loadProfile(), dishStore.load(), ingredientStore.load()])
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(error, 'Impossible de charger les plats')
     appToast.error('Chargement impossible', errorMessage.value)
@@ -139,6 +146,10 @@ async function removeDish(item: Dish) {
 
 function formatCurrency(value: number) {
   return `${value.toFixed(2)} EUR`
+}
+
+function formatPercent(value: number) {
+  return `${Math.round(value * 100)}%`
 }
 
 onMounted(loadPage)
@@ -178,7 +189,10 @@ onMounted(loadPage)
 
       <div class="mt-4 flex flex-wrap gap-2">
         <span class="app-pill">{{ activeDishCount }} plat(s) actif(s)</span>
+        <span class="app-pill">{{ restaurantName }}</span>
         <span class="app-pill">{{ ingredientStore.items.length }} ingredient(s)</span>
+        <span class="app-pill">Marge {{ formatPercent(defaultMarginRate) }}</span>
+        <span class="app-pill">TVA {{ formatPercent(vatRate) }}</span>
         <span class="app-pill">{{ recipeCoverage }}% recettes</span>
         <span class="app-pill">{{ loading ? 'Calcul en cours' : 'Carte a jour' }}</span>
       </div>
@@ -224,7 +238,7 @@ onMounted(loadPage)
           </div>
           <div class="flex flex-wrap gap-2">
             <span class="app-pill">Food cost {{ formatCurrency(averageFoodCost) }}</span>
-            <span class="app-pill">Prix moyen {{ formatCurrency(averageSuggestedPrice) }}</span>
+            <span class="app-pill">Prix TTC moyen {{ formatCurrency(averageSuggestedPrice) }}</span>
             <span class="app-pill">{{ dishCount }} plat(s)</span>
           </div>
         </div>
@@ -280,6 +294,7 @@ onMounted(loadPage)
           <DishForm
             :ingredient-options="ingredientStore.items"
             :initial-value="editingDish"
+            :default-margin-rate="defaultMarginRate"
             :submit-label="editingDish ? 'Mettre a jour le plat' : 'Ajouter le plat'"
             @submit="saveDish"
             @cancel="editingDish = null"

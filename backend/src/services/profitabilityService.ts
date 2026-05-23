@@ -1,4 +1,5 @@
-import { ChargeModel, DishModel, ICharge, IDish, IIngredient, IngredientModel } from "../models";
+import { ChargeModel, DishModel, ICharge, IDish, IIngredient, IngredientModel, IUser, UserModel } from "../models";
+import { buildAccountScope } from "./accountScopeService";
 import { BusinessUnit } from "../types/business";
 
 type CostBreakdownLine = {
@@ -16,13 +17,36 @@ type DishProfitabilitySnapshot = {
   name: string;
   category: string;
   estimatedDailyServings: number;
-  targetMarginRate: number;
+  targetMarginRate: number | null;
+  effectiveMarginRate: number;
+  marginSource: "dish" | "account" | "system";
+  vatRate: number;
   foodCost: number;
   chargeCost: number;
   totalCost: number;
+  suggestedPriceExcludingTax: number;
+  suggestedVatAmount: number;
+  suggestedPriceIncludingTax: number;
+  actualPriceExcludingTax: number;
+  actualVatAmount: number;
+  actualPriceIncludingTax: number;
+  priceGapIncludingTax: number;
+  priceGapRate: number;
+  expectedMarginAmount: number;
   suggestedPrice: number;
   expectedGrossProfit: number;
   lines: CostBreakdownLine[];
+};
+
+type PricingSettings = {
+  defaultMarginRate: number;
+  vatRate: number;
+};
+
+type ResolvedPricingSettings = {
+  targetMarginRate: number;
+  marginSource: DishProfitabilitySnapshot["marginSource"];
+  vatRate: number;
 };
 
 const MASS_TO_GRAMS: Record<"g" | "kg", number> = {
@@ -48,6 +72,14 @@ function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
 }
 
+function roundRate(value: number) {
+  return Math.round(value * 10000) / 10000;
+}
+
+function clampRate(value: number, min = 0, max = 0.95) {
+  return Math.min(Math.max(value, min), max);
+}
+
 export function convertQuantity(quantity: number, from: BusinessUnit, to: BusinessUnit): number {
   if (from === to) return quantity;
 
@@ -71,15 +103,21 @@ export function normalizeChargeToDaily(charge: ICharge) {
   return charge.amount / 30;
 }
 
-async function loadProfitabilityContext(dishes: IDish[]) {
+async function loadProfitabilityContext(dishes: IDish[], currentUser?: IUser | null) {
   const ingredientIds = [...new Set(
     dishes.flatMap((dish) => dish.ingredients.map((line) => String(line.ingredient)))
   )];
+  const ownerIds = [...new Set(
+    dishes
+      .map((dish) => dish.owner ? String(dish.owner) : currentUser ? String(currentUser._id) : null)
+      .filter((id): id is string => Boolean(id))
+  )];
 
-  const [ingredients, charges, activeDishes] = await Promise.all([
+  const [ingredients, charges, activeDishes, owners] = await Promise.all([
     IngredientModel.find({ _id: { $in: ingredientIds } }).exec(),
-    ChargeModel.find({ active: true }).exec(),
-    DishModel.find({ active: true }, "estimatedDailyServings").exec()
+    ChargeModel.find(currentUser ? buildAccountScope(currentUser, { active: true }) : { active: true }).exec(),
+    DishModel.find(currentUser ? buildAccountScope(currentUser, { active: true }) : { active: true }, "estimatedDailyServings").exec(),
+    UserModel.find({ _id: { $in: ownerIds } }, "defaultMarginRate vatRate").exec()
   ]);
 
   const ingredientMap = new Map<string, IIngredient>();
@@ -93,17 +131,51 @@ async function loadProfitabilityContext(dishes: IDish[]) {
   );
 
   const dailyCharges = charges.reduce((sum, charge) => sum + normalizeChargeToDaily(charge), 0);
+  const ownerSettingsMap = new Map<string, PricingSettings>();
+  for (const owner of owners) {
+    ownerSettingsMap.set(String(owner._id), {
+      defaultMarginRate: owner.defaultMarginRate,
+      vatRate: owner.vatRate
+    });
+  }
 
   return {
     ingredientMap,
-    chargePerServing: dailyCharges / totalEstimatedDailyServings
+    chargePerServing: dailyCharges / totalEstimatedDailyServings,
+    ownerSettingsMap
+  };
+}
+
+function resolvePricingSettings(
+  dish: IDish,
+  currentUser?: IUser | null,
+  ownerSettingsMap?: Map<string, PricingSettings>
+): ResolvedPricingSettings {
+  const ownerId = dish.owner ? String(dish.owner) : currentUser ? String(currentUser._id) : "";
+  const ownerSettings = ownerId ? ownerSettingsMap?.get(ownerId) : null;
+  const accountMargin = ownerSettings?.defaultMarginRate ?? currentUser?.defaultMarginRate;
+  const accountVatRate = ownerSettings?.vatRate ?? currentUser?.vatRate;
+
+  const marginSource: DishProfitabilitySnapshot["marginSource"] = typeof dish.targetMarginRate === "number" ? "dish" : accountMargin !== undefined ? "account" : "system";
+  const targetMarginRate = clampRate(
+    typeof dish.targetMarginRate === "number"
+      ? dish.targetMarginRate
+      : accountMargin ?? 0.72
+  );
+  const vatRate = clampRate(accountVatRate ?? 0.1, 0, 1);
+
+  return {
+    marginSource,
+    targetMarginRate,
+    vatRate
   };
 }
 
 export function buildDishProfitabilitySnapshot(
   dish: IDish,
   ingredientMap: Map<string, IIngredient>,
-  chargePerServing: number
+  chargePerServing: number,
+  pricingSettings = resolvePricingSettings(dish)
 ): DishProfitabilitySnapshot {
   const lines: CostBreakdownLine[] = [];
   let foodCost = 0;
@@ -129,10 +201,30 @@ export function buildDishProfitabilitySnapshot(
 
   const chargeCost = roundCurrency(chargePerServing);
   const totalCost = roundCurrency(foodCost + chargeCost);
-  const targetMarginRate = Math.min(Math.max(dish.targetMarginRate, 0), 0.95);
-  const safeDenominator = Math.max(1 - targetMarginRate, 0.05);
-  const suggestedPrice = roundCurrency(totalCost / safeDenominator);
-  const expectedGrossProfit = roundCurrency(suggestedPrice - totalCost);
+  const targetMarginRate = typeof dish.targetMarginRate === "number" ? roundRate(dish.targetMarginRate) : null;
+  const effectiveMarginRate = pricingSettings.targetMarginRate;
+  const vatRate = pricingSettings.vatRate;
+  const safeDenominator = Math.max(1 - effectiveMarginRate, 0.05);
+  const suggestedPriceExcludingTax = roundCurrency(totalCost / safeDenominator);
+  const suggestedVatAmount = roundCurrency(suggestedPriceExcludingTax * vatRate);
+  const suggestedPriceIncludingTax = roundCurrency(suggestedPriceExcludingTax + suggestedVatAmount);
+  const actualPriceIncludingTax = roundCurrency(dish.actualPriceIncludingTax || 0);
+  const actualPriceExcludingTax = actualPriceIncludingTax > 0
+    ? roundCurrency(actualPriceIncludingTax / (1 + vatRate))
+    : 0;
+  const actualVatAmount = actualPriceIncludingTax > 0
+    ? roundCurrency(actualPriceIncludingTax - actualPriceExcludingTax)
+    : 0;
+  const priceGapIncludingTax = actualPriceIncludingTax > 0
+    ? roundCurrency(actualPriceIncludingTax - suggestedPriceIncludingTax)
+    : 0;
+  const priceGapRate = suggestedPriceIncludingTax > 0 && actualPriceIncludingTax > 0
+    ? roundRate(priceGapIncludingTax / suggestedPriceIncludingTax)
+    : 0;
+  const expectedMarginAmount = roundCurrency(suggestedPriceExcludingTax - totalCost);
+  const expectedGrossProfit = actualPriceIncludingTax > 0
+    ? roundCurrency(actualPriceExcludingTax - totalCost)
+    : expectedMarginAmount;
 
   return {
     dishId: String(dish._id),
@@ -140,21 +232,38 @@ export function buildDishProfitabilitySnapshot(
     category: dish.category,
     estimatedDailyServings: dish.estimatedDailyServings,
     targetMarginRate,
+    effectiveMarginRate,
+    marginSource: pricingSettings.marginSource,
+    vatRate,
     foodCost: roundCurrency(foodCost),
     chargeCost,
     totalCost,
-    suggestedPrice,
+    suggestedPriceExcludingTax,
+    suggestedVatAmount,
+    suggestedPriceIncludingTax,
+    actualPriceExcludingTax,
+    actualVatAmount,
+    actualPriceIncludingTax,
+    priceGapIncludingTax,
+    priceGapRate,
+    expectedMarginAmount,
+    suggestedPrice: suggestedPriceIncludingTax,
     expectedGrossProfit,
     lines
   };
 }
 
-export async function listDishProfitability(dishes: IDish[]) {
-  const { ingredientMap, chargePerServing } = await loadProfitabilityContext(dishes);
-  return dishes.map((dish) => buildDishProfitabilitySnapshot(dish, ingredientMap, chargePerServing));
+export async function listDishProfitability(dishes: IDish[], currentUser?: IUser | null) {
+  const { ingredientMap, chargePerServing, ownerSettingsMap } = await loadProfitabilityContext(dishes, currentUser);
+  return dishes.map((dish) => buildDishProfitabilitySnapshot(
+    dish,
+    ingredientMap,
+    chargePerServing,
+    resolvePricingSettings(dish, currentUser, ownerSettingsMap)
+  ));
 }
 
-export async function buildDishProfitabilityById(dish: IDish) {
-  const [snapshot] = await listDishProfitability([dish]);
+export async function buildDishProfitabilityById(dish: IDish, currentUser?: IUser | null) {
+  const [snapshot] = await listDishProfitability([dish], currentUser);
   return snapshot;
 }

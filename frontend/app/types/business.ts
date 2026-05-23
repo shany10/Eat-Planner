@@ -1,5 +1,6 @@
 export type Supplier = {
   _id: string
+  owner?: string | null
   name: string
   contactName?: string
   email?: string
@@ -10,6 +11,7 @@ export type Supplier = {
 
 export type Ingredient = {
   _id: string
+  owner?: string | null
   name: string
   unit: 'g' | 'kg' | 'ml' | 'cl' | 'l' | 'piece'
   purchasePrice: number
@@ -28,10 +30,22 @@ export type DishProfitability = {
   name: string
   category: string
   estimatedDailyServings: number
-  targetMarginRate: number
+  targetMarginRate: number | null
+  effectiveMarginRate: number
+  marginSource: 'dish' | 'account' | 'system'
+  vatRate: number
   foodCost: number
   chargeCost: number
   totalCost: number
+  suggestedPriceExcludingTax: number
+  suggestedVatAmount: number
+  suggestedPriceIncludingTax: number
+  actualPriceExcludingTax: number
+  actualVatAmount: number
+  actualPriceIncludingTax: number
+  priceGapIncludingTax: number
+  priceGapRate: number
+  expectedMarginAmount: number
   suggestedPrice: number
   expectedGrossProfit: number
   lines: Array<{
@@ -47,10 +61,12 @@ export type DishProfitability = {
 
 export type Dish = {
   _id: string
+  owner?: string | null
   name: string
   category: string
   description?: string
-  targetMarginRate: number
+  targetMarginRate: number | null
+  actualPriceIncludingTax: number
   estimatedDailyServings: number
   active: boolean
   ingredients: DishIngredientLine[]
@@ -59,6 +75,7 @@ export type Dish = {
 
 export type Charge = {
   _id: string
+  owner?: string | null
   name: string
   category: 'staff' | 'utilities' | 'rent' | 'equipment' | 'insurance' | 'subscriptions' | 'other'
   amount: number
@@ -74,6 +91,7 @@ export type SaleItem = {
 
 export type Sale = {
   _id: string
+  owner?: string | null
   serviceDate: string
   notes?: string
   totalAmount: number
@@ -84,6 +102,7 @@ export type ForecastDish = {
   dishId: string
   dishName: string
   category: string
+  initialForecastQuantity: number
   recommendedQuantity: number
   baselineQuantity: number
   trend: 'up' | 'steady' | 'down'
@@ -93,12 +112,26 @@ export type ForecastDish = {
   recentAverage: number
   longAverage: number
   suggestedPrice: number
+  suggestedPriceIncludingTax?: number
+  actualPriceIncludingTax?: number
   projectedRevenue: number
   projectedFoodCost: number
+  comment?: string
+  userCorrectionQuantity?: number | null
+  correctionComment?: string
+  correctedAt?: string | null
+  correctedBy?: string | null
+  actualQuantitySold?: number
+  actualRevenue?: number
+  productionGap?: number
 }
 
 export type ForecastResponse = {
+  _id?: string
+  persisted: boolean
   targetDate: string
+  generatedAt?: string
+  updatedAt?: string
   dishes: ForecastDish[]
   ingredientNeeds: Array<{
     ingredientId: string
@@ -117,4 +150,11 @@ export type ForecastResponse = {
     dishName: string
     message: string
   }>
+}
+
+export type SalesCsvImportResult = {
+  importedRows: number
+  createdSales: number
+  skippedRows: number
+  errors: string[]
 }

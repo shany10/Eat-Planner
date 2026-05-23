@@ -5,9 +5,11 @@ const props = withDefaults(defineProps<{
   ingredientOptions: Ingredient[]
   initialValue?: Partial<Dish> | null
   submitLabel?: string
+  defaultMarginRate?: number
 }>(), {
   initialValue: null,
-  submitLabel: 'Enregistrer le plat'
+  submitLabel: 'Enregistrer le plat',
+  defaultMarginRate: 0.72
 })
 
 const emit = defineEmits<{
@@ -15,7 +17,8 @@ const emit = defineEmits<{
     name: string
     category: string
     description?: string
-    targetMarginRate: number
+    targetMarginRate: number | null
+    actualPriceIncludingTax: number
     estimatedDailyServings: number
     active?: boolean
     ingredients: DishIngredientLine[]
@@ -28,14 +31,19 @@ const form = reactive({
   category: '',
   description: '',
   targetMarginRate: 0.72,
+  actualPriceIncludingTax: 0,
   estimatedDailyServings: 15,
   active: true,
   ingredients: [] as DishIngredientLine[]
 })
 
+const useGlobalMargin = ref(true)
+
 const canSubmit = computed(() => {
   return props.ingredientOptions.length > 0
     && form.ingredients.length > 0
+    && Number(form.actualPriceIncludingTax) >= 0
+    && (useGlobalMargin.value || (Number(form.targetMarginRate) >= 0 && Number(form.targetMarginRate) <= 0.95))
     && form.ingredients.every(line => line.ingredient && Number(line.quantity) > 0)
 })
 
@@ -51,11 +59,15 @@ watchEffect(() => {
   form.name = props.initialValue?.name ?? ''
   form.category = props.initialValue?.category ?? ''
   form.description = props.initialValue?.description ?? ''
-  form.targetMarginRate = props.initialValue?.targetMarginRate ?? 0.72
+  useGlobalMargin.value = props.initialValue ? props.initialValue.targetMarginRate == null : true
+  form.targetMarginRate = props.initialValue?.targetMarginRate ?? props.defaultMarginRate
+  form.actualPriceIncludingTax = props.initialValue?.actualPriceIncludingTax ?? 0
   form.estimatedDailyServings = props.initialValue?.estimatedDailyServings ?? 15
   form.active = props.initialValue?.active ?? true
   form.ingredients = props.initialValue?.ingredients?.map(line => ({ ...line })) ?? [createBlankLine()]
 })
+
+const globalMarginLabel = computed(() => `${Math.round(props.defaultMarginRate * 100)}%`)
 
 function addLine() {
   form.ingredients.push(createBlankLine())
@@ -79,7 +91,8 @@ function submit() {
     name: form.name,
     category: form.category,
     description: form.description,
-    targetMarginRate: Number(form.targetMarginRate),
+    targetMarginRate: useGlobalMargin.value ? null : Number(form.targetMarginRate),
+    actualPriceIncludingTax: Number(form.actualPriceIncludingTax),
     estimatedDailyServings: Number(form.estimatedDailyServings),
     active: form.active,
     ingredients: form.ingredients.map(line => ({
@@ -109,22 +122,43 @@ function submit() {
         placeholder="Categorie"
         required
       >
+      <label class="flex items-center gap-3 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-950">
+        <input
+          v-model="useGlobalMargin"
+          type="checkbox"
+        >
+        <span>
+          Marge globale {{ globalMarginLabel }}
+        </span>
+      </label>
       <input
-        v-model="form.targetMarginRate"
-        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
-        type="number"
-        min="0"
-        max="0.95"
-        step="0.01"
-        placeholder="Marge cible"
-      >
-      <input
-        v-model="form.estimatedDailyServings"
+        v-model.number="form.estimatedDailyServings"
         class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
         type="number"
         min="1"
         step="1"
         placeholder="Portions / jour"
+      >
+    </div>
+
+    <div class="grid gap-3 md:grid-cols-2">
+      <input
+        v-model.number="form.targetMarginRate"
+        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:disabled:bg-slate-900"
+        type="number"
+        min="0"
+        max="0.95"
+        step="0.01"
+        placeholder="Marge specifique"
+        :disabled="useGlobalMargin"
+      >
+      <input
+        v-model.number="form.actualPriceIncludingTax"
+        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="Prix reel TTC"
       >
     </div>
 
@@ -172,7 +206,7 @@ function submit() {
             </option>
           </select>
           <input
-            v-model="line.quantity"
+            v-model.number="line.quantity"
             class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
             type="number"
             min="0.01"

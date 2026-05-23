@@ -11,8 +11,10 @@ export interface IDish extends Document {
   name: string;
   category: string;
   description?: string;
-  targetMarginRate: number;
+  targetMarginRate?: number | null;
+  actualPriceIncludingTax: number;
   estimatedDailyServings: number;
+  owner?: Types.ObjectId | null;
   active: boolean;
   ingredients: IDishIngredientLine[];
   created_at: Date;
@@ -31,8 +33,10 @@ const dishSchema = new Schema<IDish>({
   name: { type: String, required: true, trim: true },
   category: { type: String, required: true, trim: true },
   description: { type: String, default: "" },
-  targetMarginRate: { type: Number, required: true, min: 0, max: 0.95, default: 0.72 },
+  targetMarginRate: { type: Number, min: 0, max: 0.95, default: null },
+  actualPriceIncludingTax: { type: Number, required: true, min: 0, default: 0 },
   estimatedDailyServings: { type: Number, required: true, min: 1, default: 15 },
+  owner: { type: Schema.Types.ObjectId, ref: "User", default: null, index: true },
   active: { type: Boolean, default: true },
   ingredients: { type: [dishIngredientSchema], default: [] }
 }, {

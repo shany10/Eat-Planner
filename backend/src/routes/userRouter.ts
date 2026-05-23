@@ -18,7 +18,9 @@ import {
   forgotPasswordBody,
   ForgotPasswordInput,
   resetPasswordBody,
-  ResetPasswordInput
+  ResetPasswordInput,
+  updateAccountSettingsBody,
+  UpdateAccountSettingsInput
 } from "../schemas";
 import { IUser, UserModel } from "../models";
 import {
@@ -44,7 +46,7 @@ const userRouter = Router();
 const TOTP_ISSUER = process.env.TOTP_ISSUER ?? "EatPlanner";
 const APP_URL = process.env.APP_URL ?? process.env.FRONTEND_BASE_URL ?? "http://localhost:3001";
 const PASSWORD_RESET_TTL_MINUTES = Number(process.env.PASSWORD_RESET_TTL_MINUTES ?? 30);
-const USER_PUBLIC_FIELDS = "firstname lastname email role active authProvider twoFactorEnabled created_at updated_at";
+const USER_PUBLIC_FIELDS = "firstname lastname email role active authProvider restaurantName defaultMarginRate vatRate twoFactorEnabled created_at updated_at";
 
 type UserRole = "admin" | "manager";
 
@@ -566,6 +568,35 @@ userRouter.get(
       userId,
       USER_PUBLIC_FIELDS
     ).exec();
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.status(200).json(user);
+  }
+);
+
+userRouter.patch(
+  "/settings",
+  authMiddleware,
+  validateMiddleware({ body: updateAccountSettingsBody }),
+  async (req, res): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: "User not authenticated" });
+      return;
+    }
+
+    const input = req.body as UpdateAccountSettingsInput;
+    const user = await UserModel.findByIdAndUpdate(
+      userId,
+      input,
+      { new: true }
+    )
+      .select(USER_PUBLIC_FIELDS)
+      .exec();
 
     if (!user) {
       res.status(404).json({ error: "User not found" });
