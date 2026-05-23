@@ -61,6 +61,16 @@ function removeLine(index: number) {
   form.items.splice(index, 1)
 }
 
+function getDefaultUnitPrice(dish: Dish) {
+  return dish.actualPriceIncludingTax > 0
+    ? dish.actualPriceIncludingTax
+    : dish.profitability?.suggestedPriceIncludingTax ?? dish.profitability?.suggestedPrice ?? 0
+}
+
+function formatCurrency(value: number) {
+  return `${value.toFixed(2)} EUR`
+}
+
 function submit() {
   if (!canSubmit.value) {
     return
@@ -72,7 +82,9 @@ function submit() {
     items: form.items.map(item => ({
       dish: item.dish,
       quantity: Number(item.quantity),
-      unitPrice: item.unitPrice ? Number(item.unitPrice) : undefined
+      unitPrice: item.unitPrice === undefined || Number.isNaN(Number(item.unitPrice))
+        ? undefined
+        : Number(item.unitPrice)
     }))
   })
 }
@@ -118,23 +130,23 @@ function submit() {
             :key="dish._id"
             :value="dish._id"
           >
-            {{ dish.name }}
+            {{ dish.name }} - defaut {{ formatCurrency(getDefaultUnitPrice(dish)) }}
           </option>
         </select>
         <input
-          v-model="item.quantity"
+          v-model.number="item.quantity"
           class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
           type="number"
           min="1"
           step="1"
         >
         <input
-          v-model="item.unitPrice"
+          v-model.number="item.unitPrice"
           class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
           type="number"
           min="0"
           step="0.01"
-          placeholder="Prix optionnel"
+          placeholder="Prix TTC optionnel"
         >
         <button
           type="button"

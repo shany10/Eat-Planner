@@ -12,4 +12,9 @@ export const createSaleBody = z.object({
   items: z.array(saleItemBody).min(1)
 });
 
+export const importSalesCsvBody = z.object({
+  csv: z.string().min(1, "CSV requis")
+});
+
 export type CreateSaleInput = z.infer<typeof createSaleBody>;
+export type ImportSalesCsvInput = z.infer<typeof importSalesCsvBody>;

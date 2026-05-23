@@ -2,6 +2,7 @@
 import { getFetchErrorMessage } from '~/utils/fetch-error'
 import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
 import StatCard from '~/components/common/StatCard.vue'
+import SaleCsvImport from '~/components/sales/SaleCsvImport.vue'
 import SaleForm from '~/components/sales/SaleForm.vue'
 import SaleTable from '~/components/sales/SaleTable.vue'
 import type { Sale } from '~/types/business'
@@ -97,6 +98,24 @@ async function saveSale(payload: {
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(error, 'Echec lors de l enregistrement de la vente')
     appToast.error('Enregistrement impossible', errorMessage.value)
+  }
+}
+
+async function importSalesCsv(csv: string) {
+  try {
+    const result = await saleStore.importCsv(csv)
+    const detail = result.skippedRows > 0
+      ? `${result.importedRows} ligne(s) importee(s), ${result.skippedRows} ignoree(s).`
+      : `${result.importedRows} ligne(s) importee(s) dans ${result.createdSales} ticket(s).`
+
+    appToast.success('Import CSV termine', detail)
+
+    if (result.errors.length > 0) {
+      errorMessage.value = result.errors.join(' ')
+    }
+  } catch (error) {
+    errorMessage.value = getFetchErrorMessage(error, 'Import CSV impossible')
+    appToast.error('Import impossible', errorMessage.value)
   }
 }
 
@@ -248,25 +267,44 @@ onMounted(loadPage)
         <div
           v-if="dishStore.items.length > 0"
           id="sale-form"
-          class="app-section scroll-mt-28"
+          class="grid gap-4 scroll-mt-28"
         >
-          <div class="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <p class="app-eyebrow">
-                Formulaire
-              </p>
-              <h2 class="app-section-title mt-1">
-                Nouveau ticket
-              </h2>
+          <div class="app-section">
+            <div class="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <p class="app-eyebrow">
+                  Formulaire
+                </p>
+                <h2 class="app-section-title mt-1">
+                  Nouveau ticket
+                </h2>
+              </div>
+              <span class="app-pill">
+                Saisie rapide
+              </span>
             </div>
-            <span class="app-pill">
-              Saisie rapide
-            </span>
+            <SaleForm
+              :dishes="dishStore.items"
+              @submit="saveSale"
+            />
           </div>
-          <SaleForm
-            :dishes="dishStore.items"
-            @submit="saveSale"
-          />
+
+          <div class="app-section">
+            <div class="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <p class="app-eyebrow">
+                  Import
+                </p>
+                <h2 class="app-section-title mt-1">
+                  Ventes CSV
+                </h2>
+              </div>
+              <span class="app-pill">
+                CSV
+              </span>
+            </div>
+            <SaleCsvImport @import="importSalesCsv" />
+          </div>
         </div>
       </section>
     </template>

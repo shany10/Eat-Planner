@@ -1,4 +1,4 @@
-import type { Sale } from '~/types/business'
+import type { Sale, SalesCsvImportResult } from '~/types/business'
 
 type SalePayload = {
   serviceDate: string
@@ -33,7 +33,16 @@ export const useSaleStore = defineStore('sales', () => {
     await load()
   }
 
+  async function importCsv(csv: string) {
+    const result = await $fetch<SalesCsvImportResult>('/api/sales/import-csv', {
+      method: 'POST',
+      body: { csv }
+    })
+    await load()
+    return result
+  }
+
   const recentRevenue = computed(() => items.value.slice(0, 7).reduce((sum, sale) => sum + sale.totalAmount, 0))
 
-  return { items, pending, load, create, remove, recentRevenue }
+  return { items, pending, load, create, remove, importCsv, recentRevenue }
 })
