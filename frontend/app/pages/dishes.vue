@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getFetchErrorMessage } from '~/utils/fetch-error'
+import AppModal from '~/components/common/AppModal.vue'
 import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
 import StatCard from '~/components/common/StatCard.vue'
 import DishForm from '~/components/dishes/DishForm.vue'
@@ -19,8 +20,16 @@ const ingredientStore = useIngredientStore()
 const appToast = useAppToast()
 
 const editingDish = ref<Dish | null>(null)
+const dishModalOpen = ref(false)
 const errorMessage = ref('')
 const loading = ref(true)
+
+const dishFilters = reactive({
+  search: '',
+  category: 'all',
+  status: 'all',
+  health: 'all'
+})
 
 type DishPayload = {
   name: string
@@ -78,6 +87,46 @@ const topSuggestedDish = computed(() =>
     .sort((a, b) => (b.profitability?.suggestedPriceIncludingTax || b.profitability?.suggestedPrice || 0) - (a.profitability?.suggestedPriceIncludingTax || a.profitability?.suggestedPrice || 0))[0] ?? null
 )
 
+const dishCategoryOptions = computed(() =>
+  [...new Set(dishStore.items.map(item => item.category).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'fr'))
+)
+
+const filteredDishes = computed(() => {
+  const search = dishFilters.search.trim().toLowerCase()
+
+  return dishStore.items.filter((item) => {
+    const searchableText = [
+      item.name,
+      item.category,
+      item.description,
+      ...(item.profitability?.lines?.map(line => line.ingredientName) ?? [])
+    ].filter(Boolean).join(' ').toLowerCase()
+
+    const matchesSearch = !search || searchableText.includes(search)
+    const matchesCategory = dishFilters.category === 'all' || item.category === dishFilters.category
+    const matchesStatus = dishFilters.status === 'all'
+      || (dishFilters.status === 'active' && item.active)
+      || (dishFilters.status === 'inactive' && !item.active)
+    const isProfitable = (item.profitability?.expectedGrossProfit || 0) > 0
+    const needsReview = !item.profitability
+      || !item.profitability.lines.length
+      || (item.profitability.priceGapIncludingTax ?? 0) < 0
+      || !isProfitable
+    const matchesHealth = dishFilters.health === 'all'
+      || (dishFilters.health === 'profitable' && isProfitable)
+      || (dishFilters.health === 'review' && needsReview)
+
+    return matchesSearch && matchesCategory && matchesStatus && matchesHealth
+  })
+})
+
+const dishTableEmptyMessage = computed(() =>
+  dishStore.items.length === 0
+    ? 'Aucun plat pour le moment. Cree une recette pour voir apparaitre le cout matiere, la part de charges et le prix conseille.'
+    : 'Aucun plat ne correspond aux filtres actifs.'
+)
+
 const defaultMarginRate = computed(() => authStore.profile?.defaultMarginRate ?? 0.72)
 const vatRate = computed(() => authStore.profile?.vatRate ?? 0.1)
 const restaurantName = computed(() => authStore.profile?.restaurantName || 'Mon restaurant')
@@ -122,12 +171,12 @@ async function saveDish(payload: DishPayload) {
   try {
     if (editingDish.value) {
       await dishStore.update(editingDish.value._id, payload)
-      editingDish.value = null
       appToast.success('Plat mis a jour', `${payload.name} a ete modifie.`)
     } else {
       await dishStore.create(payload)
       appToast.success('Plat ajoute', `${payload.name} est maintenant dans la carte.`)
     }
+    closeDishModal()
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(error, 'Echec lors de l enregistrement du plat')
     appToast.error('Enregistrement impossible', errorMessage.value)
@@ -142,6 +191,28 @@ async function removeDish(item: Dish) {
     errorMessage.value = getFetchErrorMessage(error, 'Suppression impossible')
     appToast.error('Suppression impossible', errorMessage.value)
   }
+}
+
+function openDishModal() {
+  editingDish.value = null
+  dishModalOpen.value = true
+}
+
+function editDish(item: Dish) {
+  editingDish.value = item
+  dishModalOpen.value = true
+}
+
+function closeDishModal() {
+  dishModalOpen.value = false
+  editingDish.value = null
+}
+
+function resetDishFilters() {
+  dishFilters.search = ''
+  dishFilters.category = 'all'
+  dishFilters.status = 'all'
+  dishFilters.health = 'all'
 }
 
 function formatCurrency(value: number) {
@@ -167,17 +238,23 @@ onMounted(loadPage)
             Recettes et prix de vente
           </h1>
           <p class="app-subtitle mt-2">
-            La carte, les prix et le formulaire arrivent tout de suite pour eviter l effet page trop longue.
+            La table garde toute la largeur, les formulaires s ouvrent seulement au moment de creer ou modifier.
           </p>
         </div>
 
         <div class="flex flex-wrap gap-2">
-          <a
-            href="#dish-form"
+          <button
+            type="button"
             class="btn-primary"
+            :disabled="ingredientStore.items.length === 0"
+            @click="openDishModal"
           >
+            <UIcon
+              name="i-lucide-plus"
+              class="size-4"
+            />
             Ajouter un plat
-          </a>
+          </button>
           <NuxtLink
             to="/ingredients"
             class="btn-secondary"
@@ -253,54 +330,124 @@ onMounted(loadPage)
         action-to="/ingredients"
       />
 
-      <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <div class="app-section">
-          <div class="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <p class="app-eyebrow">
-                Table
-              </p>
-              <h2 class="app-section-title mt-1">
-                Vue carte
-              </h2>
-            </div>
-            <span class="app-pill">{{ dishStore.items.length }} plat(s)</span>
+      <section class="app-section">
+        <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p class="app-eyebrow">
+              Filtres
+            </p>
+            <h2 class="app-section-title mt-1">
+              Retrouver un plat rapidement
+            </h2>
           </div>
-          <DishTable
-            :items="dishStore.items"
-            @edit="editingDish = $event"
-            @remove="removeDish"
-          />
+          <span class="app-pill">{{ filteredDishes.length }} / {{ dishStore.items.length }} plat(s)</span>
         </div>
 
-        <div
-          v-if="ingredientStore.items.length > 0"
-          id="dish-form"
-          class="app-section scroll-mt-28"
-        >
-          <div class="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <p class="app-eyebrow">
-                Formulaire
-              </p>
-              <h2 class="app-section-title mt-1">
-                {{ editingDish ? 'Modifier plat' : 'Nouveau plat' }}
-              </h2>
-            </div>
-            <span class="app-pill">
-              {{ editingDish ? 'Edition' : 'Creation' }}
-            </span>
-          </div>
-          <DishForm
-            :ingredient-options="ingredientStore.items"
-            :initial-value="editingDish"
-            :default-margin-rate="defaultMarginRate"
-            :submit-label="editingDish ? 'Mettre a jour le plat' : 'Ajouter le plat'"
-            @submit="saveDish"
-            @cancel="editingDish = null"
-          />
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
+          <input
+            v-model="dishFilters.search"
+            class="app-input"
+            type="search"
+            placeholder="Rechercher nom, categorie, ingredient"
+            aria-label="Rechercher un plat"
+          >
+          <select
+            v-model="dishFilters.category"
+            class="app-input"
+            aria-label="Filtrer par categorie"
+          >
+            <option value="all">
+              Toutes categories
+            </option>
+            <option
+              v-for="category in dishCategoryOptions"
+              :key="category"
+              :value="category"
+            >
+              {{ category }}
+            </option>
+          </select>
+          <select
+            v-model="dishFilters.status"
+            class="app-input"
+            aria-label="Filtrer par statut"
+          >
+            <option value="all">
+              Tous statuts
+            </option>
+            <option value="active">
+              Actifs
+            </option>
+            <option value="inactive">
+              Inactifs
+            </option>
+          </select>
+          <select
+            v-model="dishFilters.health"
+            class="app-input"
+            aria-label="Filtrer par rentabilite"
+          >
+            <option value="all">
+              Tous niveaux
+            </option>
+            <option value="profitable">
+              Rentables
+            </option>
+            <option value="review">
+              A revoir
+            </option>
+          </select>
+          <button
+            type="button"
+            class="btn-secondary"
+            @click="resetDishFilters"
+          >
+            <UIcon
+              name="i-lucide-rotate-ccw"
+              class="size-4"
+            />
+            Reset
+          </button>
         </div>
       </section>
+
+      <section class="app-section">
+        <div class="mb-4 flex items-center justify-between gap-4">
+          <div>
+            <p class="app-eyebrow">
+              Table
+            </p>
+            <h2 class="app-section-title mt-1">
+              Vue carte
+            </h2>
+          </div>
+          <span class="app-pill">{{ filteredDishes.length }} plat(s)</span>
+        </div>
+        <DishTable
+          :items="filteredDishes"
+          :empty-message="dishTableEmptyMessage"
+          @edit="editDish"
+          @remove="removeDish"
+        />
+      </section>
     </template>
+
+    <AppModal
+      :open="dishModalOpen"
+      :title="editingDish ? 'Modifier plat' : 'Nouveau plat'"
+      eyebrow="Formulaire"
+      :description="editingDish ? 'Ajuste la recette, le prix ou les portions.' : 'Ajoute la recette sans perdre la table de vue.'"
+      size="lg"
+      @close="closeDishModal"
+    >
+      <DishForm
+        :ingredient-options="ingredientStore.items"
+        :initial-value="editingDish"
+        :default-margin-rate="defaultMarginRate"
+        :submit-label="editingDish ? 'Mettre a jour le plat' : 'Ajouter le plat'"
+        @submit="saveDish"
+        @cancel="closeDishModal"
+      />
+    </AppModal>
   </div>
 </template>

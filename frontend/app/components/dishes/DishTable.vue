@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import type { Dish } from '~/types/business'
 
-defineProps<{
+withDefaults(defineProps<{
   items: Dish[]
-}>()
+  emptyMessage?: string
+}>(), {
+  emptyMessage: 'Aucun plat pour le moment. Cree une recette pour voir apparaitre le cout matiere, la part de charges et le prix conseille.'
+})
 
 defineEmits<{
   edit: [item: Dish]
@@ -48,7 +51,7 @@ function getGapClass(item: Dish) {
     v-if="items.length === 0"
     class="rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50/80 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300"
   >
-    Aucun plat pour le moment. Cree une recette pour voir apparaitre le cout matiere, la part de charges et le prix conseille.
+    {{ emptyMessage }}
   </div>
 
   <div

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getFetchErrorMessage } from '~/utils/fetch-error'
+import AppModal from '~/components/common/AppModal.vue'
 import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
 import StatCard from '~/components/common/StatCard.vue'
 import SaleCsvImport from '~/components/sales/SaleCsvImport.vue'
@@ -18,6 +19,15 @@ const dishStore = useDishStore()
 const appToast = useAppToast()
 const errorMessage = ref('')
 const loading = ref(true)
+const saleModalOpen = ref(false)
+const importModalOpen = ref(false)
+
+const saleFilters = reactive({
+  search: '',
+  dateFrom: '',
+  dateTo: '',
+  minAmount: ''
+})
 
 type PageStat = {
   title: string
@@ -50,6 +60,34 @@ const todayRevenue = computed(() => {
     .filter(sale => toDateKey(sale.serviceDate) === today)
     .reduce((sum, sale) => sum + sale.totalAmount, 0)
 })
+
+const filteredSales = computed(() => {
+  const search = saleFilters.search.trim().toLowerCase()
+  const minAmount = saleFilters.minAmount === '' ? null : Number(saleFilters.minAmount)
+
+  return saleStore.items.filter((sale) => {
+    const saleDate = toDateKey(sale.serviceDate)
+    const searchableText = [
+      saleDate,
+      sale.notes,
+      sale.totalAmount.toFixed(2),
+      ...sale.items.map(item => getSaleItemDishName(item))
+    ].filter(Boolean).join(' ').toLowerCase()
+
+    const matchesSearch = !search || searchableText.includes(search)
+    const matchesFrom = !saleFilters.dateFrom || saleDate >= saleFilters.dateFrom
+    const matchesTo = !saleFilters.dateTo || saleDate <= saleFilters.dateTo
+    const matchesAmount = minAmount === null || sale.totalAmount >= minAmount
+
+    return matchesSearch && matchesFrom && matchesTo && matchesAmount
+  })
+})
+
+const saleTableEmptyMessage = computed(() =>
+  saleStore.items.length === 0
+    ? 'Aucune vente enregistree. Cree ton premier ticket pour commencer a alimenter les previsions.'
+    : 'Aucune vente ne correspond aux filtres actifs.'
+)
 
 const stats = computed<PageStat[]>(() => [
   { title: 'Tickets', value: ticketCount.value, hint: 'Historique saisi' },
@@ -94,6 +132,7 @@ async function saveSale(payload: {
 }) {
   try {
     await saleStore.create(payload)
+    saleModalOpen.value = false
     appToast.success('Vente enregistree', `Ticket du ${formatDate(payload.serviceDate)} ajoute.`)
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(error, 'Echec lors de l enregistrement de la vente')
@@ -108,6 +147,7 @@ async function importSalesCsv(csv: string) {
       ? `${result.importedRows} ligne(s) importee(s), ${result.skippedRows} ignoree(s).`
       : `${result.importedRows} ligne(s) importee(s) dans ${result.createdSales} ticket(s).`
 
+    importModalOpen.value = false
     appToast.success('Import CSV termine', detail)
 
     if (result.errors.length > 0) {
@@ -127,6 +167,17 @@ async function removeSale(item: Sale) {
     errorMessage.value = getFetchErrorMessage(error, 'Suppression impossible')
     appToast.error('Suppression impossible', errorMessage.value)
   }
+}
+
+function resetSaleFilters() {
+  saleFilters.search = ''
+  saleFilters.dateFrom = ''
+  saleFilters.dateTo = ''
+  saleFilters.minAmount = ''
+}
+
+function getSaleItemDishName(item: Sale['items'][number]) {
+  return typeof item.dish === 'object' ? item.dish.name : item.dish
 }
 
 function toDateKey(value: Date | string) {
@@ -160,17 +211,35 @@ onMounted(loadPage)
             Ventes
           </h1>
           <p class="app-subtitle mt-2">
-            Les tickets et la saisie restent au premier niveau pour que le flux commercial soit lisible rapidement.
+            Les tickets restent au centre de la page, la saisie et l import s ouvrent en modal.
           </p>
         </div>
 
         <div class="flex flex-wrap gap-2">
-          <a
-            href="#sale-form"
+          <button
+            type="button"
             class="btn-primary"
+            :disabled="dishStore.items.length === 0"
+            @click="saleModalOpen = true"
           >
+            <UIcon
+              name="i-lucide-plus"
+              class="size-4"
+            />
             Ajouter une vente
-          </a>
+          </button>
+          <button
+            type="button"
+            class="btn-secondary"
+            :disabled="dishStore.items.length === 0"
+            @click="importModalOpen = true"
+          >
+            <UIcon
+              name="i-lucide-upload"
+              class="size-4"
+            />
+            Import CSV
+          </button>
           <NuxtLink
             to="/dishes"
             class="btn-secondary"
@@ -245,68 +314,104 @@ onMounted(loadPage)
         secondary-to="/ingredients"
       />
 
-      <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <div class="app-section">
-          <div class="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <p class="app-eyebrow">
-                Table
-              </p>
-              <h2 class="app-section-title mt-1">
-                Tickets enregistres
-              </h2>
-            </div>
-            <span class="app-pill">{{ saleStore.items.length }} vente(s)</span>
+      <section class="app-section">
+        <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p class="app-eyebrow">
+              Filtres
+            </p>
+            <h2 class="app-section-title mt-1">
+              Retrouver un ticket
+            </h2>
           </div>
-          <SaleTable
-            :items="saleStore.items"
-            @remove="removeSale"
-          />
+          <span class="app-pill">{{ filteredSales.length }} / {{ saleStore.items.length }} vente(s)</span>
         </div>
 
-        <div
-          v-if="dishStore.items.length > 0"
-          id="sale-form"
-          class="grid gap-4 scroll-mt-28"
-        >
-          <div class="app-section">
-            <div class="mb-4 flex items-center justify-between gap-4">
-              <div>
-                <p class="app-eyebrow">
-                  Formulaire
-                </p>
-                <h2 class="app-section-title mt-1">
-                  Nouveau ticket
-                </h2>
-              </div>
-              <span class="app-pill">
-                Saisie rapide
-              </span>
-            </div>
-            <SaleForm
-              :dishes="dishStore.items"
-              @submit="saveSale"
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_0.9fr_0.9fr_0.9fr_auto]">
+          <input
+            v-model="saleFilters.search"
+            class="app-input"
+            type="search"
+            placeholder="Rechercher date, plat, note"
+            aria-label="Rechercher une vente"
+          >
+          <input
+            v-model="saleFilters.dateFrom"
+            class="app-input"
+            type="date"
+            aria-label="Date de debut"
+          >
+          <input
+            v-model="saleFilters.dateTo"
+            class="app-input"
+            type="date"
+            aria-label="Date de fin"
+          >
+          <input
+            v-model="saleFilters.minAmount"
+            class="app-input"
+            type="number"
+            min="0"
+            step="0.01"
+            placeholder="CA minimum"
+            aria-label="Montant minimum"
+          >
+          <button
+            type="button"
+            class="btn-secondary"
+            @click="resetSaleFilters"
+          >
+            <UIcon
+              name="i-lucide-rotate-ccw"
+              class="size-4"
             />
-          </div>
-
-          <div class="app-section">
-            <div class="mb-4 flex items-center justify-between gap-4">
-              <div>
-                <p class="app-eyebrow">
-                  Import
-                </p>
-                <h2 class="app-section-title mt-1">
-                  Ventes CSV
-                </h2>
-              </div>
-              <span class="app-pill">
-                CSV
-              </span>
-            </div>
-            <SaleCsvImport @import="importSalesCsv" />
-          </div>
+            Reset
+          </button>
         </div>
       </section>
+
+      <section class="app-section">
+        <div class="mb-4 flex items-center justify-between gap-4">
+          <div>
+            <p class="app-eyebrow">
+              Table
+            </p>
+            <h2 class="app-section-title mt-1">
+              Tickets enregistres
+            </h2>
+          </div>
+          <span class="app-pill">{{ filteredSales.length }} vente(s)</span>
+        </div>
+        <SaleTable
+          :items="filteredSales"
+          :empty-message="saleTableEmptyMessage"
+          @remove="removeSale"
+        />
+      </section>
     </template>
+
+    <AppModal
+      :open="saleModalOpen"
+      title="Nouveau ticket"
+      eyebrow="Formulaire"
+      description="Enregistre la vente sans masquer durablement la table."
+      size="lg"
+      @close="saleModalOpen = false"
+    >
+      <SaleForm
+        :dishes="dishStore.items"
+        @submit="saveSale"
+      />
+    </AppModal>
+
+    <AppModal
+      :open="importModalOpen"
+      title="Importer des ventes"
+      eyebrow="CSV"
+      description="Ajoute un fichier CSV, puis la table se met a jour."
+      @close="importModalOpen = false"
+    >
+      <SaleCsvImport @import="importSalesCsv" />
+    </AppModal>
   </div>
 </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getFetchErrorMessage } from '~/utils/fetch-error'
+import AppModal from '~/components/common/AppModal.vue'
 import ChargeForm from '~/components/charges/ChargeForm.vue'
 import ChargeTable from '~/components/charges/ChargeTable.vue'
 import type { Charge } from '~/types/business'
@@ -12,11 +13,59 @@ definePageMeta({
 const chargeStore = useChargeStore()
 const appToast = useAppToast()
 const editingCharge = ref<Charge | null>(null)
+const chargeModalOpen = ref(false)
 const errorMessage = ref('')
+
+const chargeFilters = reactive({
+  search: '',
+  category: 'all',
+  period: 'all',
+  status: 'all'
+})
+
+const chargeCategoryOptions: Array<{ value: Charge['category'], label: string }> = [
+  { value: 'staff', label: 'Salaires' },
+  { value: 'utilities', label: 'Energie' },
+  { value: 'rent', label: 'Loyer' },
+  { value: 'equipment', label: 'Materiel' },
+  { value: 'insurance', label: 'Assurance' },
+  { value: 'subscriptions', label: 'Abonnements' },
+  { value: 'other', label: 'Autre' }
+]
 
 const activeChargeCount = computed(() => chargeStore.items.filter(charge => charge.active).length)
 const monthlyChargeEstimate = computed(() => chargeStore.dailyChargeEstimate * 30)
 const fixedChargeCount = computed(() => chargeStore.items.filter(charge => charge.period === 'monthly').length)
+
+const filteredCharges = computed(() => {
+  const search = chargeFilters.search.trim().toLowerCase()
+
+  return chargeStore.items.filter((charge) => {
+    const categoryLabel = chargeCategoryOptions.find(option => option.value === charge.category)?.label ?? charge.category
+    const searchableText = [
+      charge.name,
+      charge.category,
+      categoryLabel,
+      charge.amount.toFixed(2),
+      charge.period
+    ].join(' ').toLowerCase()
+
+    const matchesSearch = !search || searchableText.includes(search)
+    const matchesCategory = chargeFilters.category === 'all' || charge.category === chargeFilters.category
+    const matchesPeriod = chargeFilters.period === 'all' || charge.period === chargeFilters.period
+    const matchesStatus = chargeFilters.status === 'all'
+      || (chargeFilters.status === 'active' && charge.active)
+      || (chargeFilters.status === 'inactive' && !charge.active)
+
+    return matchesSearch && matchesCategory && matchesPeriod && matchesStatus
+  })
+})
+
+const chargeTableEmptyMessage = computed(() =>
+  chargeStore.items.length === 0
+    ? 'Aucune charge enregistree. Ajoute tes couts fixes et variables pour affiner le prix conseille.'
+    : 'Aucune charge ne correspond aux filtres actifs.'
+)
 
 async function loadPage() {
   errorMessage.value = ''
@@ -32,12 +81,12 @@ async function saveCharge(payload: Omit<Charge, '_id'>) {
   try {
     if (editingCharge.value) {
       await chargeStore.update(editingCharge.value._id, payload)
-      editingCharge.value = null
       appToast.success('Charge mise a jour', `${payload.name} a ete modifiee.`)
     } else {
       await chargeStore.create(payload)
       appToast.success('Charge ajoutee', `${payload.name} est maintenant prise en compte.`)
     }
+    closeChargeModal()
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(error, 'Echec lors de l enregistrement de la charge')
     appToast.error('Enregistrement impossible', errorMessage.value)
@@ -52,6 +101,28 @@ async function removeCharge(item: Charge) {
     errorMessage.value = getFetchErrorMessage(error, 'Suppression impossible')
     appToast.error('Suppression impossible', errorMessage.value)
   }
+}
+
+function openChargeModal() {
+  editingCharge.value = null
+  chargeModalOpen.value = true
+}
+
+function editCharge(item: Charge) {
+  editingCharge.value = item
+  chargeModalOpen.value = true
+}
+
+function closeChargeModal() {
+  chargeModalOpen.value = false
+  editingCharge.value = null
+}
+
+function resetChargeFilters() {
+  chargeFilters.search = ''
+  chargeFilters.category = 'all'
+  chargeFilters.period = 'all'
+  chargeFilters.status = 'all'
 }
 
 function formatCurrency(value: number) {
@@ -73,16 +144,21 @@ onMounted(loadPage)
             Fixes, variables et repartition
           </h1>
           <p class="app-subtitle mt-2">
-            Les lignes de charges sont visibles directement, avec la saisie a cote pour aller plus vite.
+            Les charges restent en table pleine largeur, la saisie passe en modal pour garder les couts lisibles.
           </p>
         </div>
 
-        <a
-          href="#charge-form"
+        <button
+          type="button"
           class="btn-primary"
+          @click="openChargeModal"
         >
+          <UIcon
+            name="i-lucide-plus"
+            class="size-4"
+          />
           Ajouter une charge
-        </a>
+        </button>
       </div>
 
       <div class="mt-4 flex flex-wrap gap-2">
@@ -100,50 +176,121 @@ onMounted(loadPage)
       {{ errorMessage }}
     </p>
 
-    <section class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-      <div class="app-section">
-        <div class="mb-4 flex items-center justify-between gap-4">
-          <div>
-            <p class="app-eyebrow">
-              Table
-            </p>
-            <h2 class="app-section-title mt-1">
-              Historique des charges
-            </h2>
-          </div>
-          <span class="app-pill">{{ chargeStore.items.length }} ligne(s)</span>
+    <section class="app-section">
+      <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="app-eyebrow">
+            Filtres
+          </p>
+          <h2 class="app-section-title mt-1">
+            Isoler un cout
+          </h2>
         </div>
-        <ChargeTable
-          :items="chargeStore.items"
-          @edit="editingCharge = $event"
-          @remove="removeCharge"
-        />
+        <span class="app-pill">{{ filteredCharges.length }} / {{ chargeStore.items.length }} ligne(s)</span>
       </div>
 
-      <div
-        id="charge-form"
-        class="app-section scroll-mt-28"
-      >
-        <div class="mb-4 flex items-center justify-between gap-4">
-          <div>
-            <p class="app-eyebrow">
-              Formulaire
-            </p>
-            <h2 class="app-section-title mt-1">
-              {{ editingCharge ? 'Modifier charge' : 'Nouvelle charge' }}
-            </h2>
-          </div>
-          <span class="app-pill">
-            {{ editingCharge ? 'Edition' : 'Creation' }}
-          </span>
-        </div>
-        <ChargeForm
-          :initial-value="editingCharge"
-          :submit-label="editingCharge ? 'Mettre a jour la charge' : 'Ajouter la charge'"
-          @submit="saveCharge"
-          @cancel="editingCharge = null"
-        />
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
+        <input
+          v-model="chargeFilters.search"
+          class="app-input"
+          type="search"
+          placeholder="Rechercher nom, categorie, montant"
+          aria-label="Rechercher une charge"
+        >
+        <select
+          v-model="chargeFilters.category"
+          class="app-input"
+          aria-label="Filtrer par categorie"
+        >
+          <option value="all">
+            Toutes categories
+          </option>
+          <option
+            v-for="category in chargeCategoryOptions"
+            :key="category.value"
+            :value="category.value"
+          >
+            {{ category.label }}
+          </option>
+        </select>
+        <select
+          v-model="chargeFilters.period"
+          class="app-input"
+          aria-label="Filtrer par periode"
+        >
+          <option value="all">
+            Toutes periodes
+          </option>
+          <option value="daily">
+            Journalier
+          </option>
+          <option value="monthly">
+            Mensuel
+          </option>
+        </select>
+        <select
+          v-model="chargeFilters.status"
+          class="app-input"
+          aria-label="Filtrer par statut"
+        >
+          <option value="all">
+            Tous statuts
+          </option>
+          <option value="active">
+            Actives
+          </option>
+          <option value="inactive">
+            Inactives
+          </option>
+        </select>
+        <button
+          type="button"
+          class="btn-secondary"
+          @click="resetChargeFilters"
+        >
+          <UIcon
+            name="i-lucide-rotate-ccw"
+            class="size-4"
+          />
+          Reset
+        </button>
       </div>
     </section>
+
+    <section class="app-section">
+      <div class="mb-4 flex items-center justify-between gap-4">
+        <div>
+          <p class="app-eyebrow">
+            Table
+          </p>
+          <h2 class="app-section-title mt-1">
+            Historique des charges
+          </h2>
+        </div>
+        <span class="app-pill">{{ filteredCharges.length }} ligne(s)</span>
+      </div>
+      <ChargeTable
+        :items="filteredCharges"
+        :empty-message="chargeTableEmptyMessage"
+        @edit="editCharge"
+        @remove="removeCharge"
+      />
+    </section>
+
+    <AppModal
+      :open="chargeModalOpen"
+      :title="editingCharge ? 'Modifier charge' : 'Nouvelle charge'"
+      eyebrow="Formulaire"
+      :description="editingCharge ? 'Mets a jour le cout, la periode ou le statut.' : 'Ajoute un cout sans quitter la table.'"
+      size="lg"
+      @close="closeChargeModal"
+    >
+      <ChargeForm
+        :initial-value="editingCharge"
+        :submit-label="editingCharge ? 'Mettre a jour la charge' : 'Ajouter la charge'"
+        @submit="saveCharge"
+        @cancel="closeChargeModal"
+      />
+    </AppModal>
   </div>
 </template>
