@@ -9,6 +9,7 @@
     "build": "tsc",
     "dev": "tsx --watch index.ts",
     "seed": "tsc && node dist/seeders/index.js",
+    "seed:business": "tsc && node dist/seeders/businessOnlySeeder.js",
     "seed:dev": "ts-node seeders/index.ts"
   },
   "keywords": [],

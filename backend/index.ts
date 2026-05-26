@@ -6,7 +6,8 @@ import {
   dishRouter,
   chargeRouter,
   saleRouter,
-  forecastRouter
+  forecastRouter,
+  purchaseOrderRouter
 } from './src/routes';
 import { connectMongoose } from "./src/db/mangoose";
 import { ensureUserAccessBootstrap } from "./src/services/userAccessBootstrap";
@@ -27,6 +28,7 @@ app.use('/dishes', dishRouter);
 app.use('/charges', chargeRouter);
 app.use('/sales', saleRouter);
 app.use('/forecasts', forecastRouter);
+app.use('/purchase-orders', purchaseOrderRouter);
 
 const port = process.env.NODE_PORT || 3000;
 
