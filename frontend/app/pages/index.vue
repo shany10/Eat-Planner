@@ -9,6 +9,7 @@ import { useChargeStore } from '~/stores/charges'
 import { useDishStore } from '~/stores/dishes'
 import { useForecastStore } from '~/stores/forecasts'
 import { useIngredientStore } from '~/stores/ingredients'
+import { usePurchaseOrderStore } from '~/stores/purchase-orders'
 import { useSaleStore } from '~/stores/sales'
 
 definePageMeta({
@@ -21,6 +22,7 @@ const dishStore = useDishStore()
 const chargeStore = useChargeStore()
 const saleStore = useSaleStore()
 const forecastStore = useForecastStore()
+const purchaseOrderStore = usePurchaseOrderStore()
 const appToast = useAppToast()
 
 const users = ref<ManagedUser[]>([])
@@ -55,6 +57,14 @@ type DashboardAction = {
   description: string
 }
 
+type DashboardMission = {
+  title: string
+  value: string
+  helper: string
+  to: string
+  icon: string
+}
+
 const profile = computed(() => authStore.profile)
 const isAdmin = computed(() => profile.value?.role === 'admin')
 const firstName = computed(() => profile.value?.firstname || 'Equipe')
@@ -65,11 +75,16 @@ const pricingSettingsLabel = computed(() =>
   `Marge ${Math.round((profile.value?.defaultMarginRate ?? 0.72) * 100)}% - TVA ${Math.round((profile.value?.vatRate ?? 0.1) * 100)}%`
 )
 
-const activeIngredients = computed(() => ingredientStore.items.filter(item => item.active).length)
-const activeDishes = computed(() => dishStore.items.filter(item => item.active).length)
+const totalRevenue = computed(() => saleStore.items.reduce((sum, sale) => sum + sale.totalAmount, 0))
+const projectedRevenue = computed(() => forecastStore.forecast?.totals.totalProjectedRevenue ?? 0)
+const projectedPlates = computed(() => forecastStore.forecast?.totals.totalProjectedPlates ?? 0)
+const forecastIngredientBudget = computed(() =>
+  forecastStore.forecast?.ingredientNeeds.reduce((sum, need) => sum + need.estimatedCost, 0) ?? 0
+)
 const latestSale = computed(() =>
   [...saleStore.items].sort((a, b) => new Date(b.serviceDate).getTime() - new Date(a.serviceDate).getTime())[0] ?? null
 )
+const openPurchaseOrderCount = computed(() => purchaseOrderStore.openOrders.length)
 const managerCount = computed(() => users.value.filter(user => user.role === 'manager').length)
 const inactiveUserCount = computed(() => users.value.filter(user => !user.active).length)
 const twoFactorCoverage = computed(() => {
@@ -100,6 +115,7 @@ const suggestedPriceAverage = computed(() => {
 
 const setupSteps = computed<DashboardStep[]>(() => [
   { title: 'Ingredients', to: '/ingredients', count: ingredientStore.items.length, helper: 'Base matiere premiere', ready: ingredientStore.items.length > 0 },
+  { title: 'Fournisseurs', to: '/suppliers', count: ingredientStore.items.filter(item => item.supplier).length, helper: 'Ingredients relies aux achats', ready: ingredientStore.items.some(item => item.supplier) },
   { title: 'Plats', to: '/dishes', count: dishStore.items.length, helper: 'Recettes et marges', ready: dishStore.items.length > 0 },
   { title: 'Charges', to: '/charges', count: chargeStore.items.length, helper: 'Couts fixes et variables', ready: chargeStore.items.length > 0 },
   { title: 'Ventes', to: '/sales', count: saleStore.items.length, helper: 'Historique utile pour prevoir', ready: saleStore.items.length > 0 }
@@ -110,6 +126,15 @@ const setupProgress = computed(() => {
   return Math.round((completed / Math.max(setupSteps.value.length, 1)) * 100)
 })
 
+const businessScore = computed(() => {
+  const dataScore = setupProgress.value
+  const salesScore = saleStore.items.length > 0 ? 100 : 0
+  const forecastScore = (forecastStore.forecast?.dishes.length ?? 0) > 0 ? 100 : 0
+  const purchaseScore = openPurchaseOrderCount.value > 0 || ingredientStore.items.some(item => item.supplier) ? 100 : 35
+
+  return Math.round((dataScore * 0.45) + (salesScore * 0.2) + (forecastScore * 0.2) + (purchaseScore * 0.15))
+})
+
 const stats = computed<DashboardStat[]>(() => isAdmin.value
   ? [
       { title: 'Comptes', value: users.value.length, hint: 'Tous les utilisateurs' },
@@ -118,11 +143,39 @@ const stats = computed<DashboardStat[]>(() => isAdmin.value
       { title: 'Couverture 2FA', value: `${twoFactorCoverage.value}%`, hint: 'Niveau de securite equipe' }
     ]
   : [
-      { title: 'Ingredients actifs', value: activeIngredients.value, hint: 'Base exploitable' },
-      { title: 'Plats suivis', value: activeDishes.value, hint: 'Recettes et rentabilite' },
-      { title: 'Charges / jour', value: formatCurrency(chargeStore.dailyChargeEstimate), hint: 'Toutes charges actives' },
-      { title: 'CA recent', value: formatCurrency(saleStore.recentRevenue), hint: '7 derniers tickets' }
+      { title: 'Score pilotage', value: `${businessScore.value}%`, hint: 'Donnees, ventes, prevision, achats' },
+      { title: 'CA recent', value: formatCurrency(saleStore.recentRevenue), hint: '7 derniers tickets' },
+      { title: 'Projection jour', value: formatCurrency(projectedRevenue.value), hint: `${projectedPlates.value} portions prevues` },
+      { title: 'Achats ouverts', value: openPurchaseOrderCount.value, hint: formatCurrency(purchaseOrderStore.openAmount) }
     ])
+
+const missions = computed<DashboardMission[]>(() => [
+  {
+    title: 'Produire',
+    value: `${projectedPlates.value} portions`,
+    helper: forecastStore.forecast?.dishes.length
+      ? `${forecastStore.forecast.dishes.length} plat(s) dans la prevision`
+      : 'Lance la prevision pour creer le plan du jour',
+    to: '/forecasts',
+    icon: 'i-lucide-chart-no-axes-combined'
+  },
+  {
+    title: 'Vendre',
+    value: formatCurrency(totalRevenue.value),
+    helper: latestSale.value ? `Derniere vente ${formatDate(latestSale.value.serviceDate)}` : 'Aucun ticket enregistre',
+    to: '/sales',
+    icon: 'i-lucide-banknote'
+  },
+  {
+    title: 'Commander',
+    value: formatCurrency(forecastIngredientBudget.value),
+    helper: openPurchaseOrderCount.value > 0
+      ? `${openPurchaseOrderCount.value} commande(s) fournisseur ouvertes`
+      : 'Transforme les besoins matieres en panier manager',
+    to: '/purchase-orders',
+    icon: 'i-lucide-shopping-cart'
+  }
+])
 
 const alerts = computed(() => {
   const items: DashboardAlert[] = []
@@ -184,10 +237,11 @@ const actions = computed<DashboardAction[]>(() => isAdmin.value
     ]
   : [
       { to: '/ingredients', label: 'Consolider les ingredients', description: 'Matieres premieres et prix achat.' },
+      { to: '/purchase-orders', label: 'Preparer un panier achats', description: 'Commander les ingredients chez les fournisseurs.' },
       { to: '/dishes', label: 'Mettre a jour les plats', description: 'Recettes, marges, prix conseilles.' },
       { to: '/sales', label: 'Saisir les ventes', description: 'Tickets et historique du jour.' },
       { to: '/forecasts', label: 'Lire la prevision', description: 'Besoins matieres et volumes.' }
-    ])
+    ].slice(0, 4))
 
 const topForecastDishes = computed(() =>
   [...(forecastStore.forecast?.dishes ?? [])]
@@ -218,7 +272,8 @@ async function loadDashboard() {
       dishStore.load(),
       chargeStore.load(),
       saleStore.load(),
-      forecastStore.load()
+      forecastStore.load(),
+      purchaseOrderStore.load()
     ]
 
     if (currentProfile?.role === 'admin') {
@@ -315,6 +370,52 @@ onMounted(loadDashboard)
         :hint="stat.hint"
       />
     </div>
+
+    <section
+      v-if="!loading && !isAdmin"
+      class="app-section"
+    >
+      <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p class="app-eyebrow">
+            Mission manager
+          </p>
+          <h2 class="app-section-title mt-1">
+            Produire, vendre, commander
+          </h2>
+        </div>
+        <span class="app-pill">Score {{ businessScore }}%</span>
+      </div>
+
+      <div class="grid gap-3 lg:grid-cols-3">
+        <NuxtLink
+          v-for="mission in missions"
+          :key="mission.title"
+          :to="mission.to"
+          class="rounded-lg border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-sm font-semibold text-slate-950 dark:text-white">
+                {{ mission.title }}
+              </p>
+              <p class="mt-2 text-2xl font-bold text-slate-950 dark:text-white">
+                {{ mission.value }}
+              </p>
+            </div>
+            <span class="inline-flex size-10 items-center justify-center rounded-md bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-200">
+              <UIcon
+                :name="mission.icon"
+                class="size-5"
+              />
+            </span>
+          </div>
+          <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            {{ mission.helper }}
+          </p>
+        </NuxtLink>
+      </div>
+    </section>
 
     <section
       v-if="!loading"
@@ -425,7 +526,7 @@ onMounted(loadDashboard)
           />
         </div>
 
-        <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
           <NuxtLink
             v-for="step in setupSteps"
             :key="step.to"
