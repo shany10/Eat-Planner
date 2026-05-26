@@ -2,8 +2,14 @@ import type { Ingredient } from '~/types/business'
 
 type IngredientPayload = {
   name: string
+  category: Ingredient['category']
   unit: Ingredient['unit']
+  orderUnit?: Ingredient['unit']
   purchasePrice: number
+  stockQuantity?: number
+  minimumStock?: number
+  averageDailyUsage?: number
+  minimumOrderQuantity?: number
   supplier?: string | null
   active?: boolean
 }

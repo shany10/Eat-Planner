@@ -21,6 +21,14 @@ const isIngredientModalOpen = ref(false)
 const errorMessage = ref('')
 const loading = ref(true)
 
+const ingredientFilters = reactive({
+  search: '',
+  category: 'all',
+  unit: 'all',
+  supplier: 'all',
+  status: 'all'
+})
+
 type PageStat = {
   title: string
   value: string | number
@@ -29,11 +37,30 @@ type PageStat = {
 
 type IngredientPayload = {
   name: string
+  category: Ingredient['category']
   unit: Ingredient['unit']
+  orderUnit?: Ingredient['unit']
   purchasePrice: number
+  stockQuantity?: number
+  minimumStock?: number
+  averageDailyUsage?: number
+  minimumOrderQuantity?: number
   supplier?: string | null
   active?: boolean
 }
+
+const ingredientCategoryOptions: Ingredient['category'][] = [
+  'Viandes',
+  'Poissons',
+  'Fruits et legumes',
+  'Produits laitiers',
+  'Epicerie seche',
+  'Boissons',
+  'Surgeles',
+  'Boulangerie',
+  'Condiments',
+  'Produits d entretien'
+]
 
 const ingredientCount = computed(() => ingredientStore.items.length)
 const activeIngredientCount = computed(() => ingredientStore.items.filter(item => item.active).length)
@@ -41,6 +68,9 @@ const supplierCount = computed(() => supplierStore.items.length)
 const activeSupplierCount = computed(() => supplierStore.items.filter(item => item.active).length)
 const linkedIngredientCount = computed(() => ingredientStore.items.filter(item => Boolean(item.supplier)).length)
 const supplierlessIngredients = computed(() => ingredientStore.items.filter(item => !item.supplier).length)
+const lowStockIngredientCount = computed(() =>
+  ingredientStore.items.filter(item => item.stockQuantity <= item.minimumStock).length
+)
 
 const ingredientCoverage = computed(() => {
   if (ingredientCount.value === 0) {
@@ -58,10 +88,51 @@ const averagePurchasePrice = computed(() => {
   return ingredientStore.items.reduce((sum, item) => sum + item.purchasePrice, 0) / ingredientCount.value
 })
 
+const ingredientUnitOptions = computed(() =>
+  [...new Set(ingredientStore.items.map(item => item.unit))]
+)
+
+const filteredIngredients = computed(() => {
+  const search = ingredientFilters.search.trim().toLowerCase()
+
+  return ingredientStore.items.filter((item) => {
+    const supplierId = getIngredientSupplierId(item)
+    const supplierName = getIngredientSupplierName(item)
+    const searchableText = [
+      item.name,
+      item.category,
+      item.unit,
+      item.purchasePrice.toFixed(2),
+      String(item.stockQuantity),
+      String(item.minimumStock),
+      supplierName
+    ].filter(Boolean).join(' ').toLowerCase()
+
+    const matchesSearch = !search || searchableText.includes(search)
+    const matchesCategory = ingredientFilters.category === 'all' || item.category === ingredientFilters.category
+    const matchesUnit = ingredientFilters.unit === 'all' || item.unit === ingredientFilters.unit
+    const matchesStatus = ingredientFilters.status === 'all'
+      || (ingredientFilters.status === 'active' && item.active)
+      || (ingredientFilters.status === 'inactive' && !item.active)
+    const matchesSupplier = ingredientFilters.supplier === 'all'
+      || (ingredientFilters.supplier === 'linked' && Boolean(item.supplier))
+      || (ingredientFilters.supplier === 'unlinked' && !item.supplier)
+      || supplierId === ingredientFilters.supplier
+
+    return matchesSearch && matchesCategory && matchesUnit && matchesStatus && matchesSupplier
+  })
+})
+
+const ingredientTableEmptyMessage = computed(() =>
+  ingredientStore.items.length === 0
+    ? 'Aucun ingredient pour le moment. Cree ta premiere matiere premiere pour activer le calcul des plats.'
+    : 'Aucun ingredient ne correspond aux filtres actifs.'
+)
+
 const stats = computed<PageStat[]>(() => [
   { title: 'Ingredients actifs', value: activeIngredientCount.value, hint: 'References utilisables' },
   { title: 'Ingredients relies', value: `${ingredientCoverage.value}%`, hint: 'Avec fournisseur associe' },
-  { title: 'Sans fournisseur', value: supplierlessIngredients.value, hint: 'A completer plus tard' },
+  { title: 'Stock bas', value: lowStockIngredientCount.value, hint: 'Sous le seuil conseille' },
   { title: 'Prix achat moyen', value: formatCurrency(averagePurchasePrice.value), hint: 'Repere matiere rapide' }
 ])
 
@@ -116,6 +187,14 @@ function closeIngredientModal() {
   editingIngredient.value = null
 }
 
+function resetIngredientFilters() {
+  ingredientFilters.search = ''
+  ingredientFilters.category = 'all'
+  ingredientFilters.unit = 'all'
+  ingredientFilters.supplier = 'all'
+  ingredientFilters.status = 'all'
+}
+
 async function saveIngredient(payload: IngredientPayload) {
   try {
     if (editingIngredient.value) {
@@ -145,6 +224,26 @@ async function removeIngredient(item: Ingredient) {
 
 function formatCurrency(value: number) {
   return `${value.toFixed(2)} EUR`
+}
+
+function getIngredientSupplierId(item: Ingredient) {
+  if (!item.supplier) {
+    return ''
+  }
+
+  return typeof item.supplier === 'object' ? item.supplier._id : item.supplier
+}
+
+function getIngredientSupplierName(item: Ingredient) {
+  if (!item.supplier) {
+    return ''
+  }
+
+  if (typeof item.supplier === 'object') {
+    return item.supplier.name
+  }
+
+  return supplierStore.items.find(supplier => supplier._id === item.supplier)?.name ?? item.supplier
 }
 
 onMounted(loadPage)
@@ -195,6 +294,7 @@ onMounted(loadPage)
         <span class="app-pill">{{ activeIngredientCount }} ingredient(s) actif(s)</span>
         <span class="app-pill">{{ activeSupplierCount }} fournisseur(s) actif(s)</span>
         <span class="app-pill">{{ ingredientCoverage }}% relies</span>
+        <span class="app-pill">{{ lowStockIngredientCount }} stock bas</span>
         <span class="app-pill">{{ loading ? 'Synchronisation' : 'Base a jour' }}</span>
       </div>
     </section>
@@ -239,11 +339,116 @@ onMounted(loadPage)
           </div>
           <div class="flex flex-wrap gap-2">
             <span class="app-pill">{{ supplierlessIngredients }} sans fournisseur</span>
+            <span class="app-pill">{{ lowStockIngredientCount }} a reapprovisionner</span>
             <span class="app-pill">{{ supplierCount }} fournisseur(s)</span>
             <span class="app-pill">{{ ingredientCount }} ingredient(s)</span>
           </div>
         </div>
       </div>
+
+      <section class="app-section">
+        <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p class="app-eyebrow">
+              Filtres
+            </p>
+            <h2 class="app-section-title mt-1">
+              Retrouver une matiere premiere
+            </h2>
+          </div>
+          <span class="app-pill">{{ filteredIngredients.length }} / {{ ingredientStore.items.length }} ligne(s)</span>
+        </div>
+
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_0.8fr_1fr_1fr_auto]">
+          <input
+            v-model="ingredientFilters.search"
+            class="app-input"
+            type="search"
+            placeholder="Rechercher nom, fournisseur, prix"
+            aria-label="Rechercher un ingredient"
+          >
+          <select
+            v-model="ingredientFilters.category"
+            class="app-input"
+            aria-label="Filtrer par categorie"
+          >
+            <option value="all">
+              Toutes categories
+            </option>
+            <option
+              v-for="category in ingredientCategoryOptions"
+              :key="category"
+              :value="category"
+            >
+              {{ category }}
+            </option>
+          </select>
+          <select
+            v-model="ingredientFilters.unit"
+            class="app-input"
+            aria-label="Filtrer par unite"
+          >
+            <option value="all">
+              Toutes unites
+            </option>
+            <option
+              v-for="unit in ingredientUnitOptions"
+              :key="unit"
+              :value="unit"
+            >
+              {{ unit }}
+            </option>
+          </select>
+          <select
+            v-model="ingredientFilters.supplier"
+            class="app-input"
+            aria-label="Filtrer par fournisseur"
+          >
+            <option value="all">
+              Tous fournisseurs
+            </option>
+            <option value="linked">
+              Avec fournisseur
+            </option>
+            <option value="unlinked">
+              Sans fournisseur
+            </option>
+            <option
+              v-for="supplier in supplierStore.items"
+              :key="supplier._id"
+              :value="supplier._id"
+            >
+              {{ supplier.name }}
+            </option>
+          </select>
+          <select
+            v-model="ingredientFilters.status"
+            class="app-input"
+            aria-label="Filtrer par statut"
+          >
+            <option value="all">
+              Tous statuts
+            </option>
+            <option value="active">
+              Actifs
+            </option>
+            <option value="inactive">
+              Inactifs
+            </option>
+          </select>
+          <button
+            type="button"
+            class="btn-secondary"
+            @click="resetIngredientFilters"
+          >
+            <UIcon
+              name="i-lucide-rotate-ccw"
+              class="size-4"
+            />
+            Reset
+          </button>
+        </div>
+      </section>
 
       <section
         v-if="ingredientStore.items.length === 0"
@@ -289,10 +494,11 @@ onMounted(loadPage)
               Base ingredients
             </h2>
           </div>
-          <span class="app-pill">{{ ingredientStore.items.length }} ligne(s)</span>
+          <span class="app-pill">{{ filteredIngredients.length }} ligne(s)</span>
         </div>
         <IngredientTable
-          :items="ingredientStore.items"
+          :items="filteredIngredients"
+          :empty-message="ingredientTableEmptyMessage"
           @edit="openEditIngredient"
           @remove="removeIngredient"
         />

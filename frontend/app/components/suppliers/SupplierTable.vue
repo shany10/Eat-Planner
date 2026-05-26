@@ -1,18 +1,25 @@
 <script setup lang="ts">
 import type { Supplier } from '~/types/business'
 
-defineProps<{
+withDefaults(defineProps<{
   items: Supplier[]
-}>()
+  emptyMessage?: string
+}>(), {
+  emptyMessage: 'Aucun fournisseur pour le moment. Utilise le bouton Ajouter fournisseur pour creer la premiere fiche.'
+})
 
 defineEmits<{
   edit: [item: Supplier]
   remove: [item: Supplier]
 }>()
+
+function formatCurrency(value?: number) {
+  return `${Number(value || 0).toFixed(2)} EUR`
+}
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+  <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
     <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
       <thead class="bg-slate-50 dark:bg-slate-900/60">
         <tr>
@@ -20,10 +27,16 @@ defineEmits<{
             Fournisseur
           </th>
           <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Contact
+            Produits
           </th>
           <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Email
+            Livraison
+          </th>
+          <th class="px-4 py-3 text-left font-medium text-slate-500">
+            Minimum
+          </th>
+          <th class="px-4 py-3 text-left font-medium text-slate-500">
+            Contact
           </th>
           <th class="px-4 py-3 text-right font-medium text-slate-500">
             Actions
@@ -37,12 +50,22 @@ defineEmits<{
         >
           <td class="px-4 py-3 font-medium">
             {{ item.name }}
+            <span class="block text-xs font-normal text-slate-500 dark:text-slate-400">
+              {{ item.address || 'Adresse non renseignee' }}
+            </span>
           </td>
           <td class="px-4 py-3">
-            {{ item.contactName || '-' }}
+            {{ item.productTypes?.join(', ') || '-' }}
           </td>
           <td class="px-4 py-3">
-            {{ item.email || '-' }}
+            {{ item.deliveryLeadTimeDays ?? 0 }} j - {{ formatCurrency(item.deliveryFee) }}
+          </td>
+          <td class="px-4 py-3">
+            {{ formatCurrency(item.minimumOrderAmount) }}
+          </td>
+          <td class="px-4 py-3">
+            <span class="block">{{ item.contactName || '-' }}</span>
+            <span class="block text-xs text-slate-500 dark:text-slate-400">{{ item.email || item.phone || '-' }}</span>
           </td>
           <td class="px-4 py-3">
             <div class="flex justify-end gap-2">
@@ -71,10 +94,10 @@ defineEmits<{
         </tr>
         <tr v-if="items.length === 0">
           <td
-            colspan="4"
+            colspan="6"
             class="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
           >
-            Aucun fournisseur pour le moment. Utilise le bouton Ajouter fournisseur pour creer la premiere fiche.
+            {{ emptyMessage }}
           </td>
         </tr>
       </tbody>

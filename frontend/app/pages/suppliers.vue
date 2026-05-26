@@ -19,6 +19,13 @@ const isSupplierModalOpen = ref(false)
 const errorMessage = ref('')
 const loading = ref(true)
 
+const supplierFilters = reactive({
+  search: '',
+  status: 'all',
+  contact: 'all',
+  productType: 'all'
+})
+
 type PageStat = {
   title: string
   value: string | number
@@ -30,6 +37,54 @@ const activeSupplierCount = computed(() => supplierStore.items.filter(item => it
 const inactiveSupplierCount = computed(() => supplierStore.items.filter(item => !item.active).length)
 const suppliersWithContact = computed(() => supplierStore.items.filter(item => Boolean(item.contactName || item.phone || item.email)).length)
 const suppliersWithEmail = computed(() => supplierStore.items.filter(item => Boolean(item.email)).length)
+const supplierProductTypes = computed(() =>
+  [...new Set(supplierStore.items.flatMap(item => item.productTypes || []))]
+)
+const averageLeadTime = computed(() => {
+  if (supplierStore.items.length === 0) {
+    return 0
+  }
+
+  return supplierStore.items.reduce((sum, item) => sum + (item.deliveryLeadTimeDays || 0), 0) / supplierStore.items.length
+})
+
+const filteredSuppliers = computed(() => {
+  const search = supplierFilters.search.trim().toLowerCase()
+
+  return supplierStore.items.filter((item) => {
+    const searchableText = [
+      item.name,
+      item.productTypes?.join(' '),
+      String(item.deliveryLeadTimeDays),
+      String(item.minimumOrderAmount),
+      item.contactName,
+      item.email,
+      item.phone,
+      item.address,
+      item.notes
+    ].filter(Boolean).join(' ').toLowerCase()
+
+    const hasContact = Boolean(item.contactName || item.phone || item.email)
+    const matchesSearch = !search || searchableText.includes(search)
+    const matchesStatus = supplierFilters.status === 'all'
+      || (supplierFilters.status === 'active' && item.active)
+      || (supplierFilters.status === 'inactive' && !item.active)
+    const matchesContact = supplierFilters.contact === 'all'
+      || (supplierFilters.contact === 'with-contact' && hasContact)
+      || (supplierFilters.contact === 'without-contact' && !hasContact)
+      || (supplierFilters.contact === 'with-email' && Boolean(item.email))
+    const matchesProductType = supplierFilters.productType === 'all'
+      || (item.productTypes || []).includes(supplierFilters.productType)
+
+    return matchesSearch && matchesStatus && matchesContact && matchesProductType
+  })
+})
+
+const supplierTableEmptyMessage = computed(() =>
+  supplierStore.items.length === 0
+    ? 'Aucun fournisseur pour le moment. Utilise le bouton Ajouter fournisseur pour creer la premiere fiche.'
+    : 'Aucun fournisseur ne correspond aux filtres actifs.'
+)
 
 const contactCoverage = computed(() => {
   if (supplierCount.value === 0) {
@@ -42,7 +97,7 @@ const contactCoverage = computed(() => {
 const stats = computed<PageStat[]>(() => [
   { title: 'Fournisseurs actifs', value: activeSupplierCount.value, hint: 'Partenaires utilisables' },
   { title: 'Contacts renseignes', value: `${contactCoverage.value}%`, hint: 'Email, telephone ou contact' },
-  { title: 'Avec email', value: suppliersWithEmail.value, hint: 'Pratique pour les commandes' },
+  { title: 'Delai moyen', value: `${averageLeadTime.value.toFixed(1)} j`, hint: 'Livraison fournisseur' },
   { title: 'Inactifs', value: inactiveSupplierCount.value, hint: 'Historique conserve' }
 ])
 
@@ -91,6 +146,13 @@ function openEditSupplier(item: Supplier) {
 function closeSupplierModal() {
   isSupplierModalOpen.value = false
   editingSupplier.value = null
+}
+
+function resetSupplierFilters() {
+  supplierFilters.search = ''
+  supplierFilters.status = 'all'
+  supplierFilters.contact = 'all'
+  supplierFilters.productType = 'all'
 }
 
 async function saveSupplier(payload: Omit<Supplier, '_id'>) {
@@ -168,6 +230,7 @@ onMounted(loadPage)
         <span class="app-pill">{{ activeSupplierCount }} fournisseur(s) actif(s)</span>
         <span class="app-pill">{{ contactCoverage }}% contacts</span>
         <span class="app-pill">{{ suppliersWithEmail }} email(s)</span>
+        <span class="app-pill">{{ averageLeadTime.toFixed(1) }} j moyen</span>
         <span class="app-pill">{{ loading ? 'Synchronisation' : 'Base a jour' }}</span>
       </div>
     </section>
@@ -218,6 +281,90 @@ onMounted(loadPage)
         </div>
       </div>
 
+      <section class="app-section">
+        <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p class="app-eyebrow">
+              Filtres
+            </p>
+            <h2 class="app-section-title mt-1">
+              Retrouver un fournisseur
+            </h2>
+          </div>
+          <span class="app-pill">{{ filteredSuppliers.length }} / {{ supplierStore.items.length }} ligne(s)</span>
+        </div>
+
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.5fr_1fr_1fr_1fr_auto]">
+          <input
+            v-model="supplierFilters.search"
+            class="app-input"
+            type="search"
+            placeholder="Rechercher nom, contact, email, telephone"
+            aria-label="Rechercher un fournisseur"
+          >
+          <select
+            v-model="supplierFilters.status"
+            class="app-input"
+            aria-label="Filtrer par statut"
+          >
+            <option value="all">
+              Tous statuts
+            </option>
+            <option value="active">
+              Actifs
+            </option>
+            <option value="inactive">
+              Inactifs
+            </option>
+          </select>
+          <select
+            v-model="supplierFilters.contact"
+            class="app-input"
+            aria-label="Filtrer par contact"
+          >
+            <option value="all">
+              Tous contacts
+            </option>
+            <option value="with-contact">
+              Avec contact
+            </option>
+            <option value="without-contact">
+              Sans contact
+            </option>
+            <option value="with-email">
+              Avec email
+            </option>
+          </select>
+          <select
+            v-model="supplierFilters.productType"
+            class="app-input"
+            aria-label="Filtrer par type de produit"
+          >
+            <option value="all">
+              Tous produits
+            </option>
+            <option
+              v-for="productType in supplierProductTypes"
+              :key="productType"
+              :value="productType"
+            >
+              {{ productType }}
+            </option>
+          </select>
+          <button
+            type="button"
+            class="btn-secondary"
+            @click="resetSupplierFilters"
+          >
+            <UIcon
+              name="i-lucide-rotate-ccw"
+              class="size-4"
+            />
+            Reset
+          </button>
+        </div>
+      </section>
+
       <section
         v-if="supplierStore.items.length === 0"
         class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 dark:border-slate-700 dark:bg-slate-900/60"
@@ -262,10 +409,11 @@ onMounted(loadPage)
               Base fournisseurs
             </h2>
           </div>
-          <span class="app-pill">{{ supplierStore.items.length }} ligne(s)</span>
+          <span class="app-pill">{{ filteredSuppliers.length }} ligne(s)</span>
         </div>
         <SupplierTable
-          :items="supplierStore.items"
+          :items="filteredSuppliers"
+          :empty-message="supplierTableEmptyMessage"
           @edit="openEditSupplier"
           @remove="removeSupplier"
         />
