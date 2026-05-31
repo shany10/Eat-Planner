@@ -2,11 +2,14 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Enable pnpm
+RUN corepack enable pnpm
+
 # Copy package files
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN npm ci --no-audit --no-fund
+RUN pnpm install --frozen-lockfile
 
 # Copy app files
 COPY . .
@@ -15,4 +18,4 @@ COPY . .
 EXPOSE 3001
 
 # Start development server
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "dev"]
