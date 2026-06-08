@@ -1,0 +1,164 @@
+x-glitchtip-environment: &glitchtip-environment
+  DATABASE_URL: "postgres://${GLITCHTIP_DB_USER:-glitchtip}:${GLITCHTIP_DB_PASS:-glitchtip}@glitchtip-postgres:5432/${GLITCHTIP_DB_NAME:-glitchtip}"
+  REDIS_URL: "redis://glitchtip-redis:6379/0"
+  SECRET_KEY: "${GLITCHTIP_SECRET_KEY:-change_me_with_a_long_random_secret}"
+  PORT: "8000"
+  GLITCHTIP_DOMAIN: "${GLITCHTIP_DOMAIN:-http://localhost:8000}"
+  DEFAULT_FROM_EMAIL: "${GLITCHTIP_FROM_EMAIL:-glitchtip@eatplanner.local}"
+  EMAIL_URL: "${GLITCHTIP_EMAIL_URL:-consolemail://}"
+  # Allow self-service account registration on first run, then set to false.
+  ENABLE_USER_REGISTRATION: "${GLITCHTIP_ENABLE_REGISTRATION:-true}"
+  CELERY_WORKER_AUTOSCALE: "1,3"
+  CELERY_WORKER_MAX_TASKS_PER_CHILD: "10000"
+
+services:
+  # ---------------------------------------------------------------------------
+  # GlitchTip - dedicated PostgreSQL
+  # ---------------------------------------------------------------------------
+  glitchtip-postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${GLITCHTIP_DB_USER:-glitchtip}"
+      POSTGRES_PASSWORD: "${GLITCHTIP_DB_PASS:-glitchtip}"
+      POSTGRES_DB: "${GLITCHTIP_DB_NAME:-glitchtip}"
+    volumes:
+      - glitchtip-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${GLITCHTIP_DB_USER:-glitchtip} -d ${GLITCHTIP_DB_NAME:-glitchtip}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # GlitchTip - dedicated Redis (background task broker / result backend)
+  # ---------------------------------------------------------------------------
+  glitchtip-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - glitchtip-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # GlitchTip - one-shot database migrations (runs and exits)
+  # ---------------------------------------------------------------------------
+  glitchtip-migrate:
+    image: glitchtip/glitchtip:latest
+    command: ./manage.py migrate
+    depends_on:
+      glitchtip-postgres:
+        condition: service_healthy
+      glitchtip-redis:
+        condition: service_healthy
+    environment: *glitchtip-environment
+    restart: "no"
+
+  # ---------------------------------------------------------------------------
+  # GlitchTip - web UI / ingest API
+  # ---------------------------------------------------------------------------
+  glitchtip-web:
+    image: glitchtip/glitchtip:latest
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      glitchtip-postgres:
+        condition: service_healthy
+      glitchtip-redis:
+        condition: service_healthy
+      glitchtip-migrate:
+        condition: service_completed_successfully
+    environment: *glitchtip-environment
+    volumes:
+      - glitchtip-uploads:/code/uploads
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(''http://127.0.0.1:8000/_health/'').status==200 else 1)"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  # GlitchTip - background worker (Celery) + beat scheduler
+  # ---------------------------------------------------------------------------
+  glitchtip-worker:
+    image: glitchtip/glitchtip:latest
+    command: bin/run-celery-with-beat.sh
+    restart: unless-stopped
+    depends_on:
+      glitchtip-postgres:
+        condition: service_healthy
+      glitchtip-redis:
+        condition: service_healthy
+      glitchtip-migrate:
+        condition: service_completed_successfully
+    environment: *glitchtip-environment
+    volumes:
+      - glitchtip-uploads:/code/uploads
+
+  # ---------------------------------------------------------------------------
+  # Umami - dedicated PostgreSQL
+  # ---------------------------------------------------------------------------
+  umami-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${UMAMI_DB_USER:-umami}"
+      POSTGRES_PASSWORD: "${UMAMI_DB_PASS:-umami}"
+      POSTGRES_DB: "${UMAMI_DB_NAME:-umami}"
+    volumes:
+      - umami-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${UMAMI_DB_USER:-umami} -d ${UMAMI_DB_NAME:-umami}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # Umami - analytics app
+  # ---------------------------------------------------------------------------
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    depends_on:
+      umami-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_TYPE: "postgresql"
+      DATABASE_URL: "postgresql://${UMAMI_DB_USER:-umami}:${UMAMI_DB_PASS:-umami}@umami-postgres:5432/${UMAMI_DB_NAME:-umami}"
+      APP_SECRET: "${UMAMI_APP_SECRET:-change_me_with_a_long_random_secret}"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://127.0.0.1:3000/api/heartbeat || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+volumes:
+  glitchtip-postgres-data:
+  glitchtip-redis-data:
+  glitchtip-uploads:
+  umami-postgres-data:
