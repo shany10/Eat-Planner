@@ -5,8 +5,29 @@ const env = (globalThis as typeof globalThis & {
   }
 }).process?.env ?? {}
 
+// Umami analytics: only inject the tracking script when both the script source
+// and the website id are configured, so nothing breaks when analytics is off.
+const umamiSrc = env.NUXT_PUBLIC_UMAMI_SRC || ''
+const umamiWebsiteId = env.NUXT_PUBLIC_UMAMI_WEBSITE_ID || ''
+const umamiScript = umamiSrc && umamiWebsiteId
+  ? [{ src: umamiSrc, defer: true, 'data-website-id': umamiWebsiteId }]
+  : []
+
 export default defineNuxtConfig({
-  modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt'],
+  modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt', '@sentry/nuxt/module'],
+
+  app: {
+    head: {
+      script: umamiScript
+    }
+  },
+
+  // Self-hosted GlitchTip: disable source map upload to sentry.io (no auth token).
+  sentry: {
+    sourceMapsUploadOptions: {
+      enabled: false
+    }
+  },
 
   devtools: {
     enabled: env.NODE_ENV === 'development' && env.NUXT_DEVTOOLS === 'true'
@@ -20,8 +41,16 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     backendBaseUrl: env.NUXT_BACKEND_BASE_URL || 'http://backend:3000',
+    // Server-side (SSR) Sentry DSN — host must be the docker service glitchtip-web.
+    sentry: {
+      serverDsn: env.SENTRY_SERVER_DSN || ''
+    },
     public: {
-      googleClientId: env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || ''
+      googleClientId: env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || '',
+      // Browser-side Sentry DSN — host must be localhost (reachable from the browser).
+      sentry: {
+        dsn: env.NUXT_PUBLIC_SENTRY_DSN || ''
+      }
     }
   },
 
