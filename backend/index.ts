@@ -1,3 +1,5 @@
+import './instrument';
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import {
   userRouter,
@@ -6,7 +8,8 @@ import {
   dishRouter,
   chargeRouter,
   saleRouter,
-  forecastRouter
+  forecastRouter,
+  purchaseOrderRouter
 } from './src/routes';
 import { connectMongoose } from "./src/db/mangoose";
 import { ensureUserAccessBootstrap } from "./src/services/userAccessBootstrap";
@@ -27,6 +30,11 @@ app.use('/dishes', dishRouter);
 app.use('/charges', chargeRouter);
 app.use('/sales', saleRouter);
 app.use('/forecasts', forecastRouter);
+app.use('/purchase-orders', purchaseOrderRouter);
+
+// Must be registered after all routes so Sentry can capture errors thrown in
+// route handlers and forward them to GlitchTip.
+Sentry.setupExpressErrorHandler(app);
 
 const port = process.env.NODE_PORT || 3000;
 

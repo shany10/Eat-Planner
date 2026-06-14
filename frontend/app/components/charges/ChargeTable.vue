@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import type { Charge } from '~/types/business'
 
-defineProps<{
+withDefaults(defineProps<{
   items: Charge[]
-}>()
+  emptyMessage?: string
+}>(), {
+  emptyMessage: 'Aucune charge enregistree. Ajoute tes couts fixes et variables pour affiner le prix conseille.'
+})
 
 defineEmits<{
   edit: [item: Charge]
@@ -72,7 +75,7 @@ defineEmits<{
             colspan="5"
             class="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
           >
-            Aucune charge enregistree. Ajoute tes couts fixes et variables pour affiner le prix conseille.
+            {{ emptyMessage }}
           </td>
         </tr>
       </tbody>

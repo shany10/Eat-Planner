@@ -9,6 +9,7 @@ definePageMeta({
 
 const authStore = useAuthStore()
 const appToast = useAppToast()
+const { handleLogout } = useBusinessNav()
 const loading = ref(true)
 const savingSettings = ref(false)
 const errorMessage = ref('')
@@ -271,6 +272,17 @@ onMounted(loadPage)
               >
                 Revenir au dashboard
               </NuxtLink>
+              <button
+                type="button"
+                class="flex items-center gap-2 rounded-2xl border border-red-200 px-4 py-4 text-left text-red-700 transition hover:bg-red-50 dark:border-red-900/50 dark:text-red-300 dark:hover:bg-red-950/40"
+                @click="handleLogout"
+              >
+                <UIcon
+                  name="i-lucide-log-out"
+                  class="size-4 shrink-0"
+                />
+                Se deconnecter
+              </button>
             </div>
           </div>
 

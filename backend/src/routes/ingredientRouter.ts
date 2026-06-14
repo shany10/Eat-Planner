@@ -14,7 +14,7 @@ ingredientRouter.get("/", authMiddleware, async (req, res): Promise<void> => {
   }
 
   const ingredients = await IngredientModel.find(buildAccountScope(user))
-    .populate("supplier", "name")
+    .populate("supplier", "name productTypes deliveryLeadTimeDays deliveryFee minimumOrderAmount email phone address active")
     .sort({ name: 1 })
     .exec();
 
@@ -47,6 +47,7 @@ ingredientRouter.post(
 
     const ingredient = await IngredientModel.create({
       ...payload,
+      orderUnit: payload.orderUnit ?? payload.unit,
       owner: user._id
     });
     res.status(201).json(ingredient);
@@ -81,6 +82,7 @@ ingredientRouter.patch(
       buildAccountScope(user, { _id: req.params.id }),
       {
         ...payload,
+        ...(payload.unit && !payload.orderUnit ? { orderUnit: payload.unit } : {}),
         ...getOwnerPatch(user)
       },
       { new: true }

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import type { Sale } from '~/types/business'
 
-defineProps<{
+withDefaults(defineProps<{
   items: Sale[]
-}>()
+  emptyMessage?: string
+}>(), {
+  emptyMessage: 'Aucune vente enregistree. Cree ton premier ticket pour commencer a alimenter les previsions.'
+})
 
 defineEmits<{
   remove: [item: Sale]
@@ -15,7 +18,7 @@ defineEmits<{
     v-if="items.length === 0"
     class="rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50/80 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300"
   >
-    Aucune vente enregistree. Cree ton premier ticket pour commencer a alimenter les previsions.
+    {{ emptyMessage }}
   </div>
 
   <div

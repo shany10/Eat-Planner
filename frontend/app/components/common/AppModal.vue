@@ -29,7 +29,7 @@ const panelClass = computed(() => props.size === 'lg' ? 'max-w-3xl' : 'max-w-xl'
       @keydown.esc="emit('close')"
     >
       <section
-        class="w-full rounded-lg border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+        class="w-full rounded-lg border border-slate-200 bg-white text-slate-950 shadow-2xl dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
         :class="panelClass"
         role="dialog"
         aria-modal="true"

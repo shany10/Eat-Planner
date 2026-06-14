@@ -1,15 +1,12 @@
-FROM node:20-alpine
+FROM node:22-bookworm-slim
 
 WORKDIR /app
 
-# Enable pnpm
-RUN corepack enable pnpm
-
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package*.json ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN npm ci --no-audit --no-fund
 
 # Copy app files
 COPY . .
@@ -18,4 +15,4 @@ COPY . .
 EXPOSE 3001
 
 # Start development server
-CMD ["pnpm", "dev"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3001"]

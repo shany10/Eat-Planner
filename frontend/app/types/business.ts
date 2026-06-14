@@ -2,19 +2,44 @@ export type Supplier = {
   _id: string
   owner?: string | null
   name: string
+  productTypes?: string[]
+  deliveryLeadTimeDays?: number
+  deliveryFee?: number
+  minimumOrderAmount?: number
   contactName?: string
   email?: string
   phone?: string
+  address?: string
   notes?: string
   active: boolean
 }
+
+export type BusinessUnit = 'g' | 'kg' | 'ml' | 'cl' | 'l' | 'piece' | 'carton' | 'sac' | 'bouteille' | 'barquette' | 'boite'
+
+export type IngredientCategory
+  = | 'Viandes'
+    | 'Poissons'
+    | 'Fruits et legumes'
+    | 'Produits laitiers'
+    | 'Epicerie seche'
+    | 'Boissons'
+    | 'Surgeles'
+    | 'Boulangerie'
+    | 'Condiments'
+    | 'Produits d entretien'
 
 export type Ingredient = {
   _id: string
   owner?: string | null
   name: string
-  unit: 'g' | 'kg' | 'ml' | 'cl' | 'l' | 'piece'
+  category: IngredientCategory
+  unit: BusinessUnit
+  orderUnit?: BusinessUnit
   purchasePrice: number
+  stockQuantity: number
+  minimumStock: number
+  averageDailyUsage: number
+  minimumOrderQuantity: number
   supplier?: Supplier | string | null
   active: boolean
 }
@@ -157,4 +182,71 @@ export type SalesCsvImportResult = {
   createdSales: number
   skippedRows: number
   errors: string[]
+}
+
+export type PurchaseOrderStatus
+  = | 'draft'
+    | 'pending_validation'
+    | 'validated'
+    | 'pending_payment'
+    | 'paid'
+    | 'delivering'
+    | 'delivered'
+    | 'cancelled'
+    | 'sent'
+    | 'received'
+
+export type PaymentMethod = 'fake_card' | 'fake_transfer' | 'payment_on_delivery' | 'purchase_order'
+
+export type PurchaseOrderItem = {
+  ingredient: Ingredient | string
+  ingredientName: string
+  category?: string
+  supplier?: Supplier | string | null
+  supplierName?: string
+  quantity: number
+  unit: Ingredient['unit']
+  unitPrice: number
+  stockQuantity?: number
+  minimumStock?: number
+  recommendedQuantity?: number
+  lineTotal: number
+}
+
+export type PurchaseOrder = {
+  _id: string
+  orderNumber?: string
+  owner?: string | null
+  supplier: Supplier | string
+  suppliers?: Supplier[] | string[]
+  status: PurchaseOrderStatus
+  requestedDeliveryDate?: string
+  estimatedDeliveryDate?: string
+  deliveryAddress?: string
+  internalComment?: string
+  notes?: string
+  items: PurchaseOrderItem[]
+  deliveryFee?: number
+  vatRate?: number
+  totalExclTax?: number
+  vatAmount?: number
+  totalInclTax?: number
+  totalAmount: number
+  paymentMethod?: PaymentMethod | ''
+  paidAt?: string | null
+  validatedAt?: string | null
+  managementScoreDelta?: number
+  badges?: string[]
+  created_at?: string
+  updated_at?: string
+}
+
+export type PurchaseRewards = {
+  score: number
+  level: string
+  levelProgress: number
+  badges: string[]
+  tips: string[]
+  lowStockCount: number
+  paidOrderCount: number
 }

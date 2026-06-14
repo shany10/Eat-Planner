@@ -1,29 +1,4 @@
-Priorité 1
 
-Ajouter la notion Restaurant / compte
-Aujourd’hui tes ingrédients, plats, charges et ventes semblent globaux. Le cahier dit “un seul restaurant par compte utilisateur”, donc il faut rattacher les données à un restaurant ou au compte propriétaire.
-
-Finaliser le calcul de prix conseillé
-Il manque encore :
-
-prix de vente réel du plat ;
-écart entre prix conseillé et prix réel ;
-TVA séparée HT / TVA / TTC ;
-marge globale par défaut configurable ;
-affichage ultra clair du détail du calcul.
-Ajouter la correction manuelle des prévisions
-Ton moteur de prévision existe, mais il ne conserve pas :
-
-prévision initiale ;
-correction utilisateur ;
-date de correction ;
-utilisateur ayant corrigé.
-C’est une règle métier centrale du cahier.
-Créer une vraie entité Prévision / Recommandation
-Là les prévisions sont générées à la volée. Pour coller au cahier, il faudrait pouvoir sauvegarder une prévision journalière et comparer ensuite avec les ventes réelles.
-
-Importer les ventes en CSV
-La saisie manuelle existe, mais le cahier demande aussi l’import CSV. C’est très visible en soutenance et assez important fonctionnellement.
 
 Priorité 2
 

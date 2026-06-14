@@ -9,6 +9,7 @@
     "build": "tsc",
     "dev": "tsx --watch index.ts",
     "seed": "tsc && node dist/seeders/index.js",
+    "seed:business": "tsc && node dist/seeders/businessOnlySeeder.js",
     "seed:dev": "ts-node seeders/index.ts"
   },
   "keywords": [],
@@ -24,6 +25,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@sentry/node": "^10.56.0",
     "argon2": "^0.44.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",

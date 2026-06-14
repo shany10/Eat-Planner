@@ -5,3 +5,4 @@ export * from "./dishModel";
 export * from "./chargeModel";
 export * from "./saleModel";
 export * from "./forecastModel";
+export * from "./purchaseOrderModel";
