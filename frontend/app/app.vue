@@ -87,11 +87,11 @@ useHead({
       </header>
 
       <main v-if="isAuthenticated">
-        <div class="mx-auto grid min-h-[calc(100vh-65px)] max-w-[1500px] lg:grid-cols-[280px_minmax(0,1fr)]">
-          <div class="app-sidebar">
+        <div class="mx-auto grid min-h-[calc(100vh-65px)] max-w-[1500px] lg:grid-cols-[260px_minmax(0,1fr)]">
+          <div class="h-full">
             <BusinessNav />
           </div>
-          <div class="app-content">
+          <div class="app-content bg-[#f9f9f9] dark:bg-[#1a1c1c]">
             <div class="mx-auto w-full max-w-6xl">
               <NuxtPage />
             </div>
