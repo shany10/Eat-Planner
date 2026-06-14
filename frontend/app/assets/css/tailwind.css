@@ -44,13 +44,21 @@
 }
 
 .app-sidebar {
-  border-bottom: 1px solid #e2e8f0;
   background: #ffffff;
 }
 
 .dark .app-sidebar {
-  border-color: #1e293b;
   background: #020617;
+}
+
+.app-bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.app-bottom-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .app-content {
