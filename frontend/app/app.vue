@@ -11,6 +11,8 @@ const themeButtonLabel = computed(() => (hasMounted.value && isDark.value ? 'Cla
 const themeButtonIcon = computed(() => (hasMounted.value && isDark.value ? 'i-lucide-sun' : 'i-lucide-moon'))
 const themeButtonAriaLabel = computed(() => (hasMounted.value && isDark.value ? 'Activer le mode clair' : 'Activer le mode sombre'))
 const appToast = useAppToast()
+const searchQuery = ref('')
+const logoError = ref(false)
 
 onMounted(() => {
   hasMounted.value = true
@@ -41,22 +43,60 @@ useHead({
             to="/"
             class="group flex min-w-0 items-center gap-3"
           >
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-sm font-semibold text-white shadow-sm dark:bg-white dark:text-slate-950">
+            <img
+              v-if="!logoError"
+              src="/logo.png"
+              alt="Eat Planner"
+              class="h-10 w-10 shrink-0 rounded-[1rem] object-contain"
+              @error="logoError = true"
+            >
+            <div
+              v-else
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] bg-[#6b3414] text-sm font-bold text-white shadow-sm"
+            >
               EP
             </div>
             <div class="min-w-0">
-              <p class="truncate text-sm font-semibold text-slate-950 dark:text-white">
+              <p class="truncate text-sm font-bold text-[#1a1c1c] dark:text-white font-['Be_Vietnam_Pro',sans-serif]">
                 Eat Planner
               </p>
-              <p class="truncate text-xs text-slate-500 dark:text-slate-400">
+              <p class="truncate text-xs text-[#40493e] dark:text-[#c0c9ba]">
                 Pilotage restaurant
               </p>
             </div>
           </NuxtLink>
 
-          <div class="flex shrink-0 items-center gap-2">
+          <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+            <template v-if="isAuthenticated">
+              <div class="relative hidden md:block">
+                <UIcon
+                  name="i-lucide-search"
+                  class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#40493e]/60 dark:text-[#c0c9ba]/60"
+                />
+                <input
+                  v-model="searchQuery"
+                  type="search"
+                  placeholder="Rechercher..."
+                  aria-label="Rechercher"
+                  class="w-56 rounded-full border border-transparent bg-[#f3f3f3] py-2 pl-10 pr-4 text-sm text-[#1a1c1c] transition placeholder:text-[#40493e]/50 focus:outline-none focus:ring-2 focus:ring-[#feb236] lg:w-72 dark:bg-[#2f3131] dark:text-white dark:placeholder:text-[#c0c9ba]/50"
+                >
+              </div>
+
+              <button
+                type="button"
+                aria-label="Notifications"
+                class="relative inline-flex size-10 items-center justify-center rounded-full border border-[#c0c9ba]/40 text-[#40493e] transition hover:bg-[#f3f3f3] dark:border-white/10 dark:text-[#c0c9ba] dark:hover:bg-[#2f3131]"
+              >
+                <UIcon
+                  name="i-lucide-bell"
+                  class="size-5"
+                />
+                <span class="absolute right-2.5 top-2.5 size-2 rounded-full bg-[#ba1a1a] ring-2 ring-white dark:ring-[#1a1c1c]" />
+              </button>
+            </template>
+
             <button
-              class="btn-secondary !px-3"
+              class="inline-flex items-center gap-2 rounded-full border border-[#c0c9ba]/40 px-4 py-2 text-sm font-bold text-[#40493e] transition hover:bg-[#f3f3f3] dark:border-white/10 dark:text-[#c0c9ba] dark:hover:bg-[#2f3131]"
               :aria-label="themeButtonAriaLabel"
               :title="themeButtonLabel"
               @click="toggleColorMode"
@@ -71,13 +111,13 @@ useHead({
             <template v-if="!isAuthenticated">
               <NuxtLink
                 to="/login"
-                class="btn-secondary"
+                class="inline-flex items-center gap-2 rounded-full border border-[#707a6d] px-5 py-2 text-sm font-bold text-[#1a1c1c] transition hover:bg-[#f3f3f3] dark:border-[#c0c9ba] dark:text-white dark:hover:bg-[#2f3131]"
               >
                 Login
               </NuxtLink>
               <NuxtLink
                 to="/register"
-                class="btn-primary"
+                class="inline-flex items-center gap-2 rounded-full bg-[#feb236] px-5 py-2 text-sm font-bold text-[#6d4700] shadow-sm transition-all hover:bg-[#ffc059] hover:shadow-md"
               >
                 Register
               </NuxtLink>
