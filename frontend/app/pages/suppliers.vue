@@ -176,21 +176,21 @@ onMounted(loadPage)
         <div
           v-for="index in 4"
           :key="index"
-          class="h-32 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800"
+          class="h-32 animate-pulse rounded-[2.5rem] bg-slate-200 dark:bg-slate-800"
         />
       </div>
     </template>
 
     <template v-else>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-         <div v-for="stat in stats" :key="stat.title" class="bg-[#f3f3f3] dark:bg-[#1a1c1c] p-6 rounded-2xl border border-[#c0c9ba]/20 dark:border-white/5">
+         <div v-for="stat in stats" :key="stat.title" class="bg-[#f3f3f3] dark:bg-[#1a1c1c] p-6 rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5">
            <span class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">{{ stat.title }}</span>
            <div class="text-3xl font-black text-[#1a1c1c] dark:text-white my-1">{{ stat.value }}</div>
            <div class="text-xs text-[#40493e] dark:text-[#c0c9ba]">{{ stat.hint }}</div>
          </div>
       </div>
 
-      <div class="bg-[#005013]/5 dark:bg-[#8ad986]/10 rounded-2xl p-6 border border-[#005013]/20 dark:border-[#8ad986]/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div class="bg-[#005013]/5 dark:bg-[#8ad986]/10 rounded-[2.5rem] p-6 border border-[#005013]/20 dark:border-[#8ad986]/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div class="flex items-center gap-4">
           <UIcon name="i-lucide-megaphone" class="text-[#005013] dark:text-[#8ad986] size-7 shrink-0" />
           <div>
@@ -208,7 +208,7 @@ onMounted(loadPage)
 
       <section
         v-if="supplierStore.items.length === 0"
-        class="bg-white dark:bg-[#1a1c1c] rounded-2xl p-10 md:p-16 border-2 border-dashed border-[#c0c9ba] dark:border-[#40493e] flex flex-col items-center text-center space-y-6"
+        class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-10 md:p-16 border-2 border-dashed border-[#c0c9ba] dark:border-[#40493e] flex flex-col items-center text-center space-y-6"
       >
         <div class="space-y-3">
           <span class="text-[10px] font-bold uppercase text-[#40493e]/50 dark:text-[#c0c9ba]/50">Premier setup</span>
@@ -239,7 +239,7 @@ onMounted(loadPage)
 
       <div
         v-else
-        class="bg-white dark:bg-[#1a1c1c] rounded-2xl overflow-hidden border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm"
+        class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] overflow-hidden border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm"
       >
         <div class="p-6 border-b border-[#c0c9ba]/20 dark:border-white/5 flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center bg-[#f3f3f3]/50 dark:bg-[#2f3131]/50">
           <div>
@@ -266,6 +266,7 @@ onMounted(loadPage)
       :description="modalDescription"
       eyebrow="Fournisseur"
       size="lg"
+      variant="warm"
       @close="closeSupplierModal"
     >
       <SupplierForm
