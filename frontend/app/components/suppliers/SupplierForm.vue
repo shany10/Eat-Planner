@@ -59,34 +59,39 @@ function submit() {
     active: form.active
   })
 }
+
+const fieldClass = 'w-full bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm placeholder:text-[#40493e]/50 dark:placeholder:text-[#c0c9ba]/50 focus:outline-none focus:ring-2 focus:ring-[#feb236] transition'
+const textareaClass = 'w-full bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-2xl px-4 py-3 text-sm min-h-24 placeholder:text-[#40493e]/50 dark:placeholder:text-[#c0c9ba]/50 focus:outline-none focus:ring-2 focus:ring-[#feb236] transition'
+const primaryBtn = 'bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold py-2.5 px-6 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2'
+const secondaryBtn = 'border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold py-2.5 px-6 rounded-full hover:bg-[#f3f3f3] dark:hover:bg-[#2f3131] transition-all flex items-center gap-2'
 </script>
 
 <template>
   <form
-    class="grid gap-3"
+    class="grid gap-4"
     @submit.prevent="submit"
   >
     <div class="grid gap-3 md:grid-cols-2">
       <input
         v-model="form.name"
-        class="app-input"
+        :class="fieldClass"
         placeholder="Nom du fournisseur"
         required
       >
       <input
         v-model="form.contactName"
-        class="app-input"
+        :class="fieldClass"
         placeholder="Contact"
       >
       <input
         v-model="form.email"
-        class="app-input"
+        :class="fieldClass"
         placeholder="Email"
         type="email"
       >
       <input
         v-model="form.phone"
-        class="app-input"
+        :class="fieldClass"
         placeholder="Telephone"
       >
     </div>
@@ -94,12 +99,12 @@ function submit() {
     <div class="grid gap-3 md:grid-cols-4">
       <input
         v-model="form.productTypes"
-        class="app-input md:col-span-2"
+        :class="[fieldClass, 'md:col-span-2']"
         placeholder="Types de produits (separes par virgules)"
       >
       <input
         v-model.number="form.deliveryLeadTimeDays"
-        class="app-input"
+        :class="fieldClass"
         placeholder="Delai livraison"
         type="number"
         min="0"
@@ -107,7 +112,7 @@ function submit() {
       >
       <input
         v-model.number="form.deliveryFee"
-        class="app-input"
+        :class="fieldClass"
         placeholder="Frais livraison"
         type="number"
         min="0"
@@ -115,7 +120,7 @@ function submit() {
       >
       <input
         v-model.number="form.minimumOrderAmount"
-        class="app-input"
+        :class="fieldClass"
         placeholder="Minimum commande"
         type="number"
         min="0"
@@ -123,22 +128,23 @@ function submit() {
       >
       <input
         v-model="form.address"
-        class="app-input md:col-span-3"
+        :class="[fieldClass, 'md:col-span-3']"
         placeholder="Adresse fournisseur"
       >
     </div>
 
     <textarea
       v-model="form.notes"
-      class="app-input min-h-24"
+      :class="textareaClass"
       placeholder="Notes"
     />
 
-    <div class="flex items-center justify-between">
-      <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+    <div class="flex items-center justify-between gap-4 pt-2">
+      <label class="flex items-center gap-2 text-sm font-medium text-[#40493e] dark:text-[#c0c9ba]">
         <input
           v-model="form.active"
           type="checkbox"
+          class="size-4 rounded accent-[#005013]"
         >
         Fournisseur actif
       </label>
@@ -147,7 +153,7 @@ function submit() {
         <button
           v-if="showCancel || initialValue"
           type="button"
-          class="btn-secondary"
+          :class="secondaryBtn"
           @click="$emit('cancel')"
         >
           <UIcon
@@ -158,7 +164,7 @@ function submit() {
         </button>
         <button
           type="submit"
-          class="btn-primary"
+          :class="primaryBtn"
         >
           <UIcon
             name="i-lucide-save"
