@@ -89,6 +89,13 @@ const globalMarginLabel = computed(
   () => `${Math.round(props.defaultMarginRate * 100)}%`,
 );
 
+const targetMarginRatePercent = computed({
+  get: () => parseFloat((form.targetMarginRate * 100).toFixed(2)),
+  set: (val: number) => {
+    form.targetMarginRate = parseFloat((val / 100).toFixed(4));
+  },
+});
+
 function addLine() {
   form.ingredients.push(createBlankLine());
 }
@@ -140,76 +147,50 @@ function resetForm() {
 
 <template>
   <form class="grid gap-4" @submit.prevent="submit">
-    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
       <div>
         <label htmlFor="name" class="text-sm font-medium"> Nom du plat </label>
-        <input
-          v-model="form.name"
-          id="name"
+        <input v-model="form.name" id="name"
           class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
-          placeholder="Nom du plat"
-          required
-        />
+          placeholder="Nom du plat" required />
       </div>
       <div>
         <label htmlFor="category" class="text-sm font-medium">
           Catégorie
         </label>
-        <input
-          v-model="form.category"
-          id="category"
+        <input v-model="form.category" id="category"
           class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
-          placeholder="Categorie"
-          required
-        />
+          placeholder="Categorie" required />
       </div>
       <div>
         <label htmlFor="estimatedDailyServings" class="text-sm font-medium">
           Portions / jour
         </label>
-        <input
-          v-model.number="form.estimatedDailyServings"
+        <input v-model.number="form.estimatedDailyServings"
           class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
-          type="number"
-          min="1"
-          step="1"
-          id="estimatedDailyServings"
-          placeholder="Portions / jour"
-        />
+          type="number" min="1" step="1" id="estimatedDailyServings" placeholder="Portions / jour" />
       </div>
-    </div>
-
-    <div class="grid gap-3 md:grid-cols-2">
       <div>
         <label htmlFor="targetMarginRate" class="text-sm font-medium">
           Marge en %
         </label>
-        <input
-          id="targetMarginRate"
-          v-model.number="form.targetMarginRate"
+        <input id="targetMarginRate" v-model.number="targetMarginRatePercent"
           class="rounded-xl block border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:disabled:bg-slate-900"
-          type="number"
-          min="0"
-          max="0.95"
-          step="0.01"
-          placeholder="Marge specifique"
-        />
+          type="number" min="0" max="95" step="0.1" placeholder="Marge spécifique (%)" />
       </div>
-      <input
-        v-model.number="form.actualPriceIncludingTax"
-        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
-        type="number"
-        min="0"
-        step="0.01"
-        placeholder="Prix reel TTC"
-      />
+      <div>
+        <label htmlFor="actualPriceIncludingTax" class="text-sm font-medium">
+          Prix réel TTC
+        </label>
+        <input id="actualPriceIncludingTax" v-model.number="form.actualPriceIncludingTax"
+          class="rounded-xl border block border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+          type="number" min="0" step="0.01" placeholder="Prix reel TTC" />
+      </div>
     </div>
 
-    <textarea
-      v-model="form.description"
+    <textarea v-model="form.description"
       class="min-h-24 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
-      placeholder="Description du plat"
-    />
+      placeholder="Description du plat" />
 
     <div class="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
       <div class="mb-3 flex items-center justify-between gap-3">
@@ -220,44 +201,26 @@ function resetForm() {
             rentabilite fonctionne.
           </p>
         </div>
-        <button
-          type="button"
-          class="rounded-xl border border-slate-300 px-3 py-2 text-sm dark:border-slate-700"
-          @click="addLine"
-        >
+        <button type="button" class="rounded-xl border border-slate-300 px-3 py-2 text-sm dark:border-slate-700"
+          @click="addLine">
           Ajouter une ligne
         </button>
       </div>
 
       <div class="space-y-3">
-        <div
-          v-for="(line, index) in form.ingredients"
-          :key="index"
-          class="grid gap-3 md:grid-cols-[1.4fr_0.8fr_0.8fr_auto]"
-        >
-          <select
-            v-model="line.ingredient"
-            class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
-          >
-            <option
-              v-for="ingredient in ingredientOptions"
-              :key="ingredient._id"
-              :value="ingredient._id"
-            >
+        <div v-for="(line, index) in form.ingredients" :key="index"
+          class="grid gap-3 md:grid-cols-[1.4fr_0.8fr_0.8fr_auto]">
+          <select v-model="line.ingredient"
+            class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950">
+            <option v-for="ingredient in ingredientOptions" :key="ingredient._id" :value="ingredient._id">
               {{ ingredient.name }}
             </option>
           </select>
-          <input
-            v-model.number="line.quantity"
+          <input v-model.number="line.quantity"
             class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
-            type="number"
-            min="0.01"
-            step="0.01"
-          />
-          <select
-            v-model="line.unit"
-            class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
-          >
+            type="number" min="0.01" step="0.01" />
+          <select v-model="line.unit"
+            class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950">
             <option value="g">g</option>
             <option value="kg">kg</option>
             <option value="ml">ml</option>
@@ -273,26 +236,19 @@ function resetForm() {
     </div>
 
     <div class="flex items-center justify-between">
-      <label
-        class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300"
-      >
+      <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
         <input v-model="form.active" type="checkbox" />
         Plat actif
       </label>
 
       <div class="flex gap-2">
-        <button
-          v-if="initialValue"
-          type="button"
-          class="rounded-xl border border-slate-300 px-4 py-2 text-sm dark:border-slate-700"
-          @click="$emit('cancel')"
-        >
+        <button v-if="initialValue" type="button"
+          class="rounded-xl border border-slate-300 px-4 py-2 text-sm dark:border-slate-700" @click="$emit('cancel')">
           Annuler
         </button>
         <button
           class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-900"
-          :disabled="!canSubmit"
-        >
+          :disabled="!canSubmit">
           {{ submitLabel }}
         </button>
       </div>
