@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import BusinessNav from '~/components/layout/BusinessNav.vue'
+import GlobalSearch from '~/components/layout/GlobalSearch.vue'
+import NotificationBell from '~/components/layout/NotificationBell.vue'
 import { useAuthStore } from '~/stores/auth'
 
 const authStore = useAuthStore()
@@ -11,7 +13,6 @@ const themeButtonLabel = computed(() => (hasMounted.value && isDark.value ? 'Cla
 const themeButtonIcon = computed(() => (hasMounted.value && isDark.value ? 'i-lucide-sun' : 'i-lucide-moon'))
 const themeButtonAriaLabel = computed(() => (hasMounted.value && isDark.value ? 'Activer le mode clair' : 'Activer le mode sombre'))
 const appToast = useAppToast()
-const searchQuery = ref('')
 const logoError = ref(false)
 
 onMounted(() => {
@@ -68,31 +69,9 @@ useHead({
 
           <div class="flex shrink-0 items-center gap-2 sm:gap-3">
             <template v-if="isAuthenticated">
-              <div class="relative hidden md:block">
-                <UIcon
-                  name="i-lucide-search"
-                  class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#40493e]/60 dark:text-[#c0c9ba]/60"
-                />
-                <input
-                  v-model="searchQuery"
-                  type="search"
-                  placeholder="Rechercher..."
-                  aria-label="Rechercher"
-                  class="w-56 rounded-full border border-transparent bg-[#f3f3f3] py-2 pl-10 pr-4 text-sm text-[#1a1c1c] transition placeholder:text-[#40493e]/50 focus:outline-none focus:ring-2 focus:ring-[#feb236] lg:w-72 dark:bg-[#2f3131] dark:text-white dark:placeholder:text-[#c0c9ba]/50"
-                >
-              </div>
+              <GlobalSearch class="hidden md:block" />
 
-              <button
-                type="button"
-                aria-label="Notifications"
-                class="relative inline-flex size-10 items-center justify-center rounded-full border border-[#c0c9ba]/40 text-[#40493e] transition hover:bg-[#f3f3f3] dark:border-white/10 dark:text-[#c0c9ba] dark:hover:bg-[#2f3131]"
-              >
-                <UIcon
-                  name="i-lucide-bell"
-                  class="size-5"
-                />
-                <span class="absolute right-2.5 top-2.5 size-2 rounded-full bg-[#ba1a1a] ring-2 ring-white dark:ring-[#1a1c1c]" />
-              </button>
+              <NotificationBell />
             </template>
 
             <button
