@@ -2,7 +2,6 @@
 import { getFetchErrorMessage } from "~/utils/fetch-error";
 import AppModal from "~/components/common/AppModal.vue";
 import EmptyStateCard from "~/components/common/EmptyStateCard.vue";
-import StatCard from "~/components/common/StatCard.vue";
 import DishForm from "~/components/dishes/DishForm.vue";
 import DishTable from "~/components/dishes/DishTable.vue";
 import type { Dish, DishIngredientLine } from "~/types/business";
@@ -258,7 +257,6 @@ async function saveDish(payload: DishPayload) {
 }
 
 async function removeDish(item: Dish) {
-  console.log("remove dish", item);
   try {
     await dishStore.remove(item._id);
     appToast.success("Plat supprime", `${item.name} a ete retire de la carte.`);
@@ -302,102 +300,96 @@ onMounted(loadPage);
 </script>
 
 <template>
-  <div class="space-y-5">
-    <section class="app-page-header app-page-header--compact">
-      <div
-        class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
-      >
+  <div class="p-4 md:p-8 space-y-6 font-sans">
+    <section>
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
-          <p class="app-eyebrow">Carte rentable</p>
-          <h1 class="app-title mt-2">Recettes et prix de vente</h1>
-          <p class="app-subtitle mt-2">
-            La table garde toute la largeur, les formulaires s ouvrent seulement
-            au moment de creer ou modifier.
+          <span class="text-[10px] uppercase tracking-widest font-bold text-[#40493e]/60 dark:text-[#c0c9ba]">Carte rentable</span>
+          <h1 class="text-3xl md:text-[32px] md:leading-10 font-bold text-[#1a1c1c] dark:text-[#f1f1f1] font-['Be_Vietnam_Pro',sans-serif]">
+            Recettes et prix de vente
+          </h1>
+          <p class="text-[#40493e] dark:text-[#c0c9ba] text-sm mt-1">
+            La table garde toute la largeur, les formulaires s ouvrent seulement au moment de creer ou modifier.
           </p>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-3">
           <button
             type="button"
-            class="btn-primary"
+            class="bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold py-2.5 px-6 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             :disabled="ingredientStore.items.length === 0"
             @click="openDishModal"
           >
-            <UIcon name="i-lucide-plus" class="size-4" />
+            <UIcon name="i-lucide-plus" class="size-5" />
             Ajouter un plat
           </button>
-          <NuxtLink to="/ingredients" class="btn-secondary">
+          <NuxtLink
+            to="/ingredients"
+            class="border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold py-2.5 px-6 rounded-full hover:bg-[#f3f3f3] dark:hover:bg-[#2f3131] transition-all flex items-center gap-2"
+          >
+            <UIcon name="i-lucide-wheat" class="size-5" />
             Ingredients
           </NuxtLink>
         </div>
       </div>
 
-      <div class="mt-4 flex flex-wrap gap-2">
-        <span class="app-pill">{{ activeDishCount }} plat(s) actif(s)</span>
-        <span class="app-pill">{{ restaurantName }}</span>
-        <span class="app-pill"
-          >{{ ingredientStore.items.length }} ingredient(s)</span
-        >
-        <span class="app-pill"
-          >Marge {{ formatPercent(defaultMarginRate) }}</span
-        >
-        <span class="app-pill">TVA {{ formatPercent(vatRate) }}</span>
-        <span class="app-pill">{{ recipeCoverage }}% recettes</span>
-        <span class="app-pill">{{
-          loading ? "Calcul en cours" : "Carte a jour"
-        }}</span>
+      <div class="flex flex-wrap gap-2 py-4">
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ activeDishCount }} plat(s) actif(s)</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ restaurantName }}</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ ingredientStore.items.length }} ingredient(s)</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">Marge {{ formatPercent(defaultMarginRate) }}</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">TVA {{ formatPercent(vatRate) }}</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ recipeCoverage }}% recettes</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ loading ? "Calcul en cours" : "Carte a jour" }}</span>
       </div>
     </section>
 
     <p
       v-if="errorMessage"
-      class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+      class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
     >
       {{ errorMessage }}
     </p>
 
     <template v-if="loading">
-      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         <div
           v-for="index in 4"
           :key="index"
-          class="h-24 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800"
+          class="h-32 animate-pulse rounded-[2.5rem] bg-slate-200 dark:bg-slate-800"
         />
       </div>
     </template>
 
     <template v-else>
-      <!-- <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div
           v-for="stat in stats"
           :key="stat.title"
-          :title="stat.title"
-          :value="stat.value"
-          :hint="stat.hint"
-        />
-      </div> -->
-
-      <!-- <div class="app-section">
-        <div
-          class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+          class="bg-[#f3f3f3] dark:bg-[#1a1c1c] p-6 rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5"
         >
+          <span class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">{{ stat.title }}</span>
+          <div class="text-3xl font-black text-[#1a1c1c] dark:text-white my-1">{{ stat.value }}</div>
+          <div class="text-xs text-[#40493e] dark:text-[#c0c9ba]">{{ stat.hint }}</div>
+        </div>
+      </div>
+
+      <div class="bg-[#005013]/5 dark:bg-[#8ad986]/10 rounded-[2.5rem] p-6 border border-[#005013]/20 dark:border-[#8ad986]/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
+          <UIcon name="i-lucide-megaphone" class="text-[#005013] dark:text-[#8ad986] size-7 shrink-0" />
           <div>
-            <p class="app-eyebrow">Signal pricing</p>
-            <p class="app-section-title mt-1">
+            <span class="text-[10px] font-bold uppercase text-[#005013]/70 dark:text-[#8ad986]/70">Signal pricing</span>
+            <p class="font-bold text-[#1a1c1c] dark:text-[#e2e2e2] mt-0.5">
               {{ pricingSignal }}
             </p>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <span class="app-pill"
-              >Food cost {{ formatCurrency(averageFoodCost) }}</span
-            >
-            <span class="app-pill"
-              >Prix TTC moyen {{ formatCurrency(averageSuggestedPrice) }}</span
-            >
-            <span class="app-pill">{{ dishCount }} plat(s)</span>
-          </div>
         </div>
-      </div> -->
+        <div class="flex flex-wrap gap-2 shrink-0">
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[10px] font-bold rounded-full text-[#40493e] dark:text-[#c0c9ba]">Food cost {{ formatCurrency(averageFoodCost) }}</span>
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[10px] font-bold rounded-full text-[#40493e] dark:text-[#c0c9ba]">Prix TTC moyen {{ formatCurrency(averageSuggestedPrice) }}</span>
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[10px] font-bold rounded-full text-[#40493e] dark:text-[#c0c9ba]">{{ dishCount }} plat(s)</span>
+        </div>
+      </div>
 
       <EmptyStateCard
         v-if="ingredientStore.items.length === 0"
@@ -408,33 +400,26 @@ onMounted(loadPage);
         action-to="/ingredients"
       />
 
-      <section class="app-section">
-        <div
-          class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"
-        >
+      <section class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-6 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
+        <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p class="app-eyebrow">Filtres</p>
-            <h2 class="app-section-title mt-1">Retrouver un plat rapidement</h2>
+            <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Filtres</span>
+            <h4 class="font-bold text-[#1a1c1c] dark:text-white mt-1">Retrouver un plat rapidement</h4>
           </div>
-          <span class="app-pill"
-            >{{ filteredDishes.length }} /
-            {{ dishStore.items.length }} plat(s)</span
-          >
+          <span class="bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] px-3 py-1 rounded-full text-[10px] font-bold w-fit">{{ filteredDishes.length }} / {{ dishStore.items.length }} plat(s)</span>
         </div>
 
-        <div
-          class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto]"
-        >
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
           <input
             v-model="dishFilters.search"
-            class="app-input"
+            class="bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236]"
             type="search"
             placeholder="Rechercher nom, categorie, ingredient"
             aria-label="Rechercher un plat"
           />
           <select
             v-model="dishFilters.category"
-            class="app-input"
+            class="bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236]"
             aria-label="Filtrer par categorie"
           >
             <option value="all">Toutes categories</option>
@@ -448,7 +433,7 @@ onMounted(loadPage);
           </select>
           <select
             v-model="dishFilters.status"
-            class="app-input"
+            class="bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236]"
             aria-label="Filtrer par statut"
           >
             <option value="all">Tous statuts</option>
@@ -457,35 +442,41 @@ onMounted(loadPage);
           </select>
           <select
             v-model="dishFilters.health"
-            class="app-input"
+            class="bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236]"
             aria-label="Filtrer par rentabilite"
           >
             <option value="all">Tous niveaux</option>
             <option value="profitable">Rentables</option>
             <option value="review">A revoir</option>
           </select>
-          <button type="button" class="btn-secondary" @click="resetDishFilters">
+          <button
+            type="button"
+            class="border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold py-2.5 px-6 rounded-full hover:bg-[#f3f3f3] dark:hover:bg-[#2f3131] transition-all flex items-center justify-center gap-2"
+            @click="resetDishFilters"
+          >
             <UIcon name="i-lucide-rotate-ccw" class="size-4" />
             Reset
           </button>
         </div>
       </section>
 
-      <section class="app-section">
-        <div class="mb-4 flex items-center justify-between gap-4">
+      <div class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] overflow-hidden border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
+        <div class="p-6 border-b border-[#c0c9ba]/20 dark:border-white/5 flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center bg-[#f3f3f3]/50 dark:bg-[#2f3131]/50">
           <div>
-            <p class="app-eyebrow">Table</p>
-            <h2 class="app-section-title mt-1">Vue carte</h2>
+            <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Table</span>
+            <h4 class="font-bold text-[#1a1c1c] dark:text-white mt-1">Vue carte</h4>
           </div>
-          <span class="app-pill">{{ filteredDishes.length }} plat(s)</span>
+          <span class="bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] px-3 py-1 rounded-full text-[10px] font-bold w-fit">{{ filteredDishes.length }} plat(s)</span>
         </div>
-        <DishTable
-          :items="filteredDishes"
-          :empty-message="dishTableEmptyMessage"
-          @edit="editDish"
-          @remove="removeDish"
-        />
-      </section>
+        <div class="p-0">
+          <DishTable
+            :items="filteredDishes"
+            :empty-message="dishTableEmptyMessage"
+            @edit="editDish"
+            @remove="removeDish"
+          />
+        </div>
+      </div>
     </template>
 
     <AppModal
@@ -498,6 +489,7 @@ onMounted(loadPage);
           : 'Ajoute la recette sans perdre la table de vue.'
       "
       size="lg"
+      variant="warm"
       @close="closeDishModal"
     >
       <DishForm

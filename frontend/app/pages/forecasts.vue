@@ -197,51 +197,47 @@ onMounted(loadForecast)
 </script>
 
 <template>
-  <div class="space-y-5">
-    <section class="app-page-header app-page-header--compact">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  <div class="p-4 md:p-8 space-y-6 font-sans">
+    <section>
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
-          <p class="app-eyebrow">
-            Production intelligente
-          </p>
-          <h1 class="app-title mt-2">
+          <span class="text-[10px] uppercase tracking-widest font-bold text-[#40493e]/60 dark:text-[#c0c9ba]">Production intelligente</span>
+          <h1 class="text-3xl md:text-[32px] md:leading-10 font-bold text-[#1a1c1c] dark:text-[#f1f1f1] font-['Be_Vietnam_Pro',sans-serif]">
             Previsions et besoins matieres
           </h1>
-          <p class="app-subtitle mt-2">
+          <p class="text-[#40493e] dark:text-[#c0c9ba] text-sm mt-1">
             Une mission simple: choisir la date, simuler les quantites, valider le plan de production.
           </p>
         </div>
 
         <div class="flex flex-wrap gap-2">
-          <span class="app-pill">{{ forecastStore.forecast?.targetDate || selectedDate }}</span>
-          <span class="app-pill">{{ forecastStore.forecast?.persisted ? 'Sauvegardee' : 'Simulation' }}</span>
-          <span class="app-pill">{{ forecastStore.forecast?.dishes.length || 0 }} plat(s)</span>
-          <span class="app-pill">{{ forecastStore.forecast?.ingredientNeeds.length || 0 }} besoin(s)</span>
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ forecastStore.forecast?.targetDate || selectedDate }}</span>
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ forecastStore.forecast?.persisted ? 'Sauvegardee' : 'Simulation' }}</span>
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ forecastStore.forecast?.dishes.length || 0 }} plat(s)</span>
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ forecastStore.forecast?.ingredientNeeds.length || 0 }} besoin(s)</span>
         </div>
       </div>
     </section>
 
-    <section class="app-section">
-      <div class="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+    <section class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-6 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
+      <div class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <div>
-          <p class="app-eyebrow">
-            Mission prevision
-          </p>
-          <h2 class="app-section-title mt-1">
+          <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Mission prevision</span>
+          <h2 class="font-bold text-lg text-[#1a1c1c] dark:text-white mt-1">
             {{ forecastMissionTitle }}
           </h2>
-          <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          <p class="mt-2 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
             {{ forecastMissionHint }}
           </p>
 
           <div class="mt-4">
-            <div class="flex items-center justify-between text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+            <div class="flex items-center justify-between text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">
               <span>Niveau de preparation</span>
               <span>{{ forecastProgress }}%</span>
             </div>
-            <div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+            <div class="mt-2 h-2 overflow-hidden rounded-full bg-[#e8e8e8] dark:bg-[#2f3131]">
               <div
-                class="h-full rounded-full bg-teal-600 transition-all dark:bg-teal-300"
+                class="h-full rounded-full bg-[linear-gradient(90deg,#feb236,#005013)] transition-all"
                 :style="{ width: `${forecastProgress}%` }"
               />
             </div>
@@ -252,11 +248,11 @@ onMounted(loadForecast)
           <article
             v-for="step in missionSteps"
             :key="step.number"
-            class="rounded-lg border p-4"
+            class="rounded-3xl border p-4"
             :class="getStepClass(step.state)"
           >
             <div class="flex items-center justify-between gap-3">
-              <span class="inline-flex size-8 items-center justify-center rounded-md bg-white/70 text-sm font-bold dark:bg-slate-950/50">
+              <span class="inline-flex size-8 items-center justify-center rounded-full bg-white/70 text-sm font-bold dark:bg-black/30">
                 {{ step.number }}
               </span>
               <UIcon
@@ -274,31 +270,31 @@ onMounted(loadForecast)
         </div>
       </div>
 
-      <div class="mt-5 grid gap-3 lg:grid-cols-[1fr_1fr_1fr_auto_auto]">
+      <div class="mt-6 grid gap-3 lg:grid-cols-[1fr_1fr_1fr_auto_auto]">
         <input
           v-model="selectedDate"
-          class="app-input"
+          class="w-full bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236] transition"
           type="date"
           aria-label="Date de prevision"
         >
-        <div class="app-inset py-3">
-          <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+        <div class="rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] px-4 py-3">
+          <p class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">
             Portions
           </p>
-          <p class="mt-1 font-semibold">
+          <p class="mt-1 font-black text-[#1a1c1c] dark:text-white">
             {{ forecastTotals.plates }}
           </p>
         </div>
-        <div class="app-inset py-3">
-          <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+        <div class="rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] px-4 py-3">
+          <p class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">
             CA projete
           </p>
-          <p class="mt-1 font-semibold">
+          <p class="mt-1 font-black text-[#1a1c1c] dark:text-white">
             {{ formatCurrency(forecastTotals.revenue) }}
           </p>
         </div>
         <button
-          class="btn-secondary"
+          class="border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold py-2.5 px-6 rounded-full hover:bg-[#f3f3f3] dark:hover:bg-[#2f3131] transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           :disabled="forecastStore.pending"
           @click="loadForecast(true)"
         >
@@ -309,7 +305,7 @@ onMounted(loadForecast)
           Simuler
         </button>
         <button
-          class="btn-primary"
+          class="bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold py-2.5 px-6 rounded-full shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           :disabled="forecastStore.pending"
           @click="saveForecast"
         >
@@ -324,56 +320,54 @@ onMounted(loadForecast)
 
     <p
       v-if="errorMessage"
-      class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+      class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
     >
       {{ errorMessage }}
     </p>
 
-    <section class="app-section">
+    <section class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-6 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
       <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p class="app-eyebrow">
-            Explication des donnees
-          </p>
-          <h2 class="app-section-title mt-1">
+          <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Explication des donnees</span>
+          <h2 class="font-bold text-lg text-[#1a1c1c] dark:text-white mt-1">
             Comment la prevision se lit
           </h2>
         </div>
         <div class="flex flex-wrap gap-2">
-          <span class="app-pill">{{ forecastDataSummary.corrected }} correction(s)</span>
-          <span class="app-pill">{{ forecastDataSummary.alerts }} alerte(s)</span>
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ forecastDataSummary.corrected }} correction(s)</span>
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ forecastDataSummary.alerts }} alerte(s)</span>
         </div>
       </div>
 
-      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article
           v-for="card in explanationCards"
           :key="card.title"
-          class="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+          class="rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] p-5"
         >
           <div class="flex items-start justify-between gap-3">
             <div>
-              <p class="text-sm font-semibold text-slate-950 dark:text-white">
+              <p class="text-sm font-bold text-[#1a1c1c] dark:text-white">
                 {{ card.title }}
               </p>
-              <p class="mt-1 text-xl font-bold text-slate-950 dark:text-white">
+              <p class="mt-1 text-xl font-black text-[#1a1c1c] dark:text-white">
                 {{ card.value }}
               </p>
             </div>
-            <span class="inline-flex size-9 items-center justify-center rounded-md bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-200">
+            <span class="inline-flex size-9 items-center justify-center rounded-full bg-[#005013]/10 text-[#005013] dark:bg-[#8ad986]/15 dark:text-[#8ad986]">
               <UIcon
                 :name="card.icon"
                 class="size-4"
               />
             </span>
           </div>
-          <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          <p class="mt-3 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
             {{ card.text }}
           </p>
         </article>
       </div>
 
-      <div class="mt-4 rounded-lg border border-teal-200 bg-teal-50 p-4 text-sm leading-6 text-teal-900 dark:border-teal-900/50 dark:bg-teal-950/30 dark:text-teal-100">
+      <div class="mt-4 rounded-3xl border border-[#005013]/20 bg-[#005013]/5 p-5 text-sm leading-6 text-[#1a1c1c] dark:border-[#8ad986]/20 dark:bg-[#8ad986]/10 dark:text-[#e2e2e2]">
         A expliquer simplement: la page transforme les ventes passees en quantites de production, puis transforme ces quantites en liste d ingredients a preparer ou commander.
       </div>
     </section>

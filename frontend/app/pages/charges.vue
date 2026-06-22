@@ -133,73 +133,69 @@ onMounted(loadPage)
 </script>
 
 <template>
-  <div class="space-y-5">
-    <section class="app-page-header app-page-header--compact">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  <div class="p-4 md:p-8 space-y-6 font-sans">
+    <section>
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
-          <p class="app-eyebrow">
-            Charges operationnelles
-          </p>
-          <h1 class="app-title mt-2">
+          <span class="text-[10px] uppercase tracking-widest font-bold text-[#40493e]/60 dark:text-[#c0c9ba]">Charges operationnelles</span>
+          <h1 class="text-3xl md:text-[32px] md:leading-10 font-bold text-[#1a1c1c] dark:text-[#f1f1f1] font-['Be_Vietnam_Pro',sans-serif]">
             Fixes, variables et repartition
           </h1>
-          <p class="app-subtitle mt-2">
+          <p class="text-[#40493e] dark:text-[#c0c9ba] text-sm mt-1">
             Les charges restent en table pleine largeur, la saisie passe en modal pour garder les couts lisibles.
           </p>
         </div>
 
         <button
           type="button"
-          class="btn-primary"
+          class="bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold py-2.5 px-6 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2"
           @click="openChargeModal"
         >
           <UIcon
             name="i-lucide-plus"
-            class="size-4"
+            class="size-5"
           />
           Ajouter une charge
         </button>
       </div>
 
-      <div class="mt-4 flex flex-wrap gap-2">
-        <span class="app-pill">{{ activeChargeCount }} active(s)</span>
-        <span class="app-pill">{{ fixedChargeCount }} mensuelle(s)</span>
-        <span class="app-pill">Jour {{ formatCurrency(chargeStore.dailyChargeEstimate) }}</span>
-        <span class="app-pill">Mois {{ formatCurrency(monthlyChargeEstimate) }}</span>
+      <div class="flex flex-wrap gap-2 py-4">
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ activeChargeCount }} active(s)</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ fixedChargeCount }} mensuelle(s)</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">Jour {{ formatCurrency(chargeStore.dailyChargeEstimate) }}</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">Mois {{ formatCurrency(monthlyChargeEstimate) }}</span>
       </div>
     </section>
 
     <p
       v-if="errorMessage"
-      class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+      class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
     >
       {{ errorMessage }}
     </p>
 
-    <section class="app-section">
+    <section class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-6 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
       <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p class="app-eyebrow">
-            Filtres
-          </p>
-          <h2 class="app-section-title mt-1">
+          <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Filtres</span>
+          <h4 class="font-bold text-[#1a1c1c] dark:text-white mt-1">
             Isoler un cout
-          </h2>
+          </h4>
         </div>
-        <span class="app-pill">{{ filteredCharges.length }} / {{ chargeStore.items.length }} ligne(s)</span>
+        <span class="bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] px-3 py-1 rounded-full text-[10px] font-bold w-fit">{{ filteredCharges.length }} / {{ chargeStore.items.length }} ligne(s)</span>
       </div>
 
       <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
         <input
           v-model="chargeFilters.search"
-          class="app-input"
+          class="bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236]"
           type="search"
           placeholder="Rechercher nom, categorie, montant"
           aria-label="Rechercher une charge"
         >
         <select
           v-model="chargeFilters.category"
-          class="app-input"
+          class="bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236]"
           aria-label="Filtrer par categorie"
         >
           <option value="all">
@@ -215,7 +211,7 @@ onMounted(loadPage)
         </select>
         <select
           v-model="chargeFilters.period"
-          class="app-input"
+          class="bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236]"
           aria-label="Filtrer par periode"
         >
           <option value="all">
@@ -230,7 +226,7 @@ onMounted(loadPage)
         </select>
         <select
           v-model="chargeFilters.status"
-          class="app-input"
+          class="bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236]"
           aria-label="Filtrer par statut"
         >
           <option value="all">
@@ -245,7 +241,7 @@ onMounted(loadPage)
         </select>
         <button
           type="button"
-          class="btn-secondary"
+          class="border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold py-2.5 px-6 rounded-full hover:bg-[#f3f3f3] dark:hover:bg-[#2f3131] transition-all flex items-center justify-center gap-2"
           @click="resetChargeFilters"
         >
           <UIcon
@@ -257,25 +253,25 @@ onMounted(loadPage)
       </div>
     </section>
 
-    <section class="app-section">
-      <div class="mb-4 flex items-center justify-between gap-4">
+    <div class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] overflow-hidden border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
+      <div class="p-6 border-b border-[#c0c9ba]/20 dark:border-white/5 flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center bg-[#f3f3f3]/50 dark:bg-[#2f3131]/50">
         <div>
-          <p class="app-eyebrow">
-            Table
-          </p>
-          <h2 class="app-section-title mt-1">
+          <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Table</span>
+          <h4 class="font-bold text-[#1a1c1c] dark:text-white mt-1">
             Historique des charges
-          </h2>
+          </h4>
         </div>
-        <span class="app-pill">{{ filteredCharges.length }} ligne(s)</span>
+        <span class="bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] px-3 py-1 rounded-full text-[10px] font-bold w-fit">{{ filteredCharges.length }} ligne(s)</span>
       </div>
-      <ChargeTable
-        :items="filteredCharges"
-        :empty-message="chargeTableEmptyMessage"
-        @edit="editCharge"
-        @remove="removeCharge"
-      />
-    </section>
+      <div class="p-0">
+        <ChargeTable
+          :items="filteredCharges"
+          :empty-message="chargeTableEmptyMessage"
+          @edit="editCharge"
+          @remove="removeCharge"
+        />
+      </div>
+    </div>
 
     <AppModal
       :open="chargeModalOpen"
@@ -283,6 +279,7 @@ onMounted(loadPage)
       eyebrow="Formulaire"
       :description="editingCharge ? 'Mets a jour le cout, la periode ou le statut.' : 'Ajoute un cout sans quitter la table.'"
       size="lg"
+      variant="warm"
       @close="closeChargeModal"
     >
       <ChargeForm

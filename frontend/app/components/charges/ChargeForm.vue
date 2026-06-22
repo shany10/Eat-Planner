@@ -33,23 +33,27 @@ watchEffect(() => {
 function submit() {
   emit('submit', { ...form, amount: Number(form.amount) })
 }
+
+const fieldClass = 'w-full bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm placeholder:text-[#40493e]/50 dark:placeholder:text-[#c0c9ba]/50 focus:outline-none focus:ring-2 focus:ring-[#feb236] transition'
+const primaryBtn = 'bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold py-2.5 px-6 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2'
+const secondaryBtn = 'border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold py-2.5 px-6 rounded-full hover:bg-[#f3f3f3] dark:hover:bg-[#2f3131] transition-all flex items-center gap-2'
 </script>
 
 <template>
   <form
-    class="grid gap-3"
+    class="grid gap-4"
     @submit.prevent="submit"
   >
     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
       <input
         v-model="form.name"
-        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+        :class="fieldClass"
         placeholder="Nom de la charge"
         required
       >
       <select
         v-model="form.category"
-        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+        :class="fieldClass"
       >
         <option value="staff">
           Salaires
@@ -75,7 +79,7 @@ function submit() {
       </select>
       <input
         v-model="form.amount"
-        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+        :class="fieldClass"
         type="number"
         min="0"
         step="0.01"
@@ -83,7 +87,7 @@ function submit() {
       >
       <select
         v-model="form.period"
-        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+        :class="fieldClass"
       >
         <option value="daily">
           Journalier
@@ -94,11 +98,12 @@ function submit() {
       </select>
     </div>
 
-    <div class="flex items-center justify-between gap-3">
-      <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+    <div class="flex items-center justify-between gap-3 pt-2">
+      <label class="flex items-center gap-2 text-sm font-medium text-[#40493e] dark:text-[#c0c9ba]">
         <input
           v-model="form.active"
           type="checkbox"
+          class="size-4 rounded accent-[#005013]"
         >
         Charge active
       </label>
@@ -107,12 +112,12 @@ function submit() {
         <button
           v-if="initialValue"
           type="button"
-          class="rounded-xl border border-slate-300 px-4 py-3 text-sm dark:border-slate-700"
+          :class="secondaryBtn"
           @click="$emit('cancel')"
         >
           Annuler
         </button>
-        <button class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white dark:bg-white dark:text-slate-900">
+        <button :class="primaryBtn">
           {{ submitLabel }}
         </button>
       </div>

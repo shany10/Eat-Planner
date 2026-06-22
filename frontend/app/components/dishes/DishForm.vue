@@ -136,40 +136,53 @@ function resetForm() {
   form.ingredients = [createBlankLine()];
   useGlobalMargin.value = true;
 }
+
+const fieldClass =
+  "w-full bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm placeholder:text-[#40493e]/50 dark:placeholder:text-[#c0c9ba]/50 focus:outline-none focus:ring-2 focus:ring-[#feb236] transition";
+const textareaClass =
+  "w-full bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-2xl px-4 py-3 text-sm min-h-24 placeholder:text-[#40493e]/50 dark:placeholder:text-[#c0c9ba]/50 focus:outline-none focus:ring-2 focus:ring-[#feb236] transition";
+const labelClass =
+  "text-[10px] font-bold uppercase tracking-wide text-[#40493e]/70 dark:text-[#c0c9ba]/70";
+const primaryBtn =
+  "bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold py-2.5 px-6 rounded-full shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed";
+const secondaryBtn =
+  "border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold py-2.5 px-6 rounded-full hover:bg-[#f3f3f3] dark:hover:bg-[#2f3131] transition-all flex items-center gap-2";
+const dangerBtn =
+  "border border-[#ba1a1a]/40 text-[#ba1a1a] dark:text-[#ff897d] font-bold px-5 py-2.5 rounded-full hover:bg-[#ba1a1a]/10 transition-all";
 </script>
 
 <template>
   <form class="grid gap-4" @submit.prevent="submit">
     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-      <div>
-        <label htmlFor="name" class="text-sm font-medium"> Nom du plat </label>
+      <div class="grid gap-1.5">
+        <label for="name" :class="labelClass"> Nom du plat </label>
         <input
           v-model="form.name"
           id="name"
-          class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+          :class="fieldClass"
           placeholder="Nom du plat"
           required
         />
       </div>
-      <div>
-        <label htmlFor="category" class="text-sm font-medium">
+      <div class="grid gap-1.5">
+        <label for="category" :class="labelClass">
           Catégorie
         </label>
         <input
           v-model="form.category"
           id="category"
-          class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+          :class="fieldClass"
           placeholder="Categorie"
           required
         />
       </div>
-      <div>
-        <label htmlFor="estimatedDailyServings" class="text-sm font-medium">
+      <div class="grid gap-1.5">
+        <label for="estimatedDailyServings" :class="labelClass">
           Portions / jour
         </label>
         <input
           v-model.number="form.estimatedDailyServings"
-          class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+          :class="fieldClass"
           type="number"
           min="1"
           step="1"
@@ -180,14 +193,14 @@ function resetForm() {
     </div>
 
     <div class="grid gap-3 md:grid-cols-2">
-      <div>
-        <label htmlFor="targetMarginRate" class="text-sm font-medium">
+      <div class="grid gap-1.5">
+        <label for="targetMarginRate" :class="labelClass">
           Marge en %
         </label>
         <input
           id="targetMarginRate"
           v-model.number="form.targetMarginRate"
-          class="rounded-xl block border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:disabled:bg-slate-900"
+          :class="fieldClass"
           type="number"
           min="0"
           max="0.95"
@@ -195,34 +208,40 @@ function resetForm() {
           placeholder="Marge specifique"
         />
       </div>
-      <input
-        v-model.number="form.actualPriceIncludingTax"
-        class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
-        type="number"
-        min="0"
-        step="0.01"
-        placeholder="Prix reel TTC"
-      />
+      <div class="grid gap-1.5">
+        <label for="actualPriceIncludingTax" :class="labelClass">
+          Prix reel TTC
+        </label>
+        <input
+          id="actualPriceIncludingTax"
+          v-model.number="form.actualPriceIncludingTax"
+          :class="fieldClass"
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="Prix reel TTC"
+        />
+      </div>
     </div>
 
     <textarea
       v-model="form.description"
-      class="min-h-24 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+      :class="textareaClass"
       placeholder="Description du plat"
     />
 
-    <div class="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+    <div class="rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] p-5">
       <div class="mb-3 flex items-center justify-between gap-3">
         <div>
-          <h3 class="font-medium">Composition</h3>
-          <p class="mt-1 text-sm text-slate-500">
+          <h3 class="font-bold text-[#1a1c1c] dark:text-white">Composition</h3>
+          <p class="mt-1 text-sm text-[#40493e] dark:text-[#c0c9ba]">
             Garde au moins une ligne d ingredient pour que le calcul de
             rentabilite fonctionne.
           </p>
         </div>
         <button
           type="button"
-          class="rounded-xl border border-slate-300 px-3 py-2 text-sm dark:border-slate-700"
+          class="border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold px-4 py-2 rounded-full text-sm hover:bg-[#e8e8e8] dark:hover:bg-[#3a3d3d] transition-all"
           @click="addLine"
         >
           Ajouter une ligne
@@ -237,7 +256,7 @@ function resetForm() {
         >
           <select
             v-model="line.ingredient"
-            class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+            :class="fieldClass"
           >
             <option
               v-for="ingredient in ingredientOptions"
@@ -249,14 +268,14 @@ function resetForm() {
           </select>
           <input
             v-model.number="line.quantity"
-            class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+            :class="fieldClass"
             type="number"
             min="0.01"
             step="0.01"
           />
           <select
             v-model="line.unit"
-            class="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950"
+            :class="fieldClass"
           >
             <option value="g">g</option>
             <option value="kg">kg</option>
@@ -265,18 +284,18 @@ function resetForm() {
             <option value="l">l</option>
             <option value="piece">piece</option>
           </select>
-          <button type="button" class="btn-danger" @click="removeLine(index)">
+          <button type="button" :class="dangerBtn" @click="removeLine(index)">
             Retirer
           </button>
         </div>
       </div>
     </div>
 
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between gap-4 pt-2">
       <label
-        class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300"
+        class="flex items-center gap-2 text-sm font-medium text-[#40493e] dark:text-[#c0c9ba]"
       >
-        <input v-model="form.active" type="checkbox" />
+        <input v-model="form.active" type="checkbox" class="size-4 rounded accent-[#005013]" />
         Plat actif
       </label>
 
@@ -284,13 +303,13 @@ function resetForm() {
         <button
           v-if="initialValue"
           type="button"
-          class="rounded-xl border border-slate-300 px-4 py-2 text-sm dark:border-slate-700"
+          :class="secondaryBtn"
           @click="$emit('cancel')"
         >
           Annuler
         </button>
         <button
-          class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-900"
+          :class="primaryBtn"
           :disabled="!canSubmit"
         >
           {{ submitLabel }}

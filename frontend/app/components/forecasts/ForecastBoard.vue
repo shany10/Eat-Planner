@@ -165,163 +165,153 @@ function submitCorrection(dish: ForecastDishView) {
 <template>
   <section
     v-if="!forecast"
-    class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300"
+    class="rounded-[2.5rem] border-2 border-dashed border-[#c0c9ba] dark:border-[#40493e] bg-white dark:bg-[#1a1c1c] p-8 text-sm text-[#40493e] dark:text-[#c0c9ba]"
   >
     Aucune prevision chargee pour le moment. Choisis une date puis lance le calcul pour afficher la production conseillee.
   </section>
 
   <div
     v-else
-    class="grid gap-5"
+    class="grid gap-6"
   >
-    <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-      <article class="app-card">
-        <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
-          Mission
-        </p>
-        <p class="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
+    <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <article class="bg-[#f3f3f3] dark:bg-[#1a1c1c] p-6 rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5">
+        <span class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">Mission</span>
+        <p class="text-xl font-black text-[#1a1c1c] dark:text-white my-1">
           {{ forecast.persisted ? 'Validee' : 'Simulation' }}
         </p>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
           {{ forecast.targetDate }}
         </p>
       </article>
 
-      <article class="app-card">
-        <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
-          Portions cible
-        </p>
-        <p class="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
+      <article class="bg-[#f3f3f3] dark:bg-[#1a1c1c] p-6 rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5">
+        <span class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">Portions cible</span>
+        <p class="text-xl font-black text-[#1a1c1c] dark:text-white my-1">
           {{ totalRecommendedQuantity }}
         </p>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
           {{ forecast.dishes.length }} plat(s)
         </p>
       </article>
 
-      <article class="app-card">
-        <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
-          CA projete
-        </p>
-        <p class="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
+      <article class="bg-[#f3f3f3] dark:bg-[#1a1c1c] p-6 rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5">
+        <span class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">CA projete</span>
+        <p class="text-xl font-black text-[#1a1c1c] dark:text-white my-1">
           {{ formatCurrency(forecast.totals.totalProjectedRevenue) }}
         </p>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+        <p class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
           Cout matiere {{ formatCurrency(totalProjectedFoodCost) }}
         </p>
       </article>
 
-      <article class="app-card">
+      <article class="bg-[#f3f3f3] dark:bg-[#1a1c1c] p-6 rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
-              Confiance
-            </p>
-            <p class="mt-2 text-xl font-semibold text-slate-950 dark:text-white">
+            <span class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">Confiance</span>
+            <p class="text-xl font-black text-[#1a1c1c] dark:text-white my-1">
               {{ confidenceScore }}%
             </p>
           </div>
-          <span class="app-pill">{{ highConfidenceCount }} haute(s)</span>
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ highConfidenceCount }} haute(s)</span>
         </div>
-        <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+        <div class="mt-3 h-2 overflow-hidden rounded-full bg-[#e8e8e8] dark:bg-[#2f3131]">
           <div
-            class="h-full rounded-full bg-emerald-600 dark:bg-emerald-300"
+            class="h-full rounded-full bg-[#005013] dark:bg-[#8ad986]"
             :style="{ width: `${confidenceScore}%` }"
           />
         </div>
       </article>
     </section>
 
-    <section class="grid gap-4 xl:grid-cols-[1.35fr_0.85fr]">
-      <div class="app-section">
+    <section class="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
+      <div class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-6 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
         <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p class="app-eyebrow">
-              Mission du service
-            </p>
-            <h3 class="app-section-title mt-1">
+            <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Mission du service</span>
+            <h3 class="font-bold text-lg text-[#1a1c1c] dark:text-white mt-1">
               Quantites a preparer
             </h3>
           </div>
-          <span class="app-pill">{{ sortedDishes.length }} objectif(s)</span>
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ sortedDishes.length }} objectif(s)</span>
         </div>
 
-        <div class="space-y-3">
+        <div class="space-y-4">
           <article
             v-for="dish in sortedDishes"
             :key="dish.dishId"
-            class="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+            class="rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] p-5"
           >
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="app-pill">{{ dish.category }}</span>
+                  <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#1a1c1c] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ dish.category }}</span>
                   <span
-                    class="inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold"
+                    class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold"
                     :class="getConfidenceClass(dish.confidence)"
                   >
                     {{ getMissionLabel(dish) }}
                   </span>
                 </div>
-                <h4 class="mt-3 text-lg font-semibold text-slate-950 dark:text-white">
+                <h4 class="mt-3 text-lg font-bold text-[#1a1c1c] dark:text-white">
                   {{ dish.dishName }}
                 </h4>
-                <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                <p class="mt-2 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
                   {{ dish.comment || 'Objectif calcule avec l historique disponible.' }}
                 </p>
               </div>
 
-              <div class="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-5 py-4 text-center dark:border-slate-800 dark:bg-slate-900">
-                <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+              <div class="shrink-0 rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-white dark:bg-[#1a1c1c] px-6 py-4 text-center">
+                <p class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">
                   Objectif
                 </p>
-                <p class="mt-1 text-3xl font-bold text-slate-950 dark:text-white">
+                <p class="mt-1 text-3xl font-black text-[#1a1c1c] dark:text-white">
                   {{ dish.recommendedQuantity }}
                 </p>
-                <p class="text-sm text-slate-500">
+                <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
                   portion(s)
                 </p>
               </div>
             </div>
 
             <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              <div class="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900">
-                <span class="text-slate-500 dark:text-slate-400">Base</span>
-                <strong class="mt-1 block">{{ dish.baselineQuantity }} portion(s)</strong>
+              <div class="rounded-2xl bg-white dark:bg-[#1a1c1c] p-3 text-sm border border-[#c0c9ba]/20 dark:border-white/5">
+                <span class="text-[#40493e] dark:text-[#c0c9ba]">Base</span>
+                <strong class="mt-1 block text-[#1a1c1c] dark:text-white">{{ dish.baselineQuantity }} portion(s)</strong>
               </div>
-              <div class="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900">
-                <span class="text-slate-500 dark:text-slate-400">Historique</span>
-                <strong class="mt-1 block">{{ dish.historyDaysUsed }} jour(s)</strong>
+              <div class="rounded-2xl bg-white dark:bg-[#1a1c1c] p-3 text-sm border border-[#c0c9ba]/20 dark:border-white/5">
+                <span class="text-[#40493e] dark:text-[#c0c9ba]">Historique</span>
+                <strong class="mt-1 block text-[#1a1c1c] dark:text-white">{{ dish.historyDaysUsed }} jour(s)</strong>
               </div>
-              <div class="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900">
-                <span class="text-slate-500 dark:text-slate-400">Prix TTC</span>
-                <strong class="mt-1 block">{{ formatCurrency(getProductionPrice(dish)) }}</strong>
+              <div class="rounded-2xl bg-white dark:bg-[#1a1c1c] p-3 text-sm border border-[#c0c9ba]/20 dark:border-white/5">
+                <span class="text-[#40493e] dark:text-[#c0c9ba]">Prix TTC</span>
+                <strong class="mt-1 block text-[#1a1c1c] dark:text-white">{{ formatCurrency(getProductionPrice(dish)) }}</strong>
               </div>
-              <div class="rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-900">
-                <span class="text-slate-500 dark:text-slate-400">CA attendu</span>
-                <strong class="mt-1 block">{{ formatCurrency(dish.projectedRevenue) }}</strong>
+              <div class="rounded-2xl bg-white dark:bg-[#1a1c1c] p-3 text-sm border border-[#c0c9ba]/20 dark:border-white/5">
+                <span class="text-[#40493e] dark:text-[#c0c9ba]">CA attendu</span>
+                <strong class="mt-1 block text-[#1a1c1c] dark:text-white">{{ formatCurrency(dish.projectedRevenue) }}</strong>
               </div>
             </div>
 
             <div class="mt-3 flex flex-wrap gap-2 text-xs">
-              <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-3 py-1 font-semibold dark:bg-slate-800">
+              <span class="inline-flex items-center gap-1 rounded-full bg-[#e8e8e8] dark:bg-[#1a1c1c] px-3 py-1 font-bold text-[#40493e] dark:text-[#c0c9ba]">
                 <UIcon
                   :name="getTrendIcon(dish.trend)"
                   class="size-3.5"
                 />
                 {{ getTrendLabel(dish.trend) }}
               </span>
-              <span class="rounded-md bg-slate-100 px-3 py-1 font-semibold dark:bg-slate-800">
+              <span class="rounded-full bg-[#e8e8e8] dark:bg-[#1a1c1c] px-3 py-1 font-bold text-[#40493e] dark:text-[#c0c9ba]">
                 {{ getConfidenceLabel(dish.confidence) }}
               </span>
-              <span class="rounded-md bg-slate-100 px-3 py-1 font-semibold dark:bg-slate-800">
+              <span class="rounded-full bg-[#e8e8e8] dark:bg-[#1a1c1c] px-3 py-1 font-bold text-[#40493e] dark:text-[#c0c9ba]">
                 Initial {{ dish.initialForecastQuantity ?? dish.recommendedQuantity }}
               </span>
-              <span class="rounded-md bg-slate-100 px-3 py-1 font-semibold dark:bg-slate-800">
+              <span class="rounded-full bg-[#e8e8e8] dark:bg-[#1a1c1c] px-3 py-1 font-bold text-[#40493e] dark:text-[#c0c9ba]">
                 Reel {{ dish.actualQuantitySold ?? 0 }}
               </span>
               <span
-                class="rounded-md bg-slate-100 px-3 py-1 font-semibold dark:bg-slate-800"
+                class="rounded-full bg-[#e8e8e8] dark:bg-[#1a1c1c] px-3 py-1 font-bold"
                 :class="getGapClass(dish.productionGap)"
               >
                 Ecart {{ dish.productionGap ?? 0 }}
@@ -330,12 +320,12 @@ function submitCorrection(dish: ForecastDishView) {
 
             <div
               v-if="forecast.persisted && forecast._id"
-              class="mt-4 grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900"
+              class="mt-4 grid gap-2 rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-white dark:bg-[#1a1c1c] p-3"
             >
               <div class="grid gap-2 sm:grid-cols-[0.7fr_1fr_auto]">
                 <input
                   v-model.number="correctionForms[dish.dishId]!.quantity"
-                  class="app-input"
+                  class="w-full bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236] transition"
                   type="number"
                   min="0"
                   step="1"
@@ -344,14 +334,14 @@ function submitCorrection(dish: ForecastDishView) {
                 >
                 <input
                   v-model="correctionForms[dish.dishId]!.comment"
-                  class="app-input"
+                  class="w-full bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm placeholder:text-[#40493e]/50 dark:placeholder:text-[#c0c9ba]/50 focus:outline-none focus:ring-2 focus:ring-[#feb236] transition"
                   type="text"
                   maxlength="280"
                   placeholder="Note de correction"
                   aria-label="Note de correction"
                 >
                 <button
-                  class="btn-primary"
+                  class="bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold py-2.5 px-6 rounded-full shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
                   @click="submitCorrection(dish)"
                 >
                   <UIcon
@@ -363,7 +353,7 @@ function submitCorrection(dish: ForecastDishView) {
               </div>
               <p
                 v-if="dish.correctedAt"
-                class="text-xs text-slate-500"
+                class="text-xs text-[#40493e] dark:text-[#c0c9ba]"
               >
                 Correction sauvegardee le {{ new Date(dish.correctedAt).toLocaleString('fr-FR') }}
               </p>
@@ -372,65 +362,61 @@ function submitCorrection(dish: ForecastDishView) {
         </div>
       </div>
 
-      <div class="space-y-4">
-        <section class="app-section">
+      <div class="space-y-6">
+        <section class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-6 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
           <div class="mb-4 flex items-center justify-between gap-3">
             <div>
-              <p class="app-eyebrow">
-                Courses
-              </p>
-              <h3 class="app-section-title mt-1">
+              <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Courses</span>
+              <h3 class="font-bold text-lg text-[#1a1c1c] dark:text-white mt-1">
                 Besoins matieres
               </h3>
             </div>
-            <span class="app-pill">{{ forecast.ingredientNeeds.length }}</span>
+            <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ forecast.ingredientNeeds.length }}</span>
           </div>
           <div class="space-y-2 text-sm">
             <p
               v-if="forecast.ingredientNeeds.length === 0"
-              class="text-slate-600 dark:text-slate-300"
+              class="text-[#40493e] dark:text-[#c0c9ba]"
             >
               Aucun besoin matiere calcule pour cette date.
             </p>
             <div
               v-for="ingredient in forecast.ingredientNeeds"
               :key="ingredient.ingredientId"
-              class="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-950"
+              class="rounded-2xl bg-[#f3f3f3] dark:bg-[#2f3131] px-4 py-2 border border-[#c0c9ba]/20 dark:border-white/5"
             >
               <div class="flex items-center justify-between gap-3">
-                <span class="font-medium">{{ ingredient.ingredientName }}</span>
-                <span>{{ ingredient.quantity }} {{ ingredient.unit }}</span>
+                <span class="font-bold text-[#1a1c1c] dark:text-white">{{ ingredient.ingredientName }}</span>
+                <span class="text-[#1a1c1c] dark:text-white">{{ ingredient.quantity }} {{ ingredient.unit }}</span>
               </div>
-              <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <p class="mt-1 text-xs text-[#40493e] dark:text-[#c0c9ba]">
                 Cout estime {{ formatCurrency(ingredient.estimatedCost) }}
               </p>
             </div>
           </div>
         </section>
 
-        <section class="app-section">
+        <section class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-6 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
           <div class="mb-4 flex items-center justify-between gap-3">
             <div>
-              <p class="app-eyebrow">
-                Vigilance
-              </p>
-              <h3 class="app-section-title mt-1">
+              <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Vigilance</span>
+              <h3 class="font-bold text-lg text-[#1a1c1c] dark:text-white mt-1">
                 Alertes
               </h3>
             </div>
-            <span class="app-pill">{{ forecast.alerts.length }}</span>
+            <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ forecast.alerts.length }}</span>
           </div>
           <div class="space-y-2 text-sm">
             <p
               v-if="forecast.alerts.length === 0"
-              class="text-slate-600 dark:text-slate-300"
+              class="text-[#40493e] dark:text-[#c0c9ba]"
             >
               Aucun signal critique sur cette date.
             </p>
             <div
               v-for="alert in forecast.alerts"
               :key="alert.dishId"
-              class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200"
+              class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200"
             >
               <strong>{{ alert.dishName }}</strong> - {{ alert.message }}
             </div>

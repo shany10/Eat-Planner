@@ -133,35 +133,33 @@ onMounted(loadPage)
 </script>
 
 <template>
-  <div class="space-y-8">
-    <section class="app-page-header">
-      <p class="app-eyebrow">
-        Compte
-      </p>
-      <h1 class="app-title mt-3">
+  <div class="p-4 md:p-8 space-y-6 font-sans">
+    <section>
+      <span class="text-[10px] uppercase tracking-widest font-bold text-[#40493e]/60 dark:text-[#c0c9ba]">Compte</span>
+      <h1 class="text-3xl md:text-[32px] md:leading-10 font-bold text-[#1a1c1c] dark:text-[#f1f1f1] font-['Be_Vietnam_Pro',sans-serif] mt-1">
         Securite et double authentification
       </h1>
-      <p class="mt-3 max-w-2xl text-slate-600 dark:text-slate-300">
+      <p class="mt-2 max-w-2xl text-sm text-[#40493e] dark:text-[#c0c9ba]">
         Gere ici l etat de la 2FA TOTP pour ton compte. Le backend est deja pret, cette page remet simplement l option dans le produit.
       </p>
-      <div class="mt-6 flex flex-wrap gap-3">
+      <div class="mt-4 flex flex-wrap gap-3">
         <NuxtLink
           to="/account"
-          class="btn-secondary"
+          class="border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold py-2.5 px-6 rounded-full hover:bg-[#f3f3f3] dark:hover:bg-[#2f3131] transition-all flex items-center gap-2"
         >
           Retour au compte
         </NuxtLink>
         <a
           v-if="!twoFactorEnabled"
           href="#setup-2fa"
-          class="btn-primary"
+          class="bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold py-2.5 px-6 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2"
         >
           Activer la 2FA
         </a>
         <a
           v-else
           href="#disable-2fa"
-          class="btn-secondary"
+          class="border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold py-2.5 px-6 rounded-full hover:bg-[#f3f3f3] dark:hover:bg-[#2f3131] transition-all flex items-center gap-2"
         >
           Desactiver la 2FA
         </a>
@@ -170,88 +168,88 @@ onMounted(loadPage)
 
     <div
       v-if="loading"
-      class="grid gap-4 lg:grid-cols-2"
+      class="grid gap-6 lg:grid-cols-2"
     >
-      <div class="h-48 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />
-      <div class="h-48 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />
+      <div class="h-48 animate-pulse rounded-[2.5rem] bg-slate-200 dark:bg-slate-800" />
+      <div class="h-48 animate-pulse rounded-[2.5rem] bg-slate-200 dark:bg-slate-800" />
     </div>
 
     <template v-else>
       <p
         v-if="errorMessage"
-        class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+        class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
       >
         {{ errorMessage }}
       </p>
 
       <p
         v-if="successMessage"
-        class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200"
+        class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200"
       >
         {{ successMessage }}
       </p>
 
-      <section class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 class="text-xl font-semibold">
+      <section class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div class="rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5 bg-white dark:bg-[#1a1c1c] p-6 shadow-sm">
+          <h2 class="text-xl font-bold text-[#1a1c1c] dark:text-white">
             Etat du compte
           </h2>
           <div class="mt-5 grid gap-3 md:grid-cols-2">
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
+            <div class="rounded-3xl bg-[#f3f3f3] dark:bg-[#2f3131] p-4 border border-[#c0c9ba]/20 dark:border-white/5">
+              <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
                 Email
               </p>
-              <p class="mt-2 font-medium">
+              <p class="mt-2 font-bold text-[#1a1c1c] dark:text-white break-all">
                 {{ profile?.email || '-' }}
               </p>
             </div>
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
+            <div class="rounded-3xl bg-[#f3f3f3] dark:bg-[#2f3131] p-4 border border-[#c0c9ba]/20 dark:border-white/5">
+              <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
                 Fournisseur de connexion
               </p>
-              <p class="mt-2 font-medium">
+              <p class="mt-2 font-bold text-[#1a1c1c] dark:text-white">
                 {{ profile?.authProvider || '-' }}
               </p>
             </div>
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
+            <div class="rounded-3xl bg-[#f3f3f3] dark:bg-[#2f3131] p-4 border border-[#c0c9ba]/20 dark:border-white/5">
+              <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
                 Role
               </p>
-              <p class="mt-2 font-medium">
+              <p class="mt-2 font-bold text-[#1a1c1c] dark:text-white">
                 {{ profile?.role || '-' }}
               </p>
             </div>
-            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-              <p class="text-sm text-slate-500">
+            <div class="rounded-3xl bg-[#f3f3f3] dark:bg-[#2f3131] p-4 border border-[#c0c9ba]/20 dark:border-white/5">
+              <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
                 2FA
               </p>
-              <p class="mt-2 font-medium">
+              <p class="mt-2 font-bold text-[#1a1c1c] dark:text-white">
                 {{ twoFactorEnabled ? 'Activee' : 'Inactive' }}
               </p>
             </div>
           </div>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 class="text-xl font-semibold">
+        <div class="rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5 bg-white dark:bg-[#1a1c1c] p-6 shadow-sm">
+          <h2 class="text-xl font-bold text-[#1a1c1c] dark:text-white">
             Liens utiles
           </h2>
           <div class="mt-5 grid gap-3">
             <NuxtLink
               to="/account"
-              class="rounded-2xl border border-slate-200 px-4 py-4 transition hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-950"
+              class="rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] px-4 py-4 font-medium text-[#1a1c1c] dark:text-white transition-all hover:shadow-md"
             >
               Revenir a mon compte
             </NuxtLink>
             <NuxtLink
               to="/login"
-              class="rounded-2xl border border-slate-200 px-4 py-4 transition hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-950"
+              class="rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] px-4 py-4 font-medium text-[#1a1c1c] dark:text-white transition-all hover:shadow-md"
             >
               Tester le login avec 2FA
             </NuxtLink>
             <NuxtLink
               to="/"
-              class="rounded-2xl border border-slate-200 px-4 py-4 transition hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-950"
+              class="rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] px-4 py-4 font-medium text-[#1a1c1c] dark:text-white transition-all hover:shadow-md"
             >
               Revenir au dashboard
             </NuxtLink>
@@ -262,20 +260,20 @@ onMounted(loadPage)
       <section
         v-if="!twoFactorEnabled"
         id="setup-2fa"
-        class="scroll-mt-28 space-y-4"
+        class="scroll-mt-28 space-y-6"
       >
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div class="rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5 bg-white dark:bg-[#1a1c1c] p-6 shadow-sm">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h2 class="text-xl font-semibold">
+              <h2 class="text-xl font-bold text-[#1a1c1c] dark:text-white">
                 Activation de la 2FA
               </h2>
-              <p class="mt-1 text-sm text-slate-500">
+              <p class="mt-1 text-sm text-[#40493e] dark:text-[#c0c9ba]">
                 Initialise un secret, scanne le QR code avec ton application TOTP, puis saisis le code a 6 chiffres.
               </p>
             </div>
             <button
-              class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900"
+              class="bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold py-2.5 px-6 rounded-full shadow-sm hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               :disabled="setupPending"
               @click="initializeTwoFactor"
             >
@@ -293,50 +291,50 @@ onMounted(loadPage)
 
         <div
           v-else
-          class="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]"
+          class="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]"
         >
-          <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 class="text-lg font-semibold">
+          <div class="rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5 bg-white dark:bg-[#1a1c1c] p-6 shadow-sm">
+            <h3 class="text-lg font-bold text-[#1a1c1c] dark:text-white">
               QR code TOTP
             </h3>
-            <div class="mt-5 flex justify-center rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
+            <div class="mt-5 flex justify-center rounded-3xl bg-[#f3f3f3] dark:bg-[#2f3131] p-4">
               <img
                 :src="setupState.qrCodeDataUrl"
                 alt="QR code 2FA"
-                class="h-56 w-56 rounded-xl bg-white p-2"
+                class="h-56 w-56 rounded-2xl bg-white p-2"
               >
             </div>
           </div>
 
-          <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 class="text-lg font-semibold">
+          <div class="rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5 bg-white dark:bg-[#1a1c1c] p-6 shadow-sm">
+            <h3 class="text-lg font-bold text-[#1a1c1c] dark:text-white">
               Validation du secret
             </h3>
             <div class="mt-5 space-y-4">
-              <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                <p class="text-sm text-slate-500">
+              <div class="rounded-3xl bg-[#f3f3f3] dark:bg-[#2f3131] p-4 border border-[#c0c9ba]/20 dark:border-white/5">
+                <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
                   Secret manuel
                 </p>
-                <p class="mt-2 break-all font-mono text-sm">
+                <p class="mt-2 break-all font-mono text-sm text-[#1a1c1c] dark:text-white">
                   {{ setupState.secret }}
                 </p>
                 <button
-                  class="mt-3 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
+                  class="mt-3 rounded-full border border-[#707a6d] dark:border-[#c0c9ba] px-4 py-1.5 text-xs font-bold text-[#1a1c1c] dark:text-white hover:bg-[#e8e8e8] dark:hover:bg-[#3a3d3d] transition-all"
                   @click="copyText(setupState.secret, 'Secret 2FA')"
                 >
                   Copier le secret
                 </button>
               </div>
 
-              <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                <p class="text-sm text-slate-500">
+              <div class="rounded-3xl bg-[#f3f3f3] dark:bg-[#2f3131] p-4 border border-[#c0c9ba]/20 dark:border-white/5">
+                <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
                   Lien otpauth
                 </p>
-                <p class="mt-2 break-all font-mono text-xs">
+                <p class="mt-2 break-all font-mono text-xs text-[#1a1c1c] dark:text-white">
                   {{ setupState.otpauthUrl }}
                 </p>
                 <button
-                  class="mt-3 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 dark:border-slate-700 dark:text-slate-200"
+                  class="mt-3 rounded-full border border-[#707a6d] dark:border-[#c0c9ba] px-4 py-1.5 text-xs font-bold text-[#1a1c1c] dark:text-white hover:bg-[#e8e8e8] dark:hover:bg-[#3a3d3d] transition-all"
                   @click="copyText(setupState.otpauthUrl, 'Lien otpauth')"
                 >
                   Copier le lien
@@ -347,12 +345,12 @@ onMounted(loadPage)
                 class="space-y-3"
                 @submit.prevent="enableTwoFactor"
               >
-                <label class="block text-sm font-medium text-slate-700 dark:text-slate-200">
+                <label class="block text-sm font-medium text-[#40493e] dark:text-[#c0c9ba]">
                   Code TOTP a 6 chiffres
                 </label>
                 <input
                   v-model.trim="enableCode"
-                  class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                  class="w-full bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-[#feb236]"
                   type="text"
                   inputmode="numeric"
                   pattern="[0-9]{6}"
@@ -361,7 +359,7 @@ onMounted(loadPage)
                   required
                 >
                 <button
-                  class="rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900"
+                  class="bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold py-2.5 px-6 rounded-full shadow-sm hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   :disabled="enablePending"
                 >
                   {{ enablePending ? 'Activation...' : 'Activer la 2FA' }}
@@ -375,22 +373,22 @@ onMounted(loadPage)
       <section
         v-else
         id="disable-2fa"
-        class="scroll-mt-28 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]"
+        class="scroll-mt-28 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]"
       >
-        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/30">
-          <h2 class="text-xl font-semibold text-emerald-900 dark:text-emerald-100">
+        <div class="rounded-[2.5rem] border border-[#005013]/20 bg-[#005013]/5 p-6 dark:border-[#8ad986]/20 dark:bg-[#8ad986]/10">
+          <h2 class="text-xl font-bold text-[#005013] dark:text-[#8ad986]">
             2FA activee
           </h2>
-          <p class="mt-2 max-w-2xl text-sm leading-6 text-emerald-800 dark:text-emerald-200">
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
             Ce compte demande maintenant un code TOTP apres la saisie du mot de passe ou apres un login Google.
           </p>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h2 class="text-xl font-semibold">
+        <div class="rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5 bg-white dark:bg-[#1a1c1c] p-6 shadow-sm">
+          <h2 class="text-xl font-bold text-[#1a1c1c] dark:text-white">
             Desactiver la 2FA
           </h2>
-          <p class="mt-1 text-sm text-slate-500">
+          <p class="mt-1 text-sm text-[#40493e] dark:text-[#c0c9ba]">
             Saisis un code valide de ton application TOTP pour confirmer la desactivation.
           </p>
           <form
@@ -399,7 +397,7 @@ onMounted(loadPage)
           >
             <input
               v-model.trim="disableCode"
-              class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              class="w-full bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm tracking-widest focus:outline-none focus:ring-2 focus:ring-[#feb236]"
               type="text"
               inputmode="numeric"
               pattern="[0-9]{6}"
@@ -408,7 +406,7 @@ onMounted(loadPage)
               required
             >
             <button
-              class="rounded-xl bg-red-600 px-4 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+              class="border border-[#ba1a1a]/40 text-[#ba1a1a] dark:text-[#ff897d] font-bold px-6 py-2.5 rounded-full hover:bg-[#ba1a1a]/10 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               :disabled="disablePending"
             >
               {{ disablePending ? 'Desactivation...' : 'Desactiver la 2FA' }}

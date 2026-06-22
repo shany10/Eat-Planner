@@ -547,7 +547,7 @@ function getStatusClass(status: PurchaseOrderStatus) {
     return 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200'
   }
 
-  return 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200'
+  return 'border-[#c0c9ba]/30 bg-[#f3f3f3] text-[#1a1c1c] dark:border-white/10 dark:bg-[#1a1c1c] dark:text-white'
 }
 
 function formatCurrency(value: number) {
@@ -655,8 +655,8 @@ onMounted(loadPage)
               type="button"
               class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold transition"
               :class="activeStep === step.key
-                ? 'border-slate-950 bg-slate-950 text-white dark:border-white dark:bg-white dark:text-slate-950'
-                : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900'"
+                ? 'border-[#feb236] bg-[#feb236] text-[#6d4700] dark:border-[#feb236] dark:bg-[#feb236] dark:text-[#6d4700]'
+                : 'border-[#c0c9ba]/30 bg-white text-[#40493e] hover:bg-[#f3f3f3] dark:border-white/10 dark:bg-[#2f3131] dark:text-[#c0c9ba] dark:hover:bg-[#3a3d3d]'"
               @click="activeStep = step.key"
             >
               <UIcon
@@ -680,9 +680,9 @@ onMounted(loadPage)
             </div>
             <span class="app-pill">{{ rewards?.score || 0 }} pts</span>
           </div>
-          <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <div class="mt-3 h-2 overflow-hidden rounded-full bg-[#e8e8e8] dark:bg-[#2f3131]">
             <div
-              class="h-full rounded-full bg-[linear-gradient(90deg,#14b8a6,#f59e0b,#0f172a)]"
+              class="h-full rounded-full bg-[linear-gradient(90deg,#feb236,#005013)]"
               :style="{ width: `${rewards?.levelProgress || 0}%` }"
             />
           </div>
@@ -717,15 +717,15 @@ onMounted(loadPage)
               <h2 class="app-section-title mt-1">
                 Quantites recommandees avant achat
               </h2>
-              <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+              <p class="mt-2 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
                 La recommandation calcule: consommation moyenne par jour x horizon + seuil minimum - stock actuel. Le minimum de commande fournisseur est applique si besoin.
               </p>
             </div>
-            <div class="flex rounded-md border border-slate-200 p-1 dark:border-slate-800">
+            <div class="flex rounded-md border border-[#c0c9ba]/30 p-1 dark:border-white/10">
               <button
                 type="button"
                 class="rounded px-3 py-1.5 text-sm font-semibold"
-                :class="forecastHorizon === 3 ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950' : 'text-slate-600 dark:text-slate-300'"
+                :class="forecastHorizon === 3 ? 'bg-[#feb236] text-[#6d4700] dark:bg-[#feb236] dark:text-[#6d4700]' : 'text-[#40493e] dark:text-[#c0c9ba]'"
                 @click="forecastHorizon = 3"
               >
                 3 jours
@@ -733,7 +733,7 @@ onMounted(loadPage)
               <button
                 type="button"
                 class="rounded px-3 py-1.5 text-sm font-semibold"
-                :class="forecastHorizon === 7 ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950' : 'text-slate-600 dark:text-slate-300'"
+                :class="forecastHorizon === 7 ? 'bg-[#feb236] text-[#6d4700] dark:bg-[#feb236] dark:text-[#6d4700]' : 'text-[#40493e] dark:text-[#c0c9ba]'"
                 @click="forecastHorizon = 7"
               >
                 7 jours
@@ -743,26 +743,26 @@ onMounted(loadPage)
 
           <div class="mt-4 grid gap-3 md:grid-cols-4">
             <div class="app-inset">
-              <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+              <p class="text-xs font-semibold uppercase text-[#40493e] dark:text-[#c0c9ba]">
                 Stock bas
               </p>
-              <p class="mt-1 text-2xl font-bold text-slate-950 dark:text-white">
+              <p class="mt-1 text-2xl font-bold text-[#1a1c1c] dark:text-white">
                 {{ criticalLines.length }}
               </p>
             </div>
             <div class="app-inset">
-              <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+              <p class="text-xs font-semibold uppercase text-[#40493e] dark:text-[#c0c9ba]">
                 A commander
               </p>
-              <p class="mt-1 text-2xl font-bold text-slate-950 dark:text-white">
+              <p class="mt-1 text-2xl font-bold text-[#1a1c1c] dark:text-white">
                 {{ reorderLines.length }}
               </p>
             </div>
             <div class="app-inset md:col-span-2">
-              <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+              <p class="text-xs font-semibold uppercase text-[#40493e] dark:text-[#c0c9ba]">
                 Budget recommande
               </p>
-              <p class="mt-1 text-2xl font-bold text-slate-950 dark:text-white">
+              <p class="mt-1 text-2xl font-bold text-[#1a1c1c] dark:text-white">
                 {{ formatCurrency(forecastBudget) }}
               </p>
             </div>
@@ -799,12 +799,12 @@ onMounted(loadPage)
               :key="tip"
               class="app-inset"
             >
-              <p class="text-sm leading-6 text-slate-700 dark:text-slate-200">
+              <p class="text-sm leading-6 text-[#1a1c1c] dark:text-white">
                 {{ tip }}
               </p>
             </div>
             <div class="app-inset">
-              <p class="text-sm leading-6 text-slate-700 dark:text-slate-200">
+              <p class="text-sm leading-6 text-[#1a1c1c] dark:text-white">
                 Exemple: 5 kg/jour de farine sur 7 jours = 35 kg. Si le stock est a 18 kg et le seuil a 20 kg, le panier recommande environ 37 kg, puis respecte le minimum fournisseur.
               </p>
             </div>
@@ -892,59 +892,59 @@ onMounted(loadPage)
           </button>
         </div>
 
-        <div class="mt-4 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
-          <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-            <thead class="bg-slate-50 dark:bg-slate-900/60">
+        <div class="mt-4 overflow-x-auto rounded-lg border border-[#c0c9ba]/30 dark:border-white/10">
+          <table class="min-w-full divide-y divide-[#c0c9ba]/30 text-sm dark:divide-white/10">
+            <thead class="bg-[#f3f3f3] dark:bg-[#2f3131]/60">
               <tr>
-                <th class="px-3 py-2 text-left font-medium text-slate-500">
+                <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                   Ingredient
                 </th>
-                <th class="px-3 py-2 text-left font-medium text-slate-500">
+                <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                   Fournisseur
                 </th>
-                <th class="px-3 py-2 text-left font-medium text-slate-500">
+                <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                   Stock
                 </th>
-                <th class="px-3 py-2 text-left font-medium text-slate-500">
+                <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                   Besoin {{ forecastHorizon }}j
                 </th>
-                <th class="px-3 py-2 text-left font-medium text-slate-500">
+                <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                   Recommande
                 </th>
-                <th class="px-3 py-2 text-right font-medium text-slate-500">
+                <th class="px-3 py-2 text-right font-medium text-[#40493e]">
                   Action
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-950">
+            <tbody class="divide-y divide-[#c0c9ba]/30 bg-white dark:divide-white/10 dark:bg-[#1a1c1c]">
               <tr
                 v-for="line in filteredForecastLines"
                 :key="line.ingredient._id"
               >
                 <td class="px-3 py-3">
-                  <p class="font-semibold text-slate-950 dark:text-white">
+                  <p class="font-semibold text-[#1a1c1c] dark:text-white">
                     {{ line.ingredient.name }}
                   </p>
-                  <p class="text-xs text-slate-500 dark:text-slate-400">
+                  <p class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
                     {{ line.ingredient.category }} - {{ formatCurrency(line.ingredient.purchasePrice) }} / {{ line.ingredient.unit }}
                   </p>
                 </td>
-                <td class="px-3 py-3 text-slate-700 dark:text-slate-200">
+                <td class="px-3 py-3 text-[#1a1c1c] dark:text-white">
                   {{ line.supplierName }}
                 </td>
                 <td
                   class="px-3 py-3 font-medium"
-                  :class="line.lowStock ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-200'"
+                  :class="line.lowStock ? 'text-amber-700 dark:text-amber-300' : 'text-[#1a1c1c] dark:text-white'"
                 >
                   {{ formatQuantity(line.ingredient.stockQuantity, line.ingredient.unit) }}
-                  <span class="block text-xs font-normal text-slate-500 dark:text-slate-400">
+                  <span class="block text-xs font-normal text-[#40493e] dark:text-[#c0c9ba]">
                     seuil {{ formatQuantity(line.ingredient.minimumStock, line.ingredient.unit) }}
                   </span>
                 </td>
                 <td class="px-3 py-3">
                   {{ formatQuantity(line.forecastNeed, line.ingredient.unit) }}
                 </td>
-                <td class="px-3 py-3 font-semibold text-slate-950 dark:text-white">
+                <td class="px-3 py-3 font-semibold text-[#1a1c1c] dark:text-white">
                   {{ formatQuantity(line.recommendedQuantity, line.ingredient.unit) }}
                 </td>
                 <td class="px-3 py-3 text-right">
@@ -964,7 +964,7 @@ onMounted(loadPage)
               <tr v-if="filteredForecastLines.length === 0">
                 <td
                   colspan="6"
-                  class="px-3 py-8 text-center text-sm text-slate-500 dark:text-slate-400"
+                  class="px-3 py-8 text-center text-sm text-[#40493e] dark:text-[#c0c9ba]"
                 >
                   Aucun ingredient ne correspond aux filtres.
                 </td>
@@ -1008,64 +1008,64 @@ onMounted(loadPage)
             </div>
           </div>
 
-          <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
-            <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-              <thead class="bg-slate-50 dark:bg-slate-900/60">
+          <div class="overflow-x-auto rounded-lg border border-[#c0c9ba]/30 dark:border-white/10">
+            <table class="min-w-full divide-y divide-[#c0c9ba]/30 text-sm dark:divide-white/10">
+              <thead class="bg-[#f3f3f3] dark:bg-[#2f3131]/60">
                 <tr>
-                  <th class="px-3 py-2 text-left font-medium text-slate-500">
+                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                     Ingredient
                   </th>
-                  <th class="px-3 py-2 text-left font-medium text-slate-500">
+                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                     Fournisseur
                   </th>
-                  <th class="px-3 py-2 text-left font-medium text-slate-500">
+                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                     Stock / seuil
                   </th>
-                  <th class="px-3 py-2 text-left font-medium text-slate-500">
+                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                     Reco
                   </th>
-                  <th class="px-3 py-2 text-left font-medium text-slate-500">
+                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                     Quantite
                   </th>
-                  <th class="px-3 py-2 text-left font-medium text-slate-500">
+                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                     Prix
                   </th>
-                  <th class="px-3 py-2 text-right font-medium text-slate-500">
+                  <th class="px-3 py-2 text-right font-medium text-[#40493e]">
                     Total
                   </th>
-                  <th class="px-3 py-2 text-right font-medium text-slate-500">
+                  <th class="px-3 py-2 text-right font-medium text-[#40493e]">
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-950">
+              <tbody class="divide-y divide-[#c0c9ba]/30 bg-white dark:divide-white/10 dark:bg-[#1a1c1c]">
                 <tr
                   v-for="line in cartLines"
                   :key="line.ingredientId"
                 >
                   <td class="px-3 py-3">
-                    <p class="font-semibold text-slate-950 dark:text-white">
+                    <p class="font-semibold text-[#1a1c1c] dark:text-white">
                       {{ line.ingredientName }}
                     </p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                    <p class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
                       {{ line.category }} - {{ line.orderUnit }}
                     </p>
                   </td>
-                  <td class="px-3 py-3 text-slate-700 dark:text-slate-200">
+                  <td class="px-3 py-3 text-[#1a1c1c] dark:text-white">
                     {{ line.supplierName }}
                   </td>
                   <td class="px-3 py-3">
                     <span
                       class="font-medium"
-                      :class="line.stockQuantity <= line.minimumStock ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-200'"
+                      :class="line.stockQuantity <= line.minimumStock ? 'text-amber-700 dark:text-amber-300' : 'text-[#1a1c1c] dark:text-white'"
                     >
                       {{ formatQuantity(line.stockQuantity, line.unit) }}
                     </span>
-                    <span class="block text-xs text-slate-500 dark:text-slate-400">
+                    <span class="block text-xs text-[#40493e] dark:text-[#c0c9ba]">
                       seuil {{ formatQuantity(line.minimumStock, line.unit) }}
                     </span>
                   </td>
-                  <td class="px-3 py-3 font-semibold text-slate-950 dark:text-white">
+                  <td class="px-3 py-3 font-semibold text-[#1a1c1c] dark:text-white">
                     {{ formatQuantity(line.recommendedQuantity, line.unit) }}
                   </td>
                   <td class="px-3 py-3">
@@ -1113,7 +1113,7 @@ onMounted(loadPage)
                 <tr v-if="cartLines.length === 0">
                   <td
                     colspan="8"
-                    class="px-3 py-8 text-center text-sm text-slate-500 dark:text-slate-400"
+                    class="px-3 py-8 text-center text-sm text-[#40493e] dark:text-[#c0c9ba]"
                   >
                     Le panier est vide. Passe par la selection ou ajoute directement les ingredients a reapprovisionner.
                   </td>
@@ -1151,18 +1151,18 @@ onMounted(loadPage)
           </h2>
           <div class="mt-4 grid gap-2 text-sm">
             <div class="flex justify-between gap-3">
-              <span class="text-slate-500 dark:text-slate-400">Articles HT</span>
+              <span class="text-[#40493e] dark:text-[#c0c9ba]">Articles HT</span>
               <span class="font-semibold">{{ formatCurrency(cartSubtotal) }}</span>
             </div>
             <div class="flex justify-between gap-3">
-              <span class="text-slate-500 dark:text-slate-400">Frais livraison</span>
+              <span class="text-[#40493e] dark:text-[#c0c9ba]">Frais livraison</span>
               <span class="font-semibold">{{ formatCurrency(deliveryFees) }}</span>
             </div>
             <div class="flex justify-between gap-3">
-              <span class="text-slate-500 dark:text-slate-400">TVA 10%</span>
+              <span class="text-[#40493e] dark:text-[#c0c9ba]">TVA 10%</span>
               <span class="font-semibold">{{ formatCurrency(cartVatAmount) }}</span>
             </div>
-            <div class="border-t border-slate-200 pt-3 text-base dark:border-slate-800">
+            <div class="border-t border-[#c0c9ba]/30 pt-3 text-base dark:border-white/10">
               <div class="flex justify-between gap-3">
                 <span class="font-semibold">Total TTC</span>
                 <span class="font-bold">{{ formatCurrency(cartTotalInclTax) }}</span>
@@ -1204,18 +1204,18 @@ onMounted(loadPage)
 
           <div class="mt-4 grid gap-3 md:grid-cols-2">
             <div class="app-inset">
-              <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+              <p class="text-xs font-semibold uppercase text-[#40493e] dark:text-[#c0c9ba]">
                 Fournisseurs
               </p>
-              <p class="mt-1 font-semibold text-slate-950 dark:text-white">
+              <p class="mt-1 font-semibold text-[#1a1c1c] dark:text-white">
                 {{ selectedSuppliers.map(supplier => supplier.name).join(', ') || '-' }}
               </p>
             </div>
             <div class="app-inset">
-              <p class="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+              <p class="text-xs font-semibold uppercase text-[#40493e] dark:text-[#c0c9ba]">
                 Livraison estimee
               </p>
-              <p class="mt-1 font-semibold text-slate-950 dark:text-white">
+              <p class="mt-1 font-semibold text-[#1a1c1c] dark:text-white">
                 {{ formatDate(estimatedDeliveryDate) }}
               </p>
             </div>
@@ -1234,25 +1234,25 @@ onMounted(loadPage)
             />
           </div>
 
-          <div class="mt-4 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
-            <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-              <thead class="bg-slate-50 dark:bg-slate-900/60">
+          <div class="mt-4 overflow-x-auto rounded-lg border border-[#c0c9ba]/30 dark:border-white/10">
+            <table class="min-w-full divide-y divide-[#c0c9ba]/30 text-sm dark:divide-white/10">
+              <thead class="bg-[#f3f3f3] dark:bg-[#2f3131]/60">
                 <tr>
-                  <th class="px-3 py-2 text-left font-medium text-slate-500">
+                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                     Article
                   </th>
-                  <th class="px-3 py-2 text-left font-medium text-slate-500">
+                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                     Fournisseur
                   </th>
-                  <th class="px-3 py-2 text-left font-medium text-slate-500">
+                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                     Quantite
                   </th>
-                  <th class="px-3 py-2 text-right font-medium text-slate-500">
+                  <th class="px-3 py-2 text-right font-medium text-[#40493e]">
                     Total
                   </th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-950">
+              <tbody class="divide-y divide-[#c0c9ba]/30 bg-white dark:divide-white/10 dark:bg-[#1a1c1c]">
                 <tr
                   v-for="line in cartLines"
                   :key="line.ingredientId"
@@ -1281,11 +1281,11 @@ onMounted(loadPage)
           </p>
           <div class="mt-3 grid gap-2 text-sm">
             <div class="flex justify-between gap-3">
-              <span class="text-slate-500 dark:text-slate-400">Total HT</span>
+              <span class="text-[#40493e] dark:text-[#c0c9ba]">Total HT</span>
               <span class="font-semibold">{{ formatCurrency(cartTotalExclTax) }}</span>
             </div>
             <div class="flex justify-between gap-3">
-              <span class="text-slate-500 dark:text-slate-400">TVA</span>
+              <span class="text-[#40493e] dark:text-[#c0c9ba]">TVA</span>
               <span class="font-semibold">{{ formatCurrency(cartVatAmount) }}</span>
             </div>
             <div class="flex justify-between gap-3 text-base">
@@ -1315,7 +1315,7 @@ onMounted(loadPage)
           <h2 class="app-section-title mt-1">
             Simuler le reglement fournisseur
           </h2>
-          <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          <p class="mt-2 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
             Cette etape ne contacte aucun service bancaire et ne conserve aucune vraie donnee de carte.
           </p>
 
@@ -1326,7 +1326,7 @@ onMounted(loadPage)
                 type="radio"
                 value="fake_card"
               >
-              <span class="font-semibold text-slate-900 dark:text-white">Carte bancaire fictive</span>
+              <span class="font-semibold text-[#1a1c1c] dark:text-white">Carte bancaire fictive</span>
             </label>
             <label class="app-inset flex cursor-pointer items-center gap-3">
               <input
@@ -1334,7 +1334,7 @@ onMounted(loadPage)
                 type="radio"
                 value="fake_transfer"
               >
-              <span class="font-semibold text-slate-900 dark:text-white">Virement fournisseur fictif</span>
+              <span class="font-semibold text-[#1a1c1c] dark:text-white">Virement fournisseur fictif</span>
             </label>
             <label class="app-inset flex cursor-pointer items-center gap-3">
               <input
@@ -1342,7 +1342,7 @@ onMounted(loadPage)
                 type="radio"
                 value="payment_on_delivery"
               >
-              <span class="font-semibold text-slate-900 dark:text-white">Paiement a reception</span>
+              <span class="font-semibold text-[#1a1c1c] dark:text-white">Paiement a reception</span>
             </label>
             <label class="app-inset flex cursor-pointer items-center gap-3">
               <input
@@ -1350,7 +1350,7 @@ onMounted(loadPage)
                 type="radio"
                 value="purchase_order"
               >
-              <span class="font-semibold text-slate-900 dark:text-white">Bon de commande</span>
+              <span class="font-semibold text-[#1a1c1c] dark:text-white">Bon de commande</span>
             </label>
           </div>
 
@@ -1416,15 +1416,15 @@ onMounted(loadPage)
           </h2>
           <div class="mt-4 grid gap-2 text-sm">
             <div class="flex justify-between gap-3">
-              <span class="text-slate-500 dark:text-slate-400">Fournisseur(s)</span>
+              <span class="text-[#40493e] dark:text-[#c0c9ba]">Fournisseur(s)</span>
               <span class="text-right font-semibold">{{ confirmedOrder ? getOrderSupplierNames(confirmedOrder) : '-' }}</span>
             </div>
             <div class="flex justify-between gap-3">
-              <span class="text-slate-500 dark:text-slate-400">Total TTC</span>
+              <span class="text-[#40493e] dark:text-[#c0c9ba]">Total TTC</span>
               <span class="font-semibold">{{ formatCurrency(confirmedOrder?.totalInclTax || confirmedOrder?.totalAmount || 0) }}</span>
             </div>
             <div class="flex justify-between gap-3">
-              <span class="text-slate-500 dark:text-slate-400">Livraison estimee</span>
+              <span class="text-[#40493e] dark:text-[#c0c9ba]">Livraison estimee</span>
               <span class="font-semibold">{{ formatDate(confirmedOrder?.estimatedDeliveryDate) }}</span>
             </div>
           </div>
@@ -1443,7 +1443,7 @@ onMounted(loadPage)
             <h2 class="app-section-title mt-1">
               Commande fournisseur confirmee
             </h2>
-            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            <p class="mt-2 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
               La commande est enregistree dans l historique avec un paiement fictif.
             </p>
           </div>
@@ -1460,22 +1460,22 @@ onMounted(loadPage)
           v-if="confirmedOrder"
           class="mt-5 grid gap-4 lg:grid-cols-[0.65fr_0.35fr]"
         >
-          <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
-            <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-              <thead class="bg-slate-50 dark:bg-slate-900/60">
+          <div class="overflow-x-auto rounded-lg border border-[#c0c9ba]/30 dark:border-white/10">
+            <table class="min-w-full divide-y divide-[#c0c9ba]/30 text-sm dark:divide-white/10">
+              <thead class="bg-[#f3f3f3] dark:bg-[#2f3131]/60">
                 <tr>
-                  <th class="px-3 py-2 text-left font-medium text-slate-500">
+                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                     Ingredient
                   </th>
-                  <th class="px-3 py-2 text-left font-medium text-slate-500">
+                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                     Quantite
                   </th>
-                  <th class="px-3 py-2 text-right font-medium text-slate-500">
+                  <th class="px-3 py-2 text-right font-medium text-[#40493e]">
                     Total
                   </th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-950">
+              <tbody class="divide-y divide-[#c0c9ba]/30 bg-white dark:divide-white/10 dark:bg-[#1a1c1c]">
                 <tr
                   v-for="item in confirmedOrder.items"
                   :key="`${confirmedOrder._id}-${item.ingredientName}`"
@@ -1495,24 +1495,24 @@ onMounted(loadPage)
           </div>
 
           <div class="app-inset">
-            <p class="text-sm font-semibold text-slate-950 dark:text-white">
+            <p class="text-sm font-semibold text-[#1a1c1c] dark:text-white">
               {{ confirmedOrder.orderNumber }}
             </p>
             <div class="mt-3 grid gap-2 text-sm">
               <div class="flex justify-between gap-3">
-                <span class="text-slate-500 dark:text-slate-400">Date</span>
+                <span class="text-[#40493e] dark:text-[#c0c9ba]">Date</span>
                 <span class="font-semibold">{{ formatDate(confirmedOrder.created_at) }}</span>
               </div>
               <div class="flex justify-between gap-3">
-                <span class="text-slate-500 dark:text-slate-400">Fournisseur</span>
+                <span class="text-[#40493e] dark:text-[#c0c9ba]">Fournisseur</span>
                 <span class="text-right font-semibold">{{ getOrderSupplierNames(confirmedOrder) }}</span>
               </div>
               <div class="flex justify-between gap-3">
-                <span class="text-slate-500 dark:text-slate-400">Total paye</span>
+                <span class="text-[#40493e] dark:text-[#c0c9ba]">Total paye</span>
                 <span class="font-semibold">{{ formatCurrency(confirmedOrder.totalInclTax || confirmedOrder.totalAmount) }}</span>
               </div>
               <div class="flex justify-between gap-3">
-                <span class="text-slate-500 dark:text-slate-400">Livraison</span>
+                <span class="text-[#40493e] dark:text-[#c0c9ba]">Livraison</span>
                 <span class="font-semibold">{{ formatDate(confirmedOrder.estimatedDeliveryDate) }}</span>
               </div>
             </div>
@@ -1622,7 +1622,7 @@ onMounted(loadPage)
           <article
             v-for="order in filteredOrders"
             :key="order._id"
-            class="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+            class="rounded-lg border border-[#c0c9ba]/30 bg-white p-4 dark:border-white/10 dark:bg-[#1a1c1c]"
           >
             <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
@@ -1636,15 +1636,15 @@ onMounted(loadPage)
                   <span class="app-pill">{{ order.orderNumber || order._id }}</span>
                   <span class="app-pill">{{ formatDate(order.created_at) }}</span>
                 </div>
-                <h3 class="mt-3 font-semibold text-slate-950 dark:text-white">
+                <h3 class="mt-3 font-semibold text-[#1a1c1c] dark:text-white">
                   {{ getOrderSupplierNames(order) }}
                 </h3>
-                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                <p class="mt-1 text-sm text-[#40493e] dark:text-[#c0c9ba]">
                   {{ order.items.length }} article(s), total {{ formatCurrency(order.totalInclTax || order.totalAmount) }}
                 </p>
                 <p
                   v-if="order.internalComment || order.notes"
-                  class="mt-1 text-sm text-slate-500 dark:text-slate-400"
+                  class="mt-1 text-sm text-[#40493e] dark:text-[#c0c9ba]"
                 >
                   {{ order.internalComment || order.notes }}
                 </p>
@@ -1689,10 +1689,10 @@ onMounted(loadPage)
               <div
                 v-for="item in order.items"
                 :key="`${order._id}-${item.ingredientName}`"
-                class="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-900"
+                class="flex items-center justify-between gap-3 rounded-lg bg-[#f3f3f3] px-3 py-2 text-sm dark:bg-[#2f3131]"
               >
-                <span class="font-medium text-slate-800 dark:text-slate-100">{{ item.ingredientName }}</span>
-                <span class="text-slate-600 dark:text-slate-300">
+                <span class="font-medium text-[#1a1c1c] dark:text-white">{{ item.ingredientName }}</span>
+                <span class="text-[#40493e] dark:text-[#c0c9ba]">
                   {{ formatQuantity(item.quantity, item.unit) }} - {{ formatCurrency(item.lineTotal) }}
                 </span>
               </div>
@@ -1701,7 +1701,7 @@ onMounted(loadPage)
 
           <div
             v-if="filteredOrders.length === 0"
-            class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-400"
+            class="rounded-lg border border-dashed border-[#c0c9ba]/40 bg-[#f3f3f3] p-6 text-center text-sm text-[#40493e] dark:border-white/10 dark:bg-[#1a1c1c] dark:text-[#c0c9ba]"
           >
             Aucune commande fournisseur ne correspond aux filtres.
           </div>

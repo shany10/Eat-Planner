@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { getFetchErrorMessage } from '~/utils/fetch-error'
 import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
-import StatCard from '~/components/common/StatCard.vue'
 import ForecastBoard from '~/components/forecasts/ForecastBoard.vue'
 import type { ManagedUser } from '~/types/access'
 import { useAuthStore } from '~/stores/auth'
@@ -296,46 +295,44 @@ onMounted(loadDashboard)
 </script>
 
 <template>
-  <div class="space-y-5">
-    <section class="app-page-header app-page-header--compact">
-      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+  <div class="p-4 md:p-8 space-y-6 font-sans">
+    <section>
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
-          <p class="app-eyebrow">
-            {{ isAdmin ? 'Supervision plateforme' : 'Dashboard' }}
-          </p>
-          <h1 class="app-title mt-2">
+          <span class="text-[10px] uppercase tracking-widest font-bold text-[#40493e]/60 dark:text-[#c0c9ba]">{{ isAdmin ? 'Supervision plateforme' : 'Dashboard' }}</span>
+          <h1 class="text-3xl md:text-[32px] md:leading-10 font-bold text-[#1a1c1c] dark:text-[#f1f1f1] font-['Be_Vietnam_Pro',sans-serif]">
             Bonjour {{ firstName }}
           </h1>
-          <p class="app-subtitle mt-2">
+          <p class="text-[#40493e] dark:text-[#c0c9ba] text-sm mt-1">
             {{ isAdmin
               ? 'Etat des comptes, securite et signaux de gestion visibles sans detour.'
               : 'Les chiffres utiles, les alertes et les raccourcis sont remontes en premier.' }}
           </p>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-3">
           <NuxtLink
             :to="isAdmin ? '/admin' : (ingredientStore.items.length === 0 ? '/ingredients' : saleStore.items.length === 0 ? '/sales' : '/forecasts')"
-            class="btn-primary"
+            class="bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold py-2.5 px-6 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2"
           >
             {{ isAdmin ? 'Panel admin' : (ingredientStore.items.length === 0 ? 'Ajouter ingredients' : saleStore.items.length === 0 ? 'Saisir ventes' : 'Previsions') }}
           </NuxtLink>
           <NuxtLink
             :to="profile?.twoFactorEnabled ? '/account' : '/security'"
-            class="btn-secondary"
+            class="border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold py-2.5 px-6 rounded-full hover:bg-[#f3f3f3] dark:hover:bg-[#2f3131] transition-all flex items-center gap-2"
           >
             {{ profile?.twoFactorEnabled ? 'Mon compte' : 'Activer 2FA' }}
           </NuxtLink>
         </div>
       </div>
 
-      <div class="mt-4 flex flex-wrap gap-2">
-        <span class="app-pill">{{ roleLabel }}</span>
-        <span class="app-pill">{{ restaurantName }}</span>
-        <span class="app-pill">{{ securityLabel }}</span>
-        <span class="app-pill">{{ pricingSettingsLabel }}</span>
-        <span class="app-pill">{{ lastUpdatedAt ? 'Synchronise' : 'Chargement' }}</span>
-        <span class="app-pill">
+      <div class="flex flex-wrap gap-2 py-4">
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ roleLabel }}</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ restaurantName }}</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ securityLabel }}</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ pricingSettingsLabel }}</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ lastUpdatedAt ? 'Synchronise' : 'Chargement' }}</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">
           {{ latestSale ? `Derniere vente ${formatDate(latestSale.serviceDate)}` : 'Aucune vente recente' }}
         </span>
       </div>
@@ -343,74 +340,74 @@ onMounted(loadDashboard)
 
     <p
       v-if="errorMessage"
-      class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+      class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
     >
       {{ errorMessage }}
     </p>
 
     <template v-if="loading">
-      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         <div
           v-for="index in 4"
           :key="index"
-          class="h-24 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800"
+          class="h-32 animate-pulse rounded-[2.5rem] bg-slate-200 dark:bg-slate-800"
         />
       </div>
     </template>
 
     <div
       v-else
-      class="grid gap-3 md:grid-cols-2 xl:grid-cols-4"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
     >
-      <StatCard
+      <div
         v-for="stat in stats"
         :key="stat.title"
-        :title="stat.title"
-        :value="stat.value"
-        :hint="stat.hint"
-      />
+        class="bg-[#f3f3f3] dark:bg-[#1a1c1c] p-6 rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5"
+      >
+        <span class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">{{ stat.title }}</span>
+        <div class="text-3xl font-black text-[#1a1c1c] dark:text-white my-1">{{ stat.value }}</div>
+        <div class="text-xs text-[#40493e] dark:text-[#c0c9ba]">{{ stat.hint }}</div>
+      </div>
     </div>
 
     <section
       v-if="!loading && !isAdmin"
-      class="app-section"
+      class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-6 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm"
     >
       <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <p class="app-eyebrow">
-            Mission manager
-          </p>
-          <h2 class="app-section-title mt-1">
+          <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Mission manager</span>
+          <h2 class="font-bold text-lg text-[#1a1c1c] dark:text-white mt-1">
             Produire, vendre, commander
           </h2>
         </div>
-        <span class="app-pill">Score {{ businessScore }}%</span>
+        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">Score {{ businessScore }}%</span>
       </div>
 
-      <div class="grid gap-3 lg:grid-cols-3">
+      <div class="grid gap-4 lg:grid-cols-3">
         <NuxtLink
           v-for="mission in missions"
           :key="mission.title"
           :to="mission.to"
-          class="rounded-lg border border-slate-200 bg-white p-4 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+          class="rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] p-5 transition-all hover:shadow-md"
         >
           <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-sm font-semibold text-slate-950 dark:text-white">
+              <p class="text-sm font-bold text-[#1a1c1c] dark:text-white">
                 {{ mission.title }}
               </p>
-              <p class="mt-2 text-2xl font-bold text-slate-950 dark:text-white">
+              <p class="mt-2 text-2xl font-black text-[#1a1c1c] dark:text-white">
                 {{ mission.value }}
               </p>
             </div>
-            <span class="inline-flex size-10 items-center justify-center rounded-md bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-200">
+            <span class="inline-flex size-10 items-center justify-center rounded-full bg-[#005013]/10 text-[#005013] dark:bg-[#8ad986]/15 dark:text-[#8ad986]">
               <UIcon
                 :name="mission.icon"
                 class="size-5"
               />
             </span>
           </div>
-          <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          <p class="mt-3 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
             {{ mission.helper }}
           </p>
         </NuxtLink>
@@ -419,32 +416,28 @@ onMounted(loadDashboard)
 
     <section
       v-if="!loading"
-      class="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]"
+      class="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]"
     >
-      <div class="app-section">
+      <div class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-6 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
         <div class="flex items-center justify-between gap-3">
           <div>
-            <p class="app-eyebrow">
-              Alertes
-            </p>
-            <h2 class="app-section-title mt-1">
+            <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Alertes</span>
+            <h2 class="font-bold text-lg text-[#1a1c1c] dark:text-white mt-1">
               A traiter
             </h2>
           </div>
-          <span class="app-pill">
-            {{ alerts.length }} point(s)
-          </span>
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ alerts.length }} point(s)</span>
         </div>
 
-        <div class="mt-4 grid gap-2">
+        <div class="mt-4 grid gap-3">
           <div
             v-if="alerts.length === 0"
-            class="app-inset border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/25"
+            class="rounded-3xl p-5 border border-[#005013]/20 bg-[#005013]/5 dark:border-[#8ad986]/20 dark:bg-[#8ad986]/10"
           >
-            <p class="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+            <p class="text-sm font-bold text-[#005013] dark:text-[#8ad986]">
               Rien de critique
             </p>
-            <p class="mt-1 text-sm text-emerald-800 dark:text-emerald-200">
+            <p class="mt-1 text-sm text-[#40493e] dark:text-[#c0c9ba]">
               Les donnees principales sont lisibles.
             </p>
           </div>
@@ -452,20 +445,20 @@ onMounted(loadDashboard)
           <div
             v-for="alert in alerts"
             :key="`${alert.title}-${alert.to}`"
-            class="app-inset"
+            class="rounded-3xl p-5 border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131]"
           >
             <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                <p class="text-sm font-bold text-[#1a1c1c] dark:text-white">
                   {{ alert.title }}
                 </p>
-                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                <p class="mt-1 text-sm text-[#40493e] dark:text-[#c0c9ba]">
                   {{ alert.description }}
                 </p>
               </div>
               <NuxtLink
                 :to="alert.to"
-                class="btn-secondary min-w-fit"
+                class="border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold py-2 px-5 rounded-full hover:bg-[#e8e8e8] dark:hover:bg-[#3a3d3d] transition-all text-sm text-center min-w-fit"
               >
                 {{ alert.action }}
               </NuxtLink>
@@ -474,25 +467,23 @@ onMounted(loadDashboard)
         </div>
       </div>
 
-      <div class="app-section">
-        <p class="app-eyebrow">
-          Actions rapides
-        </p>
-        <h2 class="app-section-title mt-1">
+      <div class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-6 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
+        <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Actions rapides</span>
+        <h2 class="font-bold text-lg text-[#1a1c1c] dark:text-white mt-1">
           Raccourcis
         </h2>
 
-        <div class="mt-4 grid gap-2">
+        <div class="mt-4 grid gap-3">
           <NuxtLink
             v-for="action in actions"
             :key="action.to"
             :to="action.to"
-            class="app-inset block transition hover:border-slate-300 hover:bg-white dark:hover:border-slate-700 dark:hover:bg-slate-900"
+            class="block rounded-3xl p-5 border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] transition-all hover:shadow-md"
           >
-            <p class="text-sm font-semibold text-slate-900 dark:text-white">
+            <p class="text-sm font-bold text-[#1a1c1c] dark:text-white">
               {{ action.label }}
             </p>
-            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            <p class="mt-1 text-sm text-[#40493e] dark:text-[#c0c9ba]">
               {{ action.description }}
             </p>
           </NuxtLink>
@@ -502,80 +493,74 @@ onMounted(loadDashboard)
 
     <section
       v-if="!loading"
-      class="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]"
+      class="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]"
     >
-      <div class="app-section">
+      <div class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-6 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p class="app-eyebrow">
-              Progression
-            </p>
-            <h2 class="app-section-title mt-1">
+            <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Progression</span>
+            <h2 class="font-bold text-lg text-[#1a1c1c] dark:text-white mt-1">
               Donnees configurees
             </h2>
           </div>
-          <span class="app-pill">
-            Setup {{ setupProgress }}%
-          </span>
+          <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">Setup {{ setupProgress }}%</span>
         </div>
 
-        <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+        <div class="mt-4 h-2 overflow-hidden rounded-full bg-[#e8e8e8] dark:bg-[#2f3131]">
           <div
-            class="h-full rounded-full bg-[linear-gradient(90deg,#f97316,#14b8a6,#0f172a)] transition-all"
+            class="h-full rounded-full bg-[linear-gradient(90deg,#feb236,#005013)] transition-all"
             :style="{ width: `${setupProgress}%` }"
           />
         </div>
 
-        <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <NuxtLink
             v-for="step in setupSteps"
             :key="step.to"
             :to="step.to"
-            class="app-inset transition hover:border-slate-300 dark:hover:border-slate-700"
+            class="rounded-3xl p-4 border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] transition-all hover:shadow-md"
           >
-            <p class="text-sm font-semibold text-slate-900 dark:text-white">
+            <p class="text-sm font-bold text-[#1a1c1c] dark:text-white">
               {{ step.title }}
             </p>
-            <p class="mt-1 text-xl font-semibold text-slate-900 dark:text-white">
+            <p class="mt-1 text-xl font-black text-[#1a1c1c] dark:text-white">
               {{ step.count }}
             </p>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            <p class="mt-1 text-xs text-[#40493e] dark:text-[#c0c9ba]">
               {{ step.ready ? 'Pret' : step.helper }}
             </p>
           </NuxtLink>
         </div>
       </div>
 
-      <div class="app-section">
-        <p class="app-eyebrow">
-          Lecture rapide
-        </p>
-        <h2 class="app-section-title mt-1">
+      <div class="bg-white dark:bg-[#1a1c1c] rounded-[2.5rem] p-6 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm">
+        <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Lecture rapide</span>
+        <h2 class="font-bold text-lg text-[#1a1c1c] dark:text-white mt-1">
           Signaux metier
         </h2>
 
-        <div class="mt-4 grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
-          <div class="app-inset">
-            <p class="text-sm text-slate-500">
+        <div class="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+          <div class="rounded-3xl p-4 border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131]">
+            <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
               Food cost moyen
             </p>
-            <p class="mt-1 text-xl font-semibold">
+            <p class="mt-1 text-xl font-black text-[#1a1c1c] dark:text-white">
               {{ foodCostAverage.toFixed(2) }} EUR
             </p>
           </div>
-          <div class="app-inset">
-            <p class="text-sm text-slate-500">
+          <div class="rounded-3xl p-4 border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131]">
+            <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
               Prix conseille TTC moyen
             </p>
-            <p class="mt-1 text-xl font-semibold">
+            <p class="mt-1 text-xl font-black text-[#1a1c1c] dark:text-white">
               {{ suggestedPriceAverage.toFixed(2) }} EUR
             </p>
           </div>
-          <div class="app-inset">
-            <p class="text-sm text-slate-500">
+          <div class="rounded-3xl p-4 border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131]">
+            <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
               Projection
             </p>
-            <p class="mt-1 text-xl font-semibold">
+            <p class="mt-1 text-xl font-black text-[#1a1c1c] dark:text-white">
               {{ forecastStore.forecast?.totals.totalProjectedPlates || 0 }} portions
             </p>
           </div>
@@ -596,20 +581,18 @@ onMounted(loadDashboard)
 
     <div
       v-if="!loading"
-      class="space-y-3"
+      class="space-y-4"
     >
       <div class="flex items-center justify-between gap-3">
         <div>
-          <p class="app-eyebrow">
-            Prevision
-          </p>
-          <h2 class="app-section-title mt-1">
+          <span class="text-[10px] font-bold uppercase text-[#40493e]/60 dark:text-[#c0c9ba]/60">Prevision</span>
+          <h2 class="font-bold text-lg text-[#1a1c1c] dark:text-white mt-1">
             Donnees de production
           </h2>
         </div>
         <NuxtLink
           to="/forecasts"
-          class="btn-secondary"
+          class="border border-[#707a6d] dark:border-[#c0c9ba] text-[#1a1c1c] dark:text-white font-bold py-2.5 px-6 rounded-full hover:bg-[#f3f3f3] dark:hover:bg-[#2f3131] transition-all flex items-center gap-2"
         >
           Voir tout
         </NuxtLink>
@@ -617,20 +600,20 @@ onMounted(loadDashboard)
 
       <div
         v-if="topForecastDishes.length > 0"
-        class="grid gap-3 md:grid-cols-3"
+        class="grid gap-4 md:grid-cols-3"
       >
         <div
           v-for="dish in topForecastDishes"
           :key="dish.dishId"
-          class="app-card"
+          class="bg-white dark:bg-[#1a1c1c] rounded-3xl p-5 border border-[#c0c9ba]/20 dark:border-white/5 shadow-sm"
         >
-          <p class="text-sm font-semibold text-slate-900 dark:text-white">
+          <p class="text-sm font-bold text-[#1a1c1c] dark:text-white">
             {{ dish.dishName }}
           </p>
-          <p class="mt-1 text-sm text-slate-500">
+          <p class="mt-1 text-sm text-[#40493e] dark:text-[#c0c9ba]">
             {{ dish.recommendedQuantity }} portions conseillees
           </p>
-          <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          <p class="mt-2 text-sm text-[#40493e] dark:text-[#c0c9ba]">
             CA projete {{ formatCurrency(dish.projectedRevenue) }}
           </p>
         </div>
