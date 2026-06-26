@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/nuxt'
+/*  */import * as Sentry from '@sentry/nuxt'
 
 // Browser-side error reporting to GlitchTip.
 // The DSN host must be reachable from the user's browser, i.e. localhost:8000

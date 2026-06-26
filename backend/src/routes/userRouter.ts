@@ -50,8 +50,8 @@ const USER_PUBLIC_FIELDS = "firstname lastname email role active authProvider re
 
 type UserRole = "admin" | "manager";
 
-function buildAuthSuccessPayload(userId: string) {
-  const token = signAccessToken({ sub: userId });
+function buildAuthSuccessPayload(userId: string, role?: "admin" | "manager" | "employee") {
+  const token = signAccessToken({ sub: userId, role });
   return { ok: true, token, id: userId };
 }
 
@@ -236,7 +236,7 @@ userRouter.post(
         return;
       }
 
-      res.json(buildAuthSuccessPayload(user.id));
+      res.json(buildAuthSuccessPayload(user.id, user.role));
     } catch {
       res.status(500).json({ error: "Google OAuth failed" });
     }
@@ -312,7 +312,7 @@ userRouter.post(
       return;
     }
 
-    res.json(buildAuthSuccessPayload(user.id));
+    res.json(buildAuthSuccessPayload(user.id, user.role));
   }
 );
 
@@ -429,7 +429,7 @@ userRouter.post(
         return;
       }
 
-      res.json(buildAuthSuccessPayload(user.id));
+      res.json(buildAuthSuccessPayload(user.id, user.role));
     } catch {
       res.status(401).json({ error: "Invalid or expired MFA token" });
     }
