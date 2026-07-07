@@ -1,5 +1,6 @@
 export * from "./userSchema";
 export * from "./supplierSchema";
+export * from "./supplierMessageSchema";
 export * from "./ingredientSchema";
 export * from "./dishSchema";
 export * from "./chargeSchema";

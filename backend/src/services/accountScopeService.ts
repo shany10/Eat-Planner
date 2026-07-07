@@ -18,28 +18,14 @@ export function buildAccountScope<T extends OwnedDocument>(
   user: IUser,
   filter: FilterQuery<T> = {}
 ): FilterQuery<T> {
-  if (user.role === "admin") {
-    return filter;
-  }
-
   return {
     $and: [
       filter,
-      {
-        $or: [
-          { owner: user._id },
-          { owner: null },
-          { owner: { $exists: false } }
-        ]
-      }
+      { owner: user._id }
     ]
   } as FilterQuery<T>;
 }
 
 export function getOwnerPatch(user: IUser) {
-  if (user.role === "admin") {
-    return {};
-  }
-
   return { owner: user._id };
 }

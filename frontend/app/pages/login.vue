@@ -52,6 +52,11 @@ function getErrorMessage(error: unknown, fallback: string) {
   return getFetchErrorMessage(error, fallback)
 }
 
+async function navigateAfterLogin() {
+  await authStore.loadProfile()
+  await navigateTo(authStore.profile?.role === 'supplier' ? '/supplier-messages' : '/')
+}
+
 async function handleSubmit() {
   errorMessage.value = ''
   pending.value = true
@@ -60,7 +65,7 @@ async function handleSubmit() {
     await authStore.login(form)
     if (authStore.isAuthenticated) {
       appToast.success('Connexion reussie', 'Bienvenue dans Eat Planner.')
-      await navigateTo('/')
+      await navigateAfterLogin()
     } else if (authStore.requiresTwoFactor) {
       appToast.info('Code 2FA requis', 'Entre ton code de verification pour terminer la connexion.')
     }
@@ -79,7 +84,7 @@ async function handleTwoFactorSubmit() {
   try {
     await authStore.verifyTwoFactor(twoFactorForm.code)
     appToast.success('Connexion confirmee', 'Le code 2FA est valide.')
-    await navigateTo('/')
+    await navigateAfterLogin()
   } catch (error) {
     errorMessage.value = getErrorMessage(error, 'Code 2FA invalide')
     appToast.error('Code 2FA invalide', errorMessage.value)
@@ -109,7 +114,7 @@ async function handleGoogleCredential(response: GoogleCredentialResponse) {
     await authStore.loginWithGoogle({ idToken })
     if (authStore.isAuthenticated) {
       appToast.success('Connexion Google reussie', 'Bienvenue dans Eat Planner.')
-      await navigateTo('/')
+      await navigateAfterLogin()
     } else if (authStore.requiresTwoFactor) {
       appToast.info('Code 2FA requis', 'Entre ton code de verification pour terminer la connexion.')
     }

@@ -217,7 +217,11 @@ async function removeUser(user: ManagedUser) {
 }
 
 function formatRole(role: ManagedUser['role']) {
-  return role === 'admin' ? 'Admin principal' : 'Manager'
+  if (role === 'admin') {
+    return 'Admin principal'
+  }
+
+  return role === 'supplier' ? 'Fournisseur' : 'Manager'
 }
 
 function formatDate(value: string) {

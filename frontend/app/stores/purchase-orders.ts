@@ -18,6 +18,16 @@ type PurchaseOrderPayload = {
   }>
 }
 
+type SupplierEmailResult = {
+  ok: boolean
+  sent: Array<{
+    supplierName: string
+    to: string
+    itemCount: number
+  }>
+  order: PurchaseOrder
+}
+
 export const usePurchaseOrderStore = defineStore('purchase-orders', () => {
   const items = ref<PurchaseOrder[]>([])
   const rewards = ref<PurchaseRewards | null>(null)
@@ -69,6 +79,15 @@ export const usePurchaseOrderStore = defineStore('purchase-orders', () => {
     return lastOrder.value
   }
 
+  async function sendSupplierEmail(id: string) {
+    const result = await $fetch<SupplierEmailResult>(`/api/purchase-orders/${id}/send-supplier-email`, {
+      method: 'POST'
+    })
+    lastOrder.value = result.order
+    await load()
+    return result
+  }
+
   async function remove(id: string) {
     await $fetch(`/api/purchase-orders/${id}`, { method: 'DELETE' })
     await load()
@@ -95,6 +114,7 @@ export const usePurchaseOrderStore = defineStore('purchase-orders', () => {
     update,
     updateStatus,
     pay,
+    sendSupplierEmail,
     remove,
     loadRewards,
     openOrders,

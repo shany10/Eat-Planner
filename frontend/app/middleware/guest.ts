@@ -4,6 +4,6 @@ export default defineNuxtRouteMiddleware(() => {
   const authStore = useAuthStore()
 
   if (authStore.isAuthenticated) {
-    return navigateTo('/')
+    return navigateTo(authStore.profile?.role === 'supplier' ? '/supplier-messages' : '/')
   }
 })

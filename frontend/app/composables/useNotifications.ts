@@ -4,6 +4,7 @@ import { useForecastStore } from '~/stores/forecasts'
 import { useIngredientStore } from '~/stores/ingredients'
 import { usePurchaseOrderStore } from '~/stores/purchase-orders'
 import { useSaleStore } from '~/stores/sales'
+import { useSupplierMessageStore } from '~/stores/supplier-messages'
 import { useSupplierStore } from '~/stores/suppliers'
 
 export type NotificationSeverity = 'info' | 'warning' | 'critical'
@@ -35,6 +36,7 @@ export function useNotifications() {
   const saleStore = useSaleStore()
   const forecastStore = useForecastStore()
   const purchaseOrderStore = usePurchaseOrderStore()
+  const supplierMessageStore = useSupplierMessageStore()
 
   const readIds = useState<string[]>('notifications:read', () => [])
   const loading = useState<boolean>('notifications:loading', () => false)
@@ -147,6 +149,26 @@ export function useNotifications() {
       })
     }
 
+    const supplierMessages = supplierMessageStore.items.filter((message) => {
+      if (authStore.profile?.role === 'supplier') {
+        return message.direction === 'outbound'
+      }
+
+      return message.direction === 'inbound'
+    })
+    if (supplierMessages.length > 0) {
+      list.push({
+        id: `supplier-message:${supplierMessages[0]?._id ?? supplierMessages.length}`,
+        severity: 'info',
+        icon: 'i-lucide-message-circle',
+        title: `${supplierMessages.length} message(s) fournisseur`,
+        description: authStore.profile?.role === 'supplier'
+          ? 'Un message restaurant attend une reponse.'
+          : 'Un fournisseur a repondu dans la messagerie.',
+        to: '/supplier-messages'
+      })
+    }
+
     return list
   })
 
@@ -183,6 +205,7 @@ export function useNotifications() {
         dishStore.load(),
         saleStore.load(),
         purchaseOrderStore.load(),
+        supplierMessageStore.load(),
         forecastStore.load(),
         authStore.profile ? Promise.resolve() : authStore.loadProfile()
       ])

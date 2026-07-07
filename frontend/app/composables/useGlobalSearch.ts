@@ -24,6 +24,7 @@ const NAV_ITEMS: Array<{ label: string, icon: string, to: string }> = [
   { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
   { label: 'Ingredients', icon: 'i-lucide-wheat', to: '/ingredients' },
   { label: 'Fournisseurs', icon: 'i-lucide-truck', to: '/suppliers' },
+  { label: 'Messagerie', icon: 'i-lucide-mails', to: '/supplier-messages' },
   { label: 'Plats', icon: 'i-lucide-utensils', to: '/dishes' },
   { label: 'Charges', icon: 'i-lucide-receipt', to: '/charges' },
   { label: 'Ventes', icon: 'i-lucide-banknote', to: '/sales' },

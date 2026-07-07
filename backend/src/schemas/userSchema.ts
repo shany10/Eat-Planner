@@ -7,7 +7,7 @@ export const createUserBody = z.object({
     .regex(/^[A-Za-zÀ-ÖØ-öø-ÿ'\-\s]+$/, "Pas de chiffres dans lastname"),
   email: z.string().email("email invalide"),
   password: z.string().min(8, "mot de passe trop court"),
-  role: z.enum(["admin", "manager", "employee"]),
+  role: z.enum(["admin", "manager", "employee", "supplier"]),
   active: z.boolean().optional().default(true),
   restaurantName: z.string().min(2).max(100).optional().default("Mon restaurant"),
   defaultMarginRate: z.number().min(0).max(0.95).optional().default(0.72),
@@ -39,7 +39,7 @@ export const updateAccountSettingsBody = z.object({
 });
 
 export const changeRoleBody = z.object({
-  role: z.enum(["admin", "manager", "employee"]),
+  role: z.enum(["admin", "manager", "employee", "supplier"]),
 });
 
 export const authUserBody = z.object({

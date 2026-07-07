@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { connectMongoose, closeMongoose } from "../src/db/mangoose";
-import { IngredientModel, PurchaseOrderModel, SupplierModel } from "../src/models";
+import { IngredientModel, PurchaseOrderModel, SupplierModel, UserModel } from "../src/models";
 import { businessSeeder } from "./businessSeeder";
 
 if (!process.env.MONGODB_URI) {
@@ -17,7 +17,21 @@ async function seedBusinessData() {
     await IngredientModel.deleteMany({});
     await SupplierModel.deleteMany({});
 
-    const business = await businessSeeder();
+    const users = await UserModel.find({ active: true }).exec();
+    const businessResults = [];
+
+    if (users.length === 0) {
+      businessResults.push(await businessSeeder());
+    } else {
+      for (const user of users) {
+        businessResults.push(await businessSeeder(user._id));
+      }
+    }
+
+    const business = {
+      suppliers: businessResults.flatMap(result => result.suppliers),
+      ingredients: businessResults.flatMap(result => result.ingredients)
+    };
 
     console.log("\nBusiness demo data ready:");
     console.log(`   - Suppliers: ${business.suppliers.length}`);

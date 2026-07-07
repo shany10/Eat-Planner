@@ -14,6 +14,7 @@ import { IngredientModel, PurchaseOrderModel, SupplierModel } from "../models";
 import { buildAccountScope, getOwnerPatch, loadRequestUser } from "../services/accountScopeService";
 import { IUser } from "../models";
 import { BusinessUnit, PurchaseOrderStatus } from "../types/business";
+import { sendSupplierOrderEmail } from "../utils/email";
 
 const purchaseOrderRouter = Router();
 
@@ -40,6 +41,12 @@ type Totals = {
   vatAmount: number;
   totalInclTax: number;
   totalAmount: number;
+};
+
+type SupplierMailTarget = {
+  id: string;
+  name: string;
+  email: string;
 };
 
 const DEFAULT_DELIVERY_ADDRESS = "Restaurant Eat Planner, 12 rue des Chefs, 75002 Paris";
@@ -227,6 +234,72 @@ async function buildOrderFinancials(user: IUser, supplierId: string, items: Norm
   };
 }
 
+function getValueId(value: unknown) {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "object" && "_id" in value) {
+    return String((value as { _id: unknown })._id);
+  }
+
+  return String(value);
+}
+
+function getSupplierMailTargets(order: { supplier: unknown; suppliers?: unknown[] }) {
+  const rawSuppliers = order.suppliers?.length ? order.suppliers : [order.supplier];
+  const seen = new Set<string>();
+  const targets: SupplierMailTarget[] = [];
+
+  for (const supplier of rawSuppliers) {
+    if (!supplier || typeof supplier !== "object") {
+      continue;
+    }
+
+    const record = supplier as { _id?: unknown; name?: unknown; email?: unknown };
+    const id = getValueId(record);
+    const email = typeof record.email === "string" ? record.email.trim() : "";
+
+    if (!id || !email || seen.has(id)) {
+      continue;
+    }
+
+    seen.add(id);
+    targets.push({
+      id,
+      email,
+      name: typeof record.name === "string" && record.name.trim() ? record.name : "Fournisseur"
+    });
+  }
+
+  return targets;
+}
+
+function getOrderItemsForSupplier(
+  order: {
+    items: Array<{
+      supplier?: unknown;
+      supplierName: string;
+      ingredientName: string;
+      quantity: number;
+      unit: BusinessUnit;
+      unitPrice: number;
+      lineTotal: number;
+    }>;
+  },
+  supplier: SupplierMailTarget
+) {
+  return order.items.filter((item) => {
+    const itemSupplierId = getValueId(item.supplier);
+
+    if (itemSupplierId) {
+      return itemSupplierId === supplier.id;
+    }
+
+    return item.supplierName === supplier.name;
+  });
+}
+
 purchaseOrderRouter.get("/", authMiddleware, async (req, res): Promise<void> => {
   const user = await loadRequestUser(req);
   if (!user) {
@@ -321,6 +394,82 @@ purchaseOrderRouter.get("/:id", authMiddleware, async (req, res): Promise<void> 
 
   res.json(order);
 });
+
+purchaseOrderRouter.post(
+  "/:id/send-supplier-email",
+  authMiddleware,
+  roleMiddleware(["admin", "manager"]),
+  async (req, res): Promise<void> => {
+    const user = await loadRequestUser(req);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const order = await PurchaseOrderModel.findOne(buildAccountScope(user, { _id: req.params.id }))
+      .populate(orderPopulate)
+      .exec();
+
+    if (!order) {
+      res.status(404).json({ error: "Purchase order not found" });
+      return;
+    }
+
+    const suppliers = getSupplierMailTargets(order);
+    const sent: Array<{ supplierName: string; to: string; itemCount: number }> = [];
+
+    for (const supplier of suppliers) {
+      const items = getOrderItemsForSupplier(order, supplier);
+
+      if (items.length === 0) {
+        continue;
+      }
+
+      await sendSupplierOrderEmail({
+        to: supplier.email,
+        supplierName: supplier.name,
+        orderNumber: order.orderNumber,
+        restaurantName: user.restaurantName || "Eat Planner",
+        deliveryAddress: order.deliveryAddress || DEFAULT_DELIVERY_ADDRESS,
+        estimatedDeliveryDate: order.estimatedDeliveryDate,
+        totalInclTax: order.totalInclTax || order.totalAmount,
+        supplierSubtotal: items.reduce((sum, item) => sum + item.lineTotal, 0),
+        notes: order.notes || order.internalComment || "",
+        items: items.map((item) => ({
+          ingredientName: item.ingredientName,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal
+        }))
+      });
+
+      sent.push({
+        supplierName: supplier.name,
+        to: supplier.email,
+        itemCount: items.length
+      });
+    }
+
+    if (sent.length === 0) {
+      res.status(400).json({ error: "No supplier email configured for this order" });
+      return;
+    }
+
+    if (!["delivered", "received", "cancelled"].includes(order.status)) {
+      order.status = "sent";
+      await order.save();
+    }
+
+    const populatedOrder = await order.populate(orderPopulate);
+
+    res.json({
+      ok: true,
+      sent,
+      order: populatedOrder
+    });
+  }
+);
 
 purchaseOrderRouter.post(
   "/",

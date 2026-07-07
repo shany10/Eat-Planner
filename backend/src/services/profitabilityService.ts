@@ -114,7 +114,7 @@ async function loadProfitabilityContext(dishes: IDish[], currentUser?: IUser | n
   )];
 
   const [ingredients, charges, activeDishes, owners] = await Promise.all([
-    IngredientModel.find({ _id: { $in: ingredientIds } }).exec(),
+    IngredientModel.find(currentUser ? buildAccountScope(currentUser, { _id: { $in: ingredientIds } }) : { _id: { $in: ingredientIds } }).exec(),
     ChargeModel.find(currentUser ? buildAccountScope(currentUser, { active: true }) : { active: true }).exec(),
     DishModel.find(currentUser ? buildAccountScope(currentUser, { active: true }) : { active: true }, "estimatedDailyServings").exec(),
     UserModel.find({ _id: { $in: ownerIds } }, "defaultMarginRate vatRate").exec()

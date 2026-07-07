@@ -7,6 +7,42 @@ type PasswordResetEmailInput = {
   resetUrl: string;
 };
 
+type SupplierOrderEmailLine = {
+  ingredientName: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  lineTotal: number;
+};
+
+type SupplierOrderEmailInput = {
+  to: string;
+  supplierName: string;
+  orderNumber: string;
+  restaurantName: string;
+  deliveryAddress: string;
+  estimatedDeliveryDate?: string | undefined;
+  totalInclTax: number;
+  supplierSubtotal: number;
+  notes?: string | undefined;
+  items: SupplierOrderEmailLine[];
+};
+
+type SupplierMessageEmailInput = {
+  to: string;
+  supplierName: string;
+  restaurantName: string;
+  subject: string;
+  body: string;
+};
+
+type AppEmailMessage = {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+};
+
 let transporter: nodemailer.Transporter | null = null;
 
 function getEnvValue(...names: string[]) {
@@ -80,6 +116,37 @@ function hasMailConfig() {
   );
 }
 
+function formatCurrency(value: number) {
+  return `${Number(value || 0).toFixed(2)} EUR`;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+async function sendAppEmail(message: AppEmailMessage, logLabel: string) {
+  const from = resolveFromAddress();
+
+  if (shouldLogMail() || !hasMailConfig() || !from) {
+    console.warn(`[mail] SMTP not configured. ${logLabel} for ${message.to}:\n${message.text}`);
+    return { mode: "log" as const };
+  }
+
+  const mailer = getTransporter();
+
+  await mailer.sendMail({
+    from,
+    ...message
+  });
+
+  return { mode: "smtp" as const };
+}
+
 function getTransporter() {
   if (transporter) {
     return transporter;
@@ -125,17 +192,8 @@ function getTransporter() {
 
 export async function sendPasswordResetEmail({ firstname, to, resetUrl }: PasswordResetEmailInput) {
   const appName = getEnvValue("SMTP_APP_NAME", "MAIL_APP_NAME") ?? "EatPlanner";
-  const from = resolveFromAddress();
 
-  if (shouldLogMail() || !hasMailConfig() || !from) {
-    console.warn(`[mail] SMTP not configured. Password reset link for ${to}: ${resetUrl}`);
-    return;
-  }
-
-  const mailer = getTransporter();
-
-  await mailer.sendMail({
-    from,
+  await sendAppEmail({
     to,
     subject: `${appName} - Reinitialisation du mot de passe`,
     text: [
@@ -160,5 +218,115 @@ export async function sendPasswordResetEmail({ firstname, to, resetUrl }: Passwo
         <p style="font-size: 12px; color: #64748b;">Lien direct : ${resetUrl}</p>
       </div>
     `
-  });
+  }, "Password reset link");
+}
+
+export async function sendSupplierOrderEmail({
+  to,
+  supplierName,
+  orderNumber,
+  restaurantName,
+  deliveryAddress,
+  estimatedDeliveryDate,
+  totalInclTax,
+  supplierSubtotal,
+  notes,
+  items
+}: SupplierOrderEmailInput) {
+  const appName = getEnvValue("SMTP_APP_NAME", "MAIL_APP_NAME") ?? "Eat Planner";
+  const subject = `${appName} - Commande ${orderNumber}`;
+  const lines = items.map((item) =>
+    `- ${item.ingredientName}: ${item.quantity} ${item.unit} x ${formatCurrency(item.unitPrice)} = ${formatCurrency(item.lineTotal)}`
+  );
+
+  return await sendAppEmail({
+    to,
+    subject,
+    text: [
+      `Bonjour ${supplierName},`,
+      "",
+      `${restaurantName} vous transmet une commande fournisseur.`,
+      `Commande: ${orderNumber}`,
+      estimatedDeliveryDate ? `Livraison souhaitee/estimee: ${estimatedDeliveryDate}` : "",
+      `Adresse: ${deliveryAddress || "-"}`,
+      "",
+      "Articles:",
+      ...lines,
+      "",
+      `Sous-total fournisseur: ${formatCurrency(supplierSubtotal)}`,
+      `Total commande TTC: ${formatCurrency(totalInclTax)}`,
+      notes ? `Commentaire: ${notes}` : "",
+      "",
+      "Ceci est un email de demonstration envoye depuis Eat Planner."
+    ].filter(Boolean).join("\n"),
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #1a1c1c;">
+        <h2 style="margin: 0 0 12px;">Commande fournisseur ${escapeHtml(orderNumber)}</h2>
+        <p>Bonjour ${escapeHtml(supplierName)},</p>
+        <p><strong>${escapeHtml(restaurantName)}</strong> vous transmet une commande fournisseur.</p>
+        <table style="width: 100%; border-collapse: collapse; margin: 18px 0;">
+          <thead>
+            <tr>
+              <th style="border-bottom: 1px solid #d7ddd2; padding: 8px; text-align: left;">Article</th>
+              <th style="border-bottom: 1px solid #d7ddd2; padding: 8px; text-align: right;">Quantite</th>
+              <th style="border-bottom: 1px solid #d7ddd2; padding: 8px; text-align: right;">Prix</th>
+              <th style="border-bottom: 1px solid #d7ddd2; padding: 8px; text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map((item) => `
+              <tr>
+                <td style="border-bottom: 1px solid #edf0ea; padding: 8px;">${escapeHtml(item.ingredientName)}</td>
+                <td style="border-bottom: 1px solid #edf0ea; padding: 8px; text-align: right;">${item.quantity} ${escapeHtml(item.unit)}</td>
+                <td style="border-bottom: 1px solid #edf0ea; padding: 8px; text-align: right;">${formatCurrency(item.unitPrice)}</td>
+                <td style="border-bottom: 1px solid #edf0ea; padding: 8px; text-align: right;"><strong>${formatCurrency(item.lineTotal)}</strong></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <p><strong>Sous-total fournisseur:</strong> ${formatCurrency(supplierSubtotal)}</p>
+        <p><strong>Total commande TTC:</strong> ${formatCurrency(totalInclTax)}</p>
+        <p><strong>Livraison:</strong> ${escapeHtml(estimatedDeliveryDate || "-")}</p>
+        <p><strong>Adresse:</strong> ${escapeHtml(deliveryAddress || "-")}</p>
+        ${notes ? `<p><strong>Commentaire:</strong> ${escapeHtml(notes)}</p>` : ""}
+        <p style="margin-top: 18px; color: #64748b; font-size: 12px;">Email de demonstration envoye depuis Eat Planner.</p>
+      </div>
+    `
+  }, `Supplier order ${orderNumber}`);
+}
+
+export async function sendSupplierMessageEmail({
+  to,
+  supplierName,
+  restaurantName,
+  subject,
+  body
+}: SupplierMessageEmailInput) {
+  const appName = getEnvValue("SMTP_APP_NAME", "MAIL_APP_NAME") ?? "Eat Planner";
+  const mailSubject = `${appName} - ${subject}`;
+  const escapedBody = escapeHtml(body).replace(/\n/g, "<br>");
+
+  return await sendAppEmail({
+    to,
+    subject: mailSubject,
+    text: [
+      `Bonjour ${supplierName},`,
+      "",
+      `${restaurantName} vous envoie un message depuis Eat Planner.`,
+      "",
+      body,
+      "",
+      "Ceci est un email de demonstration envoye depuis Eat Planner."
+    ].join("\n"),
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #1a1c1c;">
+        <p>Bonjour ${escapeHtml(supplierName)},</p>
+        <p><strong>${escapeHtml(restaurantName)}</strong> vous envoie un message depuis Eat Planner.</p>
+        <div style="margin: 18px 0; padding: 14px 16px; border: 1px solid #d7ddd2; border-radius: 8px; background: #f8faf7;">
+          ${escapedBody}
+        </div>
+        <p style="margin-top: 18px; color: #64748b; font-size: 12px;">Email de demonstration envoye depuis Eat Planner.</p>
+      </div>
+    `
+  }, `Supplier message ${subject}`);
 }

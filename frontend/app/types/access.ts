@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'manager'
+export type UserRole = 'admin' | 'manager' | 'employee' | 'supplier'
 
 export type AuthProvider = 'local' | 'google'
 

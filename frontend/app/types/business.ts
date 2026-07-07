@@ -11,7 +11,24 @@ export type Supplier = {
   phone?: string
   address?: string
   notes?: string
+  portalUser?: string | null
   active: boolean
+}
+
+export type SupplierMessage = {
+  _id: string
+  supplier: Supplier | string
+  owner?: string | null
+  subject: string
+  body: string
+  direction?: 'outbound' | 'inbound'
+  from?: string
+  to: string
+  status: 'sent' | 'failed'
+  sentAt?: string | null
+  errorMessage?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export type BusinessUnit = 'g' | 'kg' | 'ml' | 'cl' | 'l' | 'piece' | 'carton' | 'sac' | 'bouteille' | 'barquette' | 'boite'

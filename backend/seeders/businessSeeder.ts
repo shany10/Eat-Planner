@@ -1,5 +1,6 @@
 import { IngredientModel, SupplierModel } from "../src/models";
 import { BusinessUnit, IngredientCategory } from "../src/types/business";
+import { Types } from "mongoose";
 
 type SupplierSeed = {
   name: string;
@@ -224,12 +225,13 @@ const ingredients: IngredientSeed[] = [
   { name: "Liquide vaisselle pro", category: "Produits d entretien", unit: "l", orderUnit: "carton", purchasePrice: 3.2, stockQuantity: 10, minimumStock: 8, averageDailyUsage: 0.8, minimumOrderQuantity: 6, supplierName: "TransGourmet", active: true }
 ];
 
-export const businessSeeder = async () => {
-  console.log("Seeding suppliers and ingredients...");
+export const businessSeeder = async (owner?: unknown) => {
+  const ownerId = owner ? new Types.ObjectId(String(owner)) : null;
+  console.log(`Seeding suppliers and ingredients${ownerId ? ` for user ${ownerId}` : ""}...`);
 
   const createdSuppliers = await SupplierModel.insertMany(suppliers.map(supplier => ({
     ...supplier,
-    owner: null
+    owner: ownerId
   })));
   const supplierByName = new Map(createdSuppliers.map(supplier => [supplier.name, supplier._id]));
 
@@ -255,7 +257,7 @@ export const businessSeeder = async () => {
       averageDailyUsage: ingredient.averageDailyUsage,
       minimumOrderQuantity: ingredient.minimumOrderQuantity,
       supplier,
-      owner: null,
+      owner: ownerId,
       active: ingredient.active
     };
   }));

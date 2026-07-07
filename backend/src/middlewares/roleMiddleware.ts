@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
-export type UserRole = "admin" | "manager" | "employee";
+export type UserRole = "admin" | "manager" | "employee" | "supplier";
 
 export function roleMiddleware(allowedRoles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction) => {

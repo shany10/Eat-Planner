@@ -4,7 +4,7 @@ import { verifyAccessToken } from "../utils/jwt";
 declare global {
   namespace Express {
     interface Request {
-      user?: { id: string; role?: "admin" | "manager" | "employee" | undefined };
+      user?: { id: string; role?: "admin" | "manager" | "employee" | "supplier" | undefined };
     }
   }
 }

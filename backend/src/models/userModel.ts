@@ -8,7 +8,7 @@ export interface IUser extends Document {
   password: string;
   authProvider: "local" | "google";
   providerId?: string;
-  role: "admin" | "manager" | "employee";
+  role: "admin" | "manager" | "employee" | "supplier";
   active: boolean;
   restaurantName: string;
   defaultMarginRate: number;
@@ -30,7 +30,7 @@ const userSchema = new Schema<IUser>({
   password: { type: String, required: true },
   authProvider: { type: String, enum: ["local", "google"], default: "local", required: true },
   providerId: { type: String, sparse: true },
-  role: { type: String, enum: ["admin", "manager", "employee"], default: "manager", required: true },
+  role: { type: String, enum: ["admin", "manager", "employee", "supplier"], default: "manager", required: true },
   active: { type: Boolean, default: true },
   restaurantName: { type: String, trim: true, default: "Mon restaurant" },
   defaultMarginRate: { type: Number, min: 0, max: 0.95, default: 0.72 },

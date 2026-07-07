@@ -106,7 +106,7 @@ useHead({
       </header>
 
       <main v-if="isAuthenticated">
-        <div class="mx-auto grid min-h-[calc(100vh-65px)] max-w-[1500px] lg:grid-cols-[260px_minmax(0,1fr)]">
+        <div class="grid min-h-[calc(100vh-65px)] w-full lg:grid-cols-[260px_minmax(0,1fr)]">
           <div class="h-full">
             <BusinessNav />
           </div>

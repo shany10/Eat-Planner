@@ -18,6 +18,23 @@ const authStore = useAuthStore()
 const appToast = useAppToast()
 
 const sections = computed<NavSection[]>(() => {
+  if (authStore.profile?.role === 'supplier') {
+    return [
+      {
+        title: 'Portail fournisseur',
+        links: [
+          { to: '/supplier-messages', label: 'Messagerie', hint: 'Conversation avec le restaurant', icon: 'i-lucide-message-circle' }
+        ]
+      },
+      {
+        title: 'Compte',
+        links: [
+          { to: '/account', label: 'Mon compte', hint: 'Profil et statut du compte', icon: 'i-lucide-user-round' }
+        ]
+      }
+    ]
+  }
+
   const baseSections: NavSection[] = [
     {
       title: 'Pilotage',
@@ -28,11 +45,12 @@ const sections = computed<NavSection[]>(() => {
     },
     {
       title: 'Operations',
-      links: [
-        { to: '/ingredients', label: 'Ingredients', hint: 'Matieres premieres et prix achat', icon: 'i-lucide-wheat' },
-        { to: '/suppliers', label: 'Fournisseurs', hint: 'Partenaires et contacts achats', icon: 'i-lucide-truck' },
-        { to: '/purchase-orders', label: 'Achats', hint: 'Panier et commandes fournisseurs', icon: 'i-lucide-shopping-cart' },
-        { to: '/dishes', label: 'Plats', hint: 'Recettes et prix conseilles', icon: 'i-lucide-utensils' },
+        links: [
+          { to: '/ingredients', label: 'Ingredients', hint: 'Matieres premieres et prix achat', icon: 'i-lucide-wheat' },
+          { to: '/suppliers', label: 'Fournisseurs', hint: 'Partenaires et contacts achats', icon: 'i-lucide-truck' },
+          { to: '/supplier-messages', label: 'Messagerie', hint: 'Emails fournisseurs via Mailpit', icon: 'i-lucide-mails' },
+          { to: '/purchase-orders', label: 'Achats', hint: 'Panier et commandes fournisseurs', icon: 'i-lucide-shopping-cart' },
+          { to: '/dishes', label: 'Plats', hint: 'Recettes et prix conseilles', icon: 'i-lucide-utensils' },
         { to: '/charges', label: 'Charges', hint: 'Couts fixes et variables', icon: 'i-lucide-receipt' },
         { to: '/sales', label: 'Ventes', hint: 'Tickets et historique', icon: 'i-lucide-banknote' }
       ]
@@ -95,12 +113,20 @@ const roleBadge = computed(() => {
     return 'Role'
   }
 
-  return authStore.profile.role === 'admin' ? 'Admin principal' : 'Manager'
+  if (authStore.profile.role === 'admin') {
+    return 'Admin principal'
+  }
+
+  return authStore.profile.role === 'supplier' ? 'Fournisseur' : 'Manager'
 })
 
 const focusLink = computed<NavLink>(() => {
   if (authStore.profile?.role === 'admin') {
     return { to: '/admin', label: 'Panel admin', hint: 'Utilisateurs et acces critiques', icon: 'i-lucide-users-round' }
+  }
+
+  if (authStore.profile?.role === 'supplier') {
+    return { to: '/supplier-messages', label: 'Messagerie', hint: 'Conversation fournisseur', icon: 'i-lucide-message-circle' }
   }
 
   return { to: '/forecasts', label: 'Prevision du jour', hint: 'Volumes et besoins matieres', icon: 'i-lucide-chart-no-axes-combined' }

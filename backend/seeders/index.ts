@@ -33,7 +33,14 @@ async function seedDatabase() {
     await clearDatabase();
 
     const users = await userSeeder();
-    const business = await businessSeeder();
+    const businessResults = [];
+    for (const user of users) {
+      businessResults.push(await businessSeeder(user._id));
+    }
+    const business = {
+      suppliers: businessResults.flatMap(result => result.suppliers),
+      ingredients: businessResults.flatMap(result => result.ingredients)
+    };
 
     console.log("\nDatabase seeding completed successfully!");
     console.log("\nSummary:");

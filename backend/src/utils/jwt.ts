@@ -4,7 +4,7 @@ const JWT_SECRET: Secret = process.env.JWT_SECRET ?? "dev-secret";
 
 export interface AccessTokenPayload {
   sub: string;
-  role?: "admin" | "manager" | "employee";
+  role?: "admin" | "manager" | "employee" | "supplier";
   typ: "access";
 }
 
@@ -13,7 +13,7 @@ export interface MfaTokenPayload {
   typ: "mfa";
 }
 
-export function signAccessToken(payload: Pick<AccessTokenPayload, "sub"> & { role?: "admin" | "manager" | "employee" }, expiresInHours = 1) {
+export function signAccessToken(payload: Pick<AccessTokenPayload, "sub"> & { role?: "admin" | "manager" | "employee" | "supplier" }, expiresInHours = 1) {
   return jwt.sign(
     { ...payload, typ: "access" } as string | object | Buffer,
     JWT_SECRET,

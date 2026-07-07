@@ -20,7 +20,7 @@
 
 .app-shell {
     min-height: 100vh;
-    background: #f1f5f9;
+    background: #f6f7f9;
     color: #020617;
 }
 
@@ -70,9 +70,9 @@
 .app-page-header,
 .app-card {
     border: 1px solid rgb(192 201 186 / 20%);
-    border-radius: 2.5rem;
+    border-radius: 0.5rem;
     background: #ffffff;
-    box-shadow: 0 1px 2px rgb(15 23 42 / 6%);
+    box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
 }
 
 .dark .app-panel,
@@ -83,7 +83,7 @@
 }
 
 .app-page-header {
-    padding: 1.5rem;
+    padding: 1rem;
 }
 
 .app-page-header--compact {
@@ -96,10 +96,10 @@
 
 .app-section {
     border: 1px solid rgb(192 201 186 / 20%);
-    border-radius: 2.5rem;
+    border-radius: 0.5rem;
     background: #ffffff;
-    padding: 1.5rem;
-    box-shadow: 0 1px 2px rgb(15 23 42 / 6%);
+    padding: 1rem;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
 }
 
 .dark .app-section {
@@ -130,7 +130,7 @@
 
 .app-inset {
     border: 1px solid rgb(192 201 186 / 20%);
-    border-radius: 1.5rem;
+    border-radius: 0.5rem;
     background: #f3f3f3;
     padding: 1rem;
 }
@@ -180,7 +180,7 @@
     display: inline-flex;
     align-items: center;
     border: 1px solid rgb(192 201 186 / 20%);
-    border-radius: 9999px;
+    border-radius: 0.375rem;
     background: #e8e8e8;
     padding: 0.25rem 0.75rem;
     color: #40493e;
@@ -202,7 +202,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 9999px;
+    border-radius: 0.5rem;
     padding: 0.625rem 1.5rem;
     font-size: 0.875rem;
     font-weight: 700;
@@ -275,7 +275,7 @@
 .app-input {
     width: 100%;
     border: 1px solid rgb(192 201 186 / 30%);
-    border-radius: 9999px;
+    border-radius: 0.5rem;
     background: #f3f3f3;
     padding: 0.625rem 1rem;
     color: #1a1c1c;
@@ -310,9 +310,11 @@
 
 .rounded-xl,
 .rounded-2xl,
+.rounded-3xl,
 .rounded-\[1\.5rem\],
 .rounded-\[1\.75rem\],
-.rounded-\[2rem\] {
+.rounded-\[2rem\],
+.rounded-\[2\.5rem\] {
     border-radius: 0.5rem !important;
 }
 
@@ -521,7 +523,7 @@ li[data-slot="base"][role="status"] [data-slot="indicator"],
     }
 
     .app-page-header {
-        padding: 2rem;
+        padding: 1.25rem;
     }
 
     .app-page-header--compact {
@@ -529,7 +531,7 @@ li[data-slot="base"][role="status"] [data-slot="indicator"],
     }
 
     .app-section {
-        padding: 1.25rem;
+        padding: 1rem;
     }
 
     .app-title {
@@ -637,7 +639,7 @@ li[data-slot="base"][role="status"] [data-slot="indicator"],
     font-size: 48px;
     line-height: 56px;
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
 }
 
 .font-headline-lg {

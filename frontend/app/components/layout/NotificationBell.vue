@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { AppNotification } from '~/composables/useNotifications'
 
-const { notifications, unreadCount, hasUnread, isRead, markRead, markAllRead, refresh } = useNotifications()
+const { notifications, unreadCount, hasUnread, isRead, markRead, markAllRead, refresh, loading } = useNotifications()
 
 const open = ref(false)
+let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 function toggle() {
   open.value = !open.value
@@ -33,6 +34,17 @@ function severityClass(severity: AppNotification['severity']) {
 
 onMounted(() => {
   refresh()
+  refreshTimer = setInterval(() => {
+    if (!loading.value) {
+      void refresh()
+    }
+  }, 20000)
+})
+
+onBeforeUnmount(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+  }
 })
 </script>
 

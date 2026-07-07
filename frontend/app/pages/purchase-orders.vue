@@ -81,6 +81,7 @@ const cartLines = ref<CartLine[]>([])
 const deliveryAddress = ref(DEFAULT_DELIVERY_ADDRESS)
 const internalComment = ref('')
 const confirmedOrder = ref<PurchaseOrder | null>(null)
+const sendingOrderEmailId = ref('')
 
 const ingredientFilters = reactive({
   search: '',
@@ -464,6 +465,22 @@ async function updateOrderStatus(order: PurchaseOrder, status: PurchaseOrderStat
   }
 }
 
+async function sendSupplierEmail(order: PurchaseOrder) {
+  sendingOrderEmailId.value = order._id
+  try {
+    const result = await purchaseOrderStore.sendSupplierEmail(order._id)
+    if (confirmedOrder.value?._id === order._id) {
+      confirmedOrder.value = result.order
+    }
+    appToast.success('Email fournisseur envoye', `${result.sent.length} message(s) visible(s) dans Mailpit.`)
+  } catch (error) {
+    errorMessage.value = getFetchErrorMessage(error, 'Impossible d envoyer le mail fournisseur')
+    appToast.error('Envoi impossible', errorMessage.value)
+  } finally {
+    sendingOrderEmailId.value = ''
+  }
+}
+
 function payExistingOrder(order: PurchaseOrder) {
   confirmedOrder.value = order
   activeStep.value = 'payment'
@@ -515,6 +532,22 @@ function getOrderSupplierNames(order: PurchaseOrder) {
   }
 
   return typeof order.supplier === 'object' ? order.supplier.name : order.supplier
+}
+
+function getOrderSupplierEmails(order: PurchaseOrder) {
+  const suppliers = (order.suppliers?.length ? order.suppliers : [order.supplier])
+
+  return suppliers
+    .map(supplier => typeof supplier === 'object' ? supplier.email : '')
+    .filter((email): email is string => Boolean(email))
+}
+
+function canSendSupplierEmail(order: PurchaseOrder) {
+  return getOrderSupplierEmails(order).length > 0 && !['cancelled', 'delivered', 'received'].includes(order.status)
+}
+
+function isSendingSupplierEmail(order: PurchaseOrder) {
+  return sendingOrderEmailId.value === order._id
 }
 
 function getStatusLabel(status: PurchaseOrderStatus) {
@@ -1520,6 +1553,30 @@ onMounted(loadPage)
               <button
                 type="button"
                 class="btn-primary"
+                :disabled="!canSendSupplierEmail(confirmedOrder) || isSendingSupplierEmail(confirmedOrder)"
+                @click="sendSupplierEmail(confirmedOrder)"
+              >
+                <UIcon
+                  name="i-lucide-send"
+                  class="size-4"
+                />
+                {{ isSendingSupplierEmail(confirmedOrder) ? 'Envoi...' : 'Envoyer au fournisseur' }}
+              </button>
+              <a
+                href="http://localhost:8025"
+                target="_blank"
+                rel="noreferrer"
+                class="btn-secondary"
+              >
+                <UIcon
+                  name="i-lucide-mail-open"
+                  class="size-4"
+                />
+                Mailpit
+              </a>
+              <button
+                type="button"
+                class="btn-secondary"
                 @click="activeStep = 'history'"
               >
                 Voir historique
@@ -1651,6 +1708,18 @@ onMounted(loadPage)
               </div>
 
               <div class="flex flex-wrap gap-2 lg:justify-end">
+                <button
+                  type="button"
+                  class="btn-secondary"
+                  :disabled="!canSendSupplierEmail(order) || isSendingSupplierEmail(order)"
+                  @click="sendSupplierEmail(order)"
+                >
+                  <UIcon
+                    name="i-lucide-send"
+                    class="size-4"
+                  />
+                  {{ isSendingSupplierEmail(order) ? 'Envoi...' : 'Mail fournisseur' }}
+                </button>
                 <button
                   v-if="order.status === 'pending_payment'"
                   type="button"

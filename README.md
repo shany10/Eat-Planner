@@ -96,6 +96,7 @@ make up         # docker compose -f docker-compose.yml -f docker-compose.monitor
 - Frontend : http://localhost:3001
 - Backend : http://localhost:3000
 - MongoDB : localhost:27017
+- Mailpit (emails locaux) : http://localhost:8025
 - GlitchTip (erreurs) : http://localhost:8000
 - Umami (analytics) : http://localhost:3002
 
@@ -198,6 +199,7 @@ Le fichier `.env.example` fournit les valeurs attendues :
 - `TOTP_ENCRYPTION_KEY` : cle de chiffrement 2FA.
 - `FRONTEND_BASE_URL` : URL publique du frontend.
 - `MAIL_*` : configuration SMTP pour la reinitialisation de mot de passe.
+- `MAIL_*` pointe par defaut vers Mailpit en local. Les emails fournisseurs et reset mot de passe sont visibles sur http://localhost:8025.
 - `SENTRY_DSN` / `SENTRY_SERVER_DSN` / `NUXT_PUBLIC_SENTRY_DSN` : DSN GlitchTip (compatible Sentry) pour le reporting d'erreurs backend et frontend. Laisser vide pour desactiver.
 - `NUXT_PUBLIC_UMAMI_SRC` / `NUXT_PUBLIC_UMAMI_WEBSITE_ID` : analytics web Umami. Laisser l'id vide pour desactiver.
 - `GLITCHTIP_*` / `UMAMI_*` : configuration des conteneurs de monitoring (voir `docker-compose.monitoring.yml`).

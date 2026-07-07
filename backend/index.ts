@@ -46,6 +46,9 @@ async function startServer() {
     if (bootstrap.createdAdminEmail) {
       console.log(`Bootstrap admin created: ${bootstrap.createdAdminEmail}`);
     }
+    if (bootstrap.createdSupplierEmail) {
+      console.log(`Bootstrap supplier portal created: ${bootstrap.createdSupplierEmail}`);
+    }
     if (bootstrap.normalizedLegacyUsers > 0) {
       console.log(`Legacy users migrated to manager: ${bootstrap.normalizedLegacyUsers}`);
     }

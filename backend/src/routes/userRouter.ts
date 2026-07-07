@@ -48,10 +48,15 @@ const APP_URL = process.env.APP_URL ?? process.env.FRONTEND_BASE_URL ?? "http://
 const PASSWORD_RESET_TTL_MINUTES = Number(process.env.PASSWORD_RESET_TTL_MINUTES ?? 30);
 const USER_PUBLIC_FIELDS = "firstname lastname email role active authProvider restaurantName defaultMarginRate vatRate twoFactorEnabled created_at updated_at";
 
-type UserRole = "admin" | "manager";
+type UserRole = "admin" | "manager" | "employee" | "supplier";
 
-function buildAuthSuccessPayload(userId: string, role?: "admin" | "manager" | "employee") {
-  const token = signAccessToken({ sub: userId, role });
+function buildAuthSuccessPayload(userId: string, role?: UserRole) {
+  const payload: { sub: string; role?: UserRole } = { sub: userId };
+  if (role) {
+    payload.role = role;
+  }
+
+  const token = signAccessToken(payload);
   return { ok: true, token, id: userId };
 }
 

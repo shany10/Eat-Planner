@@ -1,5 +1,6 @@
 export * from "./userModel";
 export * from "./supplierModel";
+export * from "./supplierMessageModel";
 export * from "./ingredientModel";
 export * from "./dishModel";
 export * from "./chargeModel";
