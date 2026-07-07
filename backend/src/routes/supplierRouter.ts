@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Types } from "mongoose";
 import { authMiddleware, roleMiddleware, validateMiddleware } from "../middlewares";
 import {
   createSupplierBody,
@@ -12,6 +13,7 @@ import {
 } from "../schemas";
 import { IngredientModel, SupplierMessageModel, SupplierModel } from "../models";
 import { buildAccountScope, getOwnerPatch, loadRequestUser } from "../services/accountScopeService";
+import { ensureSupplierPortalAccount } from "../services/userAccessBootstrap";
 import { sendSupplierMessageEmail } from "../utils/email";
 
 const supplierRouter = Router();
@@ -25,10 +27,12 @@ supplierRouter.get("/", authMiddleware, async (req, res): Promise<void> => {
   }
 
   if (user.role === "supplier") {
-    const supplier = await SupplierModel.findOne({ portalUser: user._id }).exec();
-    res.json(supplier ? [supplier] : []);
+    const suppliers = await SupplierModel.find({ portalUser: user._id, active: true }).sort({ name: 1 }).exec();
+    res.json(suppliers);
     return;
   }
+
+  await ensureSupplierPortalAccount(user._id as Types.ObjectId);
 
   const suppliers = await SupplierModel.find(buildAccountScope(user)).sort({ name: 1 }).exec();
   res.json(suppliers);
@@ -42,13 +46,13 @@ supplierRouter.get("/messages", authMiddleware, async (req, res): Promise<void> 
   }
 
   if (user.role === "supplier") {
-    const supplier = await SupplierModel.findOne({ portalUser: user._id }).exec();
-    if (!supplier) {
+    const suppliers = await SupplierModel.find({ portalUser: user._id }).select("_id").exec();
+    if (suppliers.length === 0) {
       res.status(404).json({ error: "Supplier account is not linked" });
       return;
     }
 
-    const messages = await SupplierMessageModel.find({ supplier: supplier._id })
+    const messages = await SupplierMessageModel.find({ supplier: { $in: suppliers.map(supplier => supplier._id) } })
       .populate(supplierMessagePopulate)
       .sort({ created_at: -1 })
       .limit(80)
@@ -169,7 +173,7 @@ supplierRouter.post(
       return;
     }
 
-    const supplier = await SupplierModel.findOne({ portalUser: user._id }).exec();
+    const supplier = await SupplierModel.findOne({ portalUser: user._id, active: true }).sort({ updated_at: -1 }).exec();
     if (!supplier) {
       res.status(404).json({ error: "Supplier account is not linked" });
       return;

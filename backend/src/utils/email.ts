@@ -36,6 +36,20 @@ type SupplierMessageEmailInput = {
   body: string;
 };
 
+type SupplierPaymentConfirmationEmailInput = {
+  to: string;
+  supplierName: string;
+  orderNumber: string;
+  restaurantName: string;
+  paymentReference: string;
+  paymentIbanLast4: string;
+  paymentBic?: string;
+  paidAt: Date;
+  totalInclTax: number;
+  supplierSubtotal: number;
+  items: SupplierOrderEmailLine[];
+};
+
 type AppEmailMessage = {
   to: string;
   subject: string;
@@ -293,6 +307,85 @@ export async function sendSupplierOrderEmail({
       </div>
     `
   }, `Supplier order ${orderNumber}`);
+}
+
+export async function sendSupplierPaymentConfirmationEmail({
+  to,
+  supplierName,
+  orderNumber,
+  restaurantName,
+  paymentReference,
+  paymentIbanLast4,
+  paymentBic,
+  paidAt,
+  totalInclTax,
+  supplierSubtotal,
+  items
+}: SupplierPaymentConfirmationEmailInput) {
+  const appName = getEnvValue("SMTP_APP_NAME", "MAIL_APP_NAME") ?? "Eat Planner";
+  const subject = `${appName} - Paiement confirme ${orderNumber}`;
+  const paymentDate = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(paidAt);
+  const lines = items.map((item) =>
+    `- ${item.ingredientName}: ${item.quantity} ${item.unit} x ${formatCurrency(item.unitPrice)} = ${formatCurrency(item.lineTotal)}`
+  );
+
+  return await sendAppEmail({
+    to,
+    subject,
+    text: [
+      `Bonjour ${supplierName},`,
+      "",
+      `${restaurantName} confirme le paiement de la commande ${orderNumber}.`,
+      `Reference de virement: ${paymentReference}`,
+      `Date d execution: ${paymentDate}`,
+      paymentIbanLast4 ? `IBAN beneficiaire verifie: ****${paymentIbanLast4}` : "",
+      paymentBic ? `BIC: ${paymentBic}` : "",
+      "",
+      "Articles concernes:",
+      ...lines,
+      "",
+      `Sous-total fournisseur: ${formatCurrency(supplierSubtotal)}`,
+      `Total commande TTC: ${formatCurrency(totalInclTax)}`,
+      "",
+      "Merci de preparer la livraison selon les conditions convenues."
+    ].filter(Boolean).join("\n"),
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #1a1c1c;">
+        <h2 style="margin: 0 0 12px;">Paiement confirme - ${escapeHtml(orderNumber)}</h2>
+        <p>Bonjour ${escapeHtml(supplierName)},</p>
+        <p><strong>${escapeHtml(restaurantName)}</strong> confirme le paiement de la commande fournisseur.</p>
+        <div style="margin: 18px 0; padding: 14px 16px; border: 1px solid #d7ddd2; border-radius: 8px; background: #f8faf7;">
+          <p><strong>Reference de virement:</strong> ${escapeHtml(paymentReference)}</p>
+          <p><strong>Date d execution:</strong> ${escapeHtml(paymentDate)}</p>
+          ${paymentIbanLast4 ? `<p><strong>IBAN beneficiaire verifie:</strong> ****${escapeHtml(paymentIbanLast4)}</p>` : ""}
+          ${paymentBic ? `<p><strong>BIC:</strong> ${escapeHtml(paymentBic)}</p>` : ""}
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin: 18px 0;">
+          <thead>
+            <tr>
+              <th style="border-bottom: 1px solid #d7ddd2; padding: 8px; text-align: left;">Article</th>
+              <th style="border-bottom: 1px solid #d7ddd2; padding: 8px; text-align: right;">Quantite</th>
+              <th style="border-bottom: 1px solid #d7ddd2; padding: 8px; text-align: right;">Prix</th>
+              <th style="border-bottom: 1px solid #d7ddd2; padding: 8px; text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map((item) => `
+              <tr>
+                <td style="border-bottom: 1px solid #edf0ea; padding: 8px;">${escapeHtml(item.ingredientName)}</td>
+                <td style="border-bottom: 1px solid #edf0ea; padding: 8px; text-align: right;">${item.quantity} ${escapeHtml(item.unit)}</td>
+                <td style="border-bottom: 1px solid #edf0ea; padding: 8px; text-align: right;">${formatCurrency(item.unitPrice)}</td>
+                <td style="border-bottom: 1px solid #edf0ea; padding: 8px; text-align: right;"><strong>${formatCurrency(item.lineTotal)}</strong></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <p><strong>Sous-total fournisseur:</strong> ${formatCurrency(supplierSubtotal)}</p>
+        <p><strong>Total commande TTC:</strong> ${formatCurrency(totalInclTax)}</p>
+        <p style="margin-top: 18px; color: #64748b; font-size: 12px;">Confirmation de paiement envoyee depuis Eat Planner.</p>
+      </div>
+    `
+  }, `Supplier payment confirmation ${orderNumber}`);
 }
 
 export async function sendSupplierMessageEmail({

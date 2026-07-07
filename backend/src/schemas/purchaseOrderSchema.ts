@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BUSINESS_UNITS, PAYMENT_METHODS, PURCHASE_ORDER_STATUSES } from "../types/business";
+import { BUSINESS_UNITS, PURCHASE_ORDER_STATUSES } from "../types/business";
 
 export const purchaseOrderItemBody = z.object({
   ingredient: z.string().min(1),
@@ -29,16 +29,17 @@ export const updatePurchaseOrderStatusBody = z.object({
   status: z.enum(PURCHASE_ORDER_STATUSES)
 });
 
-export const fakePaymentBody = z.object({
-  method: z.enum(PAYMENT_METHODS),
-  holderName: z.string().optional().default(""),
-  cardNumber: z.string().optional().default(""),
-  expirationDate: z.string().optional().default(""),
-  cvv: z.string().optional().default(""),
-  billingAddress: z.string().optional().default("")
+export const bankTransferPaymentBody = z.object({
+  accountHolder: z.string().min(2).max(120),
+  iban: z.string().min(14).max(42).regex(/^[A-Za-z]{2}[0-9A-Za-z ]+$/),
+  bic: z.string().min(8).max(11).regex(/^[A-Za-z0-9]+$/).optional().default(""),
+  reference: z.string().max(80).optional().default(""),
+  executionDate: z.string().optional().default(""),
+  note: z.string().max(400).optional().default(""),
+  notifySupplier: z.boolean().optional().default(true)
 });
 
 export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderBody>;
 export type UpdatePurchaseOrderInput = z.infer<typeof updatePurchaseOrderBody>;
 export type UpdatePurchaseOrderStatusInput = z.infer<typeof updatePurchaseOrderStatusBody>;
-export type FakePaymentInput = z.infer<typeof fakePaymentBody>;
+export type BankTransferPaymentInput = z.infer<typeof bankTransferPaymentBody>;

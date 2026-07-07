@@ -15,7 +15,7 @@ type AccessBootstrapResult = {
   demotedExtraAdmins: number;
 };
 
-async function ensureSupplierPortalAccount(ownerId: Types.ObjectId): Promise<string | null> {
+export async function ensureSupplierPortalAccount(ownerId: Types.ObjectId): Promise<string | null> {
   let supplierUser = await UserModel.findOne({ email: DEFAULT_SUPPLIER_EMAIL }).select("+password").exec();
   const createdSupplierEmail = supplierUser ? null : DEFAULT_SUPPLIER_EMAIL;
 
@@ -39,7 +39,7 @@ async function ensureSupplierPortalAccount(ownerId: Types.ObjectId): Promise<str
   }
 
   await SupplierModel.findOneAndUpdate(
-    { email: DEFAULT_SUPPLIER_EMAIL },
+    { email: DEFAULT_SUPPLIER_EMAIL, owner: ownerId },
     {
       name: "Fournisseur demo Vincent",
       productTypes: ["Epicerie seche"],

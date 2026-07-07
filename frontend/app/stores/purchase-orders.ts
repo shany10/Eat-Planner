@@ -1,4 +1,4 @@
-import type { Ingredient, PaymentMethod, PurchaseOrder, PurchaseOrderStatus, PurchaseRewards } from '~/types/business'
+import type { Ingredient, PurchaseOrder, PurchaseOrderStatus, PurchaseRewards } from '~/types/business'
 
 type PurchaseOrderPayload = {
   supplier: string
@@ -26,6 +26,24 @@ type SupplierEmailResult = {
     itemCount: number
   }>
   order: PurchaseOrder
+}
+
+type BankTransferPaymentPayload = {
+  accountHolder: string
+  iban: string
+  bic?: string
+  reference?: string
+  executionDate?: string
+  note?: string
+  notifySupplier?: boolean
+}
+
+type BankTransferPaymentResult = SupplierEmailResult & {
+  failed?: Array<{
+    supplierName: string
+    to: string
+    error: string
+  }>
 }
 
 export const usePurchaseOrderStore = defineStore('purchase-orders', () => {
@@ -62,21 +80,15 @@ export const usePurchaseOrderStore = defineStore('purchase-orders', () => {
     await loadRewards()
   }
 
-  async function pay(id: string, payload: {
-    method: PaymentMethod
-    holderName?: string
-    cardNumber?: string
-    expirationDate?: string
-    cvv?: string
-    billingAddress?: string
-  }) {
-    lastOrder.value = await $fetch<PurchaseOrder>(`/api/purchase-orders/${id}/payments/fake`, {
+  async function payByBankTransfer(id: string, payload: BankTransferPaymentPayload) {
+    const result = await $fetch<BankTransferPaymentResult>(`/api/purchase-orders/${id}/payments/bank-transfer`, {
       method: 'POST',
       body: payload
     })
+    lastOrder.value = result.order
     await load()
     await loadRewards()
-    return lastOrder.value
+    return result
   }
 
   async function sendSupplierEmail(id: string) {
@@ -113,7 +125,7 @@ export const usePurchaseOrderStore = defineStore('purchase-orders', () => {
     create,
     update,
     updateStatus,
-    pay,
+    payByBankTransfer,
     sendSupplierEmail,
     remove,
     loadRewards,

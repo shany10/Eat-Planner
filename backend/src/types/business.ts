@@ -62,8 +62,7 @@ export const PURCHASE_ORDER_STATUSES = [
 export type PurchaseOrderStatus = typeof PURCHASE_ORDER_STATUSES[number];
 
 export const PAYMENT_METHODS = [
-  "fake_card",
-  "fake_transfer",
+  "bank_transfer",
   "payment_on_delivery",
   "purchase_order"
 ] as const;

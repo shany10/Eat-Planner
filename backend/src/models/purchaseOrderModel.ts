@@ -42,6 +42,12 @@ export interface IPurchaseOrder extends Document {
   totalInclTax: number;
   totalAmount: number;
   paymentMethod?: PaymentMethod | "";
+  paymentReference?: string;
+  paymentAccountHolder?: string;
+  paymentIbanLast4?: string;
+  paymentBic?: string;
+  paymentExecutionDate?: string;
+  paymentNote?: string;
   paidAt?: Date | null;
   validatedAt?: Date | null;
   managementScoreDelta: number;
@@ -87,6 +93,12 @@ const purchaseOrderSchema = new Schema<IPurchaseOrder>({
   totalInclTax: { type: Number, required: true, min: 0, default: 0 },
   totalAmount: { type: Number, required: true, min: 0, default: 0 },
   paymentMethod: { type: String, enum: [...PAYMENT_METHODS, ""], default: "" },
+  paymentReference: { type: String, default: "", trim: true },
+  paymentAccountHolder: { type: String, default: "", trim: true },
+  paymentIbanLast4: { type: String, default: "", trim: true },
+  paymentBic: { type: String, default: "", trim: true },
+  paymentExecutionDate: { type: String, default: "", trim: true },
+  paymentNote: { type: String, default: "", trim: true },
   paidAt: { type: Date, default: null },
   validatedAt: { type: Date, default: null },
   managementScoreDelta: { type: Number, required: true, default: 0 },

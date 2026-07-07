@@ -97,13 +97,16 @@ const orderFilters = reactive({
   period: 'all'
 })
 
-const paymentMethod = ref<PaymentMethod>('fake_card')
+const paymentMethod = ref<PaymentMethod>('bank_transfer')
+const paymentMethodLabel = computed(() => paymentMethod.value === 'bank_transfer' ? 'Virement bancaire' : 'Paiement fournisseur')
 const paymentForm = reactive({
-  holderName: '',
-  cardNumber: '4242 4242 4242 4242',
-  expirationDate: '',
-  cvv: '',
-  billingAddress: DEFAULT_DELIVERY_ADDRESS
+  accountHolder: '',
+  iban: '',
+  bic: '',
+  reference: '',
+  executionDate: new Date().toISOString().slice(0, 10),
+  note: '',
+  notifySupplier: true
 })
 const paymentErrors = ref<string[]>([])
 
@@ -362,6 +365,15 @@ function clearCart() {
   paymentErrors.value = []
 }
 
+function prepareBankTransferForm(order: PurchaseOrder) {
+  paymentMethod.value = 'bank_transfer'
+  paymentForm.reference = order.paymentReference || `VIR-${order.orderNumber || order._id}`
+  paymentForm.accountHolder = order.paymentAccountHolder || getOrderSupplierNames(order)
+  paymentForm.bic = order.paymentBic || paymentForm.bic
+  paymentForm.executionDate = order.paymentExecutionDate || new Date().toISOString().slice(0, 10)
+  paymentForm.note = order.paymentNote || paymentForm.note
+}
+
 function buildOrderPayload(status: PurchaseOrderStatus) {
   return {
     supplier: primarySupplierId.value,
@@ -405,53 +417,62 @@ async function validateOrder() {
   try {
     const order = await purchaseOrderStore.create(buildOrderPayload('pending_payment'))
     confirmedOrder.value = order
+    prepareBankTransferForm(order)
     activeStep.value = 'payment'
-    appToast.success('Commande validee', `Commande ${order.orderNumber || ''} en attente de paiement fictif.`)
+    appToast.success('Commande validee', `Commande ${order.orderNumber || ''} en attente de virement fournisseur.`)
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(error, 'Impossible de valider la commande')
     appToast.error('Validation impossible', errorMessage.value)
   }
 }
 
-function validateFakeCardFields() {
-  if (paymentMethod.value !== 'fake_card') {
-    paymentErrors.value = []
-    return true
-  }
-
+function validateBankTransferFields() {
   const missing = [
-    ['Nom du titulaire', paymentForm.holderName],
-    ['Numero de carte fictif', paymentForm.cardNumber],
-    ['Date expiration', paymentForm.expirationDate],
-    ['CVV fictif', paymentForm.cvv],
-    ['Adresse de facturation', paymentForm.billingAddress]
+    ['Titulaire beneficiaire', paymentForm.accountHolder],
+    ['IBAN fournisseur', paymentForm.iban],
+    ['Date execution', paymentForm.executionDate]
   ].filter(([, value]) => !String(value || '').trim())
 
   paymentErrors.value = missing.map(([label]) => `${label} requis`)
+
+  const cleanIban = paymentForm.iban.replace(/\s+/g, '')
+  if (cleanIban && !/^[A-Za-z]{2}[0-9A-Za-z]{12,32}$/.test(cleanIban)) {
+    paymentErrors.value.push('IBAN invalide')
+  }
+
+  if (paymentForm.bic.trim() && !/^[A-Za-z0-9]{8,11}$/.test(paymentForm.bic.trim())) {
+    paymentErrors.value.push('BIC invalide')
+  }
+
   return paymentErrors.value.length === 0
 }
 
-async function submitFakePayment() {
-  if (!confirmedOrder.value || !validateFakeCardFields()) {
+async function submitBankTransferPayment() {
+  if (!confirmedOrder.value || !validateBankTransferFields()) {
     return
   }
 
   try {
-    const order = await purchaseOrderStore.pay(confirmedOrder.value._id, {
-      method: paymentMethod.value,
-      holderName: paymentForm.holderName,
-      cardNumber: paymentForm.cardNumber,
-      expirationDate: paymentForm.expirationDate,
-      cvv: paymentForm.cvv,
-      billingAddress: paymentForm.billingAddress
+    const result = await purchaseOrderStore.payByBankTransfer(confirmedOrder.value._id, {
+      accountHolder: paymentForm.accountHolder,
+      iban: paymentForm.iban,
+      bic: paymentForm.bic,
+      reference: paymentForm.reference,
+      executionDate: paymentForm.executionDate,
+      note: paymentForm.note,
+      notifySupplier: paymentForm.notifySupplier
     })
+    const order = result.order
     confirmedOrder.value = order
     clearCart()
     activeStep.value = 'confirmation'
-    appToast.success('Paiement fictif valide', `Commande ${order.orderNumber || ''} marquee payee.`)
+    const notificationLabel = result.sent.length > 0
+      ? `${result.sent.length} confirmation(s) envoyee(s) au fournisseur.`
+      : 'Aucun email fournisseur configure, paiement trace en interne.'
+    appToast.success('Virement confirme', `${order.orderNumber || ''} marquee payee. ${notificationLabel}`)
   } catch (error) {
-    errorMessage.value = getFetchErrorMessage(error, 'Impossible de valider le paiement fictif')
-    appToast.error('Paiement refuse', errorMessage.value)
+    errorMessage.value = getFetchErrorMessage(error, 'Impossible de confirmer le virement')
+    appToast.error('Virement refuse', errorMessage.value)
   }
 }
 
@@ -483,6 +504,7 @@ async function sendSupplierEmail(order: PurchaseOrder) {
 
 function payExistingOrder(order: PurchaseOrder) {
   confirmedOrder.value = order
+  prepareBankTransferForm(order)
   activeStep.value = 'payment'
 }
 
@@ -614,7 +636,7 @@ onMounted(loadPage)
             Panier manager restaurant
           </h1>
           <p class="app-subtitle mt-2">
-            Un parcours achat adapte au stock restaurant: prevision, panier fournisseur, validation, paiement fictif et historique.
+            Un parcours achat adapte au stock restaurant: prevision, panier fournisseur, validation, virement et confirmation fournisseur.
           </p>
         </div>
 
@@ -1232,7 +1254,7 @@ onMounted(loadPage)
             Validation commande
           </p>
           <h2 class="app-section-title mt-1">
-            Verifier avant paiement fictif
+            Verifier avant virement fournisseur
           </h2>
 
           <div class="mt-4 grid gap-3 md:grid-cols-2">
@@ -1343,80 +1365,61 @@ onMounted(loadPage)
       >
         <div class="app-section">
           <p class="app-eyebrow">
-            Paiement 100% fictif
+            Paiement fournisseur
           </p>
           <h2 class="app-section-title mt-1">
-            Simuler le reglement fournisseur
+            Confirmer un virement
           </h2>
           <p class="mt-2 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
-            Cette etape ne contacte aucun service bancaire et ne conserve aucune vraie donnee de carte.
+            Enregistre la reference du virement effectue depuis ta banque, marque la commande comme payee et previent le fournisseur par email et messagerie.
           </p>
 
           <div class="mt-4 grid gap-3 md:grid-cols-2">
-            <label class="app-inset flex cursor-pointer items-center gap-3">
-              <input
-                v-model="paymentMethod"
-                type="radio"
-                value="fake_card"
-              >
-              <span class="font-semibold text-[#1a1c1c] dark:text-white">Carte bancaire fictive</span>
-            </label>
-            <label class="app-inset flex cursor-pointer items-center gap-3">
-              <input
-                v-model="paymentMethod"
-                type="radio"
-                value="fake_transfer"
-              >
-              <span class="font-semibold text-[#1a1c1c] dark:text-white">Virement fournisseur fictif</span>
-            </label>
-            <label class="app-inset flex cursor-pointer items-center gap-3">
-              <input
-                v-model="paymentMethod"
-                type="radio"
-                value="payment_on_delivery"
-              >
-              <span class="font-semibold text-[#1a1c1c] dark:text-white">Paiement a reception</span>
-            </label>
-            <label class="app-inset flex cursor-pointer items-center gap-3">
-              <input
-                v-model="paymentMethod"
-                type="radio"
-                value="purchase_order"
-              >
-              <span class="font-semibold text-[#1a1c1c] dark:text-white">Bon de commande</span>
-            </label>
-          </div>
-
-          <div
-            v-if="paymentMethod === 'fake_card'"
-            class="mt-4 grid gap-3 md:grid-cols-2"
-          >
             <input
-              v-model="paymentForm.holderName"
+              v-model="paymentForm.accountHolder"
               class="app-input"
-              placeholder="Nom du titulaire fictif"
+              placeholder="Titulaire beneficiaire"
             >
             <input
-              v-model="paymentForm.cardNumber"
+              v-model="paymentForm.iban"
               class="app-input"
-              placeholder="Numero de carte fictif"
+              placeholder="IBAN / RIB fournisseur"
             >
             <input
-              v-model="paymentForm.expirationDate"
+              v-model="paymentForm.bic"
               class="app-input"
-              placeholder="MM/AA"
+              placeholder="BIC fournisseur"
             >
             <input
-              v-model="paymentForm.cvv"
+              v-model="paymentForm.executionDate"
               class="app-input"
-              placeholder="CVV fictif"
+              type="date"
+            >
+            <input
+              v-model="paymentForm.reference"
+              class="app-input md:col-span-2"
+              placeholder="Reference de virement"
             >
             <textarea
-              v-model="paymentForm.billingAddress"
+              v-model="paymentForm.note"
               class="app-input min-h-20 md:col-span-2"
-              placeholder="Adresse de facturation"
+              placeholder="Note paiement visible dans le dossier commande"
             />
           </div>
+
+          <label class="app-inset mt-4 flex cursor-pointer items-start gap-3">
+            <input
+              v-model="paymentForm.notifySupplier"
+              type="checkbox"
+              class="mt-1"
+            >
+            <span>
+              <span class="block font-semibold text-[#1a1c1c] dark:text-white">Notifier le fournisseur</span>
+              <span class="mt-1 block text-sm text-[#40493e] dark:text-[#c0c9ba]">
+                Envoie un email de confirmation et ajoute le message dans le portail fournisseur.
+              </span>
+            </span>
+          </label>
 
           <div
             v-if="paymentErrors.length > 0"
@@ -1434,9 +1437,9 @@ onMounted(loadPage)
             type="button"
             class="btn-primary mt-4"
             :disabled="!confirmedOrder"
-            @click="submitFakePayment"
+            @click="submitBankTransferPayment"
           >
-            Payer fictivement
+            Confirmer le virement
           </button>
         </div>
 
@@ -1455,6 +1458,10 @@ onMounted(loadPage)
             <div class="flex justify-between gap-3">
               <span class="text-[#40493e] dark:text-[#c0c9ba]">Total TTC</span>
               <span class="font-semibold">{{ formatCurrency(confirmedOrder?.totalInclTax || confirmedOrder?.totalAmount || 0) }}</span>
+            </div>
+            <div class="flex justify-between gap-3">
+              <span class="text-[#40493e] dark:text-[#c0c9ba]">Moyen</span>
+              <span class="font-semibold">{{ paymentMethodLabel }}</span>
             </div>
             <div class="flex justify-between gap-3">
               <span class="text-[#40493e] dark:text-[#c0c9ba]">Livraison estimee</span>
@@ -1477,7 +1484,7 @@ onMounted(loadPage)
               Commande fournisseur confirmee
             </h2>
             <p class="mt-2 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
-              La commande est enregistree dans l historique avec un paiement fictif.
+              La commande est enregistree dans l historique avec une reference de virement et une confirmation fournisseur.
             </p>
           </div>
           <span
@@ -1543,6 +1550,20 @@ onMounted(loadPage)
               <div class="flex justify-between gap-3">
                 <span class="text-[#40493e] dark:text-[#c0c9ba]">Total paye</span>
                 <span class="font-semibold">{{ formatCurrency(confirmedOrder.totalInclTax || confirmedOrder.totalAmount) }}</span>
+              </div>
+              <div
+                v-if="confirmedOrder.paymentReference"
+                class="flex justify-between gap-3"
+              >
+                <span class="text-[#40493e] dark:text-[#c0c9ba]">Reference</span>
+                <span class="text-right font-semibold">{{ confirmedOrder.paymentReference }}</span>
+              </div>
+              <div
+                v-if="confirmedOrder.paymentIbanLast4"
+                class="flex justify-between gap-3"
+              >
+                <span class="text-[#40493e] dark:text-[#c0c9ba]">IBAN</span>
+                <span class="font-semibold">****{{ confirmedOrder.paymentIbanLast4 }}</span>
               </div>
               <div class="flex justify-between gap-3">
                 <span class="text-[#40493e] dark:text-[#c0c9ba]">Livraison</span>
@@ -1704,6 +1725,13 @@ onMounted(loadPage)
                   class="mt-1 text-sm text-[#40493e] dark:text-[#c0c9ba]"
                 >
                   {{ order.internalComment || order.notes }}
+                </p>
+                <p
+                  v-if="order.paymentReference"
+                  class="mt-1 text-sm font-semibold text-[#005013] dark:text-[#8ad986]"
+                >
+                  Virement {{ order.paymentReference }}
+                  <span v-if="order.paymentIbanLast4">- IBAN ****{{ order.paymentIbanLast4 }}</span>
                 </p>
               </div>
 

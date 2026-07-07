@@ -14,7 +14,7 @@ Le projet est pense comme un outil de gestion interne pour manager de restaurant
 - Gestion des charges fixes et variables.
 - Previsions de production avec explication des donnees, besoins matieres et corrections manager.
 - Panier d'achat fournisseur professionnel avec quantites recommandees, totaux HT/TVA/TTC et validation.
-- Paiement fictif uniquement, sans connexion bancaire et sans stockage de vraies donnees de carte.
+- Paiement fournisseur par virement trace: IBAN/BIC saisis pour validation, reference de virement, statut paye et confirmation email fournisseur.
 - Confirmation et historique des commandes fournisseurs.
 - Score de gestion, niveaux et badges pour gamifier l'approvisionnement sans effet jeu video enfantin.
 - Authentification, roles admin/manager, securite 2FA et panel admin.
@@ -214,13 +214,13 @@ Le parcours achat suit les etapes suivantes :
 2. Selection des ingredients.
 3. Panier fournisseur.
 4. Validation de commande.
-5. Paiement fictif.
+5. Confirmation de virement fournisseur.
 6. Confirmation.
 7. Historique des achats.
 
 Chaque ligne de panier affiche le nom de l'ingredient, la categorie, le fournisseur, l'unite, le prix unitaire, la quantite commandee, le stock actuel, le seuil minimum, la quantite recommandee et le total.
 
-Le paiement reste volontairement fictif. Aucune vraie donnee bancaire ne doit etre saisie, envoyee a un prestataire ou stockee.
+Le paiement fournisseur fonctionne comme un suivi de virement professionnel: le manager realise le virement depuis sa banque, renseigne IBAN/BIC et reference dans Eat Planner, puis l'application marque la commande payee et notifie le fournisseur. L'IBAN complet n'est pas conserve en clair; seule une trace masquee est gardee pour l'historique.
 
 ## Verification avant rendu
 
@@ -249,4 +249,4 @@ docker compose ps
 
 - Le projet utilise MongoDB, donc les donnees sont stockees en NoSQL.
 - Les donnees de demo sont adaptees a un restaurant et remplacent les anciennes donnees de test.
-- Les commandes fournisseurs, paiements fictifs, badges et historiques sont des fonctionnalites applicatives internes.
+- Les commandes fournisseurs, confirmations de virement, badges et historiques sont des fonctionnalites applicatives internes.

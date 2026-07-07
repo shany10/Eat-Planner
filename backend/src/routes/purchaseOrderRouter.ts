@@ -2,19 +2,19 @@ import { Router } from "express";
 import { Types } from "mongoose";
 import { authMiddleware, roleMiddleware, validateMiddleware } from "../middlewares";
 import {
+  bankTransferPaymentBody,
+  BankTransferPaymentInput,
   createPurchaseOrderBody,
   CreatePurchaseOrderInput,
-  fakePaymentBody,
-  FakePaymentInput,
   updatePurchaseOrderBody,
   updatePurchaseOrderStatusBody,
   UpdatePurchaseOrderStatusInput
 } from "../schemas";
-import { IngredientModel, PurchaseOrderModel, SupplierModel } from "../models";
+import { IngredientModel, PurchaseOrderModel, SupplierMessageModel, SupplierModel } from "../models";
 import { buildAccountScope, getOwnerPatch, loadRequestUser } from "../services/accountScopeService";
 import { IUser } from "../models";
 import { BusinessUnit, PurchaseOrderStatus } from "../types/business";
-import { sendSupplierOrderEmail } from "../utils/email";
+import { sendSupplierOrderEmail, sendSupplierPaymentConfirmationEmail } from "../utils/email";
 
 const purchaseOrderRouter = Router();
 
@@ -232,6 +232,32 @@ async function buildOrderFinancials(user: IUser, supplierId: string, items: Norm
     totals,
     score
   };
+}
+
+function normalizeIban(value: string) {
+  return value.replace(/\s+/g, "").toUpperCase();
+}
+
+function getIbanLast4(value: string) {
+  return normalizeIban(value).slice(-4);
+}
+
+function buildPaymentReference(orderNumber: string, reference: string) {
+  const cleanReference = reference.trim();
+  return cleanReference || `VIR-${orderNumber}`;
+}
+
+function getPaymentDate(value: string) {
+  if (!value) {
+    return new Date();
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+}
+
+function formatMoney(value: number) {
+  return `${Number(value || 0).toFixed(2)} EUR`;
 }
 
 function getValueId(value: unknown) {
@@ -649,10 +675,10 @@ purchaseOrderRouter.patch(
 );
 
 purchaseOrderRouter.post(
-  "/:id/payments/fake",
+  "/:id/payments/bank-transfer",
   authMiddleware,
   roleMiddleware(["admin", "manager"]),
-  validateMiddleware({ body: fakePaymentBody }),
+  validateMiddleware({ body: bankTransferPaymentBody }),
   async (req, res): Promise<void> => {
     const user = await loadRequestUser(req);
     if (!user) {
@@ -660,35 +686,8 @@ purchaseOrderRouter.post(
       return;
     }
 
-    const payload = req.body as FakePaymentInput;
-    if (payload.method === "fake_card") {
-      const missingFields = [
-        ["holderName", payload.holderName],
-        ["cardNumber", payload.cardNumber],
-        ["expirationDate", payload.expirationDate],
-        ["cvv", payload.cvv],
-        ["billingAddress", payload.billingAddress]
-      ].filter(([, value]) => !String(value || "").trim());
-
-      if (missingFields.length > 0) {
-        res.status(400).json({
-          error: "Fake payment validation failed",
-          missingFields: missingFields.map(([field]) => field)
-        });
-        return;
-      }
-    }
-
-    const order = await PurchaseOrderModel.findOneAndUpdate(
-      buildAccountScope(user, { _id: req.params.id }),
-      {
-        status: "paid",
-        paymentMethod: payload.method,
-        paidAt: new Date(),
-        ...getOwnerPatch(user)
-      },
-      { new: true }
-    )
+    const payload = req.body as BankTransferPaymentInput;
+    const order = await PurchaseOrderModel.findOne(buildAccountScope(user, { _id: req.params.id }))
       .populate(orderPopulate)
       .exec();
 
@@ -697,7 +696,121 @@ purchaseOrderRouter.post(
       return;
     }
 
-    res.json(order);
+    if (order.status === "cancelled") {
+      res.status(409).json({ error: "Cancelled order cannot be paid" });
+      return;
+    }
+
+    const paidAt = getPaymentDate(payload.executionDate);
+    const paymentReference = buildPaymentReference(order.orderNumber, payload.reference);
+    const paymentIbanLast4 = getIbanLast4(payload.iban);
+    const paymentBic = payload.bic.trim().toUpperCase();
+
+    order.status = "paid";
+    order.paymentMethod = "bank_transfer";
+    order.paymentReference = paymentReference;
+    order.paymentAccountHolder = payload.accountHolder.trim();
+    order.paymentIbanLast4 = paymentIbanLast4;
+    order.paymentBic = paymentBic;
+    order.paymentExecutionDate = paidAt.toISOString().slice(0, 10);
+    order.paymentNote = payload.note.trim();
+    order.paidAt = paidAt;
+    await order.save();
+
+    const sent: Array<{ supplierName: string; to: string; itemCount: number }> = [];
+    const failed: Array<{ supplierName: string; to: string; error: string }> = [];
+
+    if (payload.notifySupplier) {
+      const suppliers = getSupplierMailTargets(order);
+
+      for (const supplier of suppliers) {
+        const items = getOrderItemsForSupplier(order, supplier);
+        if (items.length === 0) {
+          continue;
+        }
+
+        const supplierSubtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
+        const subject = `Paiement confirme - ${order.orderNumber}`;
+        const body = [
+          `${user.restaurantName || "Eat Planner"} confirme le paiement de la commande ${order.orderNumber}.`,
+          `Reference de virement: ${paymentReference}`,
+          `Montant fournisseur: ${formatMoney(supplierSubtotal)}`,
+          `Total commande TTC: ${formatMoney(order.totalInclTax || order.totalAmount)}`,
+          paymentIbanLast4 ? `IBAN beneficiaire verifie: ****${paymentIbanLast4}` : "",
+          paymentBic ? `BIC: ${paymentBic}` : "",
+          payload.note ? `Note: ${payload.note}` : ""
+        ].filter(Boolean).join("\n");
+
+        try {
+          await sendSupplierPaymentConfirmationEmail({
+            to: supplier.email,
+            supplierName: supplier.name,
+            orderNumber: order.orderNumber,
+            restaurantName: user.restaurantName || "Eat Planner",
+            paymentReference,
+            paymentIbanLast4,
+            paymentBic,
+            paidAt,
+            totalInclTax: order.totalInclTax || order.totalAmount,
+            supplierSubtotal,
+            items: items.map((item) => ({
+              ingredientName: item.ingredientName,
+              quantity: item.quantity,
+              unit: item.unit,
+              unitPrice: item.unitPrice,
+              lineTotal: item.lineTotal
+            }))
+          });
+
+          await SupplierMessageModel.create({
+            supplier: supplier.id,
+            owner: user._id,
+            subject,
+            body,
+            direction: "outbound",
+            from: user.email,
+            to: supplier.email,
+            status: "sent",
+            sentAt: new Date()
+          });
+
+          sent.push({
+            supplierName: supplier.name,
+            to: supplier.email,
+            itemCount: items.length
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : "Payment email send failed";
+          await SupplierMessageModel.create({
+            supplier: supplier.id,
+            owner: user._id,
+            subject,
+            body,
+            direction: "outbound",
+            from: user.email,
+            to: supplier.email,
+            status: "failed",
+            sentAt: null,
+            errorMessage
+          });
+
+          failed.push({
+            supplierName: supplier.name,
+            to: supplier.email,
+            error: errorMessage
+          });
+        }
+      }
+    }
+
+    const populatedOrder = await order.populate(orderPopulate);
+
+    res.json({
+      ok: failed.length === 0,
+      sent,
+      failed,
+      order: populatedOrder
+    });
   }
 );
 

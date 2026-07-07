@@ -213,7 +213,7 @@ export type PurchaseOrderStatus
     | 'sent'
     | 'received'
 
-export type PaymentMethod = 'fake_card' | 'fake_transfer' | 'payment_on_delivery' | 'purchase_order'
+export type PaymentMethod = 'bank_transfer' | 'payment_on_delivery' | 'purchase_order'
 
 export type PurchaseOrderItem = {
   ingredient: Ingredient | string
@@ -250,6 +250,12 @@ export type PurchaseOrder = {
   totalInclTax?: number
   totalAmount: number
   paymentMethod?: PaymentMethod | ''
+  paymentReference?: string
+  paymentAccountHolder?: string
+  paymentIbanLast4?: string
+  paymentBic?: string
+  paymentExecutionDate?: string
+  paymentNote?: string
   paidAt?: string | null
   validatedAt?: string | null
   managementScoreDelta?: number
