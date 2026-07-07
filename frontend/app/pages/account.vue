@@ -28,9 +28,22 @@ const fullName = computed(() => {
   return `${profile.value.firstname} ${profile.value.lastname}`
 })
 
+const initials = computed(() => {
+  const first = profile.value?.firstname?.[0] || 'U'
+  const last = profile.value?.lastname?.[0] || ''
+  return `${first}${last}`.toUpperCase()
+})
+
 const securityStatus = computed(() => {
   return profile.value?.twoFactorEnabled ? 'Activee' : 'Inactive'
 })
+
+const identityFacts = computed(() => [
+  { label: 'Role', value: profile.value?.role || '-', icon: 'i-lucide-badge-check' },
+  { label: 'Connexion', value: profile.value?.authProvider || '-', icon: 'i-lucide-key-round' },
+  { label: 'Compte actif', value: profile.value?.active ? 'Oui' : 'Non', icon: 'i-lucide-circle-check' },
+  { label: 'Double auth.', value: securityStatus.value, icon: 'i-lucide-shield' }
+])
 
 watch(profile, (value) => {
   settingsForm.restaurantName = value?.restaurantName || 'Mon restaurant'
@@ -88,217 +101,276 @@ onMounted(loadPage)
 </script>
 
 <template>
-  <div class="p-4 md:p-8 space-y-6 font-sans">
-    <section>
-      <span class="text-[10px] uppercase tracking-widest font-bold text-[#40493e]/60 dark:text-[#c0c9ba]">Profil</span>
-      <h1 class="text-3xl md:text-[32px] md:leading-10 font-bold text-[#1a1c1c] dark:text-[#f1f1f1] font-['Be_Vietnam_Pro',sans-serif] mt-1">
-        Mon compte
-      </h1>
-      <p class="mt-2 max-w-2xl text-sm text-[#40493e] dark:text-[#c0c9ba]">
-        Retrouve ici les informations de connexion du compte, son niveau de securite et les raccourcis utiles pour le gerer proprement.
-      </p>
-      <div class="mt-4 flex flex-wrap gap-3 items-center">
+  <div class="space-y-5">
+    <section class="app-page-header app-page-header--compact">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p class="app-eyebrow">
+            Profil
+          </p>
+          <h1 class="app-title mt-2">
+            Mon compte
+          </h1>
+          <p class="app-subtitle mt-2">
+            Retrouve ici les informations de connexion du compte, son niveau de securite et les raccourcis utiles pour le gerer proprement.
+          </p>
+        </div>
+
         <NuxtLink
           to="/security"
-          class="bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold py-2.5 px-6 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+          class="btn-accent shrink-0"
         >
+          <UIcon
+            name="i-lucide-shield-check"
+            class="size-4"
+          />
           Gerer la 2FA
         </NuxtLink>
-        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">{{ profile?.restaurantName || 'Mon restaurant' }}</span>
-        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">Marge {{ formatPercent(profile?.defaultMarginRate) }}</span>
-        <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">TVA {{ formatPercent(profile?.vatRate) }}</span>
+      </div>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <span class="app-pill">{{ profile?.restaurantName || 'Mon restaurant' }}</span>
+        <span class="app-pill">Marge {{ formatPercent(profile?.defaultMarginRate) }}</span>
+        <span class="app-pill">TVA {{ formatPercent(profile?.vatRate) }}</span>
+        <span class="app-pill">2FA {{ securityStatus }}</span>
       </div>
     </section>
 
     <div
       v-if="loading"
-      class="grid gap-6 lg:grid-cols-3"
+      class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]"
     >
-      <div class="h-40 animate-pulse rounded-[2.5rem] bg-slate-200 dark:bg-slate-800" />
-      <div class="h-40 animate-pulse rounded-[2.5rem] bg-slate-200 dark:bg-slate-800" />
-      <div class="h-40 animate-pulse rounded-[2.5rem] bg-slate-200 dark:bg-slate-800" />
+      <div class="h-64 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
+      <div class="h-64 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
     </div>
 
     <template v-else>
       <p
         v-if="errorMessage"
-        class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+        class="app-alert-error"
       >
+        <UIcon
+          name="i-lucide-circle-alert"
+          class="size-4 shrink-0"
+        />
         {{ errorMessage }}
       </p>
 
-      <section class="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div class="rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5 bg-white dark:bg-[#1a1c1c] p-6 shadow-sm">
-          <div class="flex items-center justify-between gap-4">
-            <div>
-              <span class="text-[10px] font-bold uppercase tracking-widest text-[#40493e]/60 dark:text-[#c0c9ba]/60">
+      <section class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <div class="app-section">
+          <div class="flex items-center gap-4">
+            <div class="flex size-16 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#005013,#0b642a)] text-xl font-bold text-white shadow-sm">
+              {{ initials }}
+            </div>
+            <div class="min-w-0">
+              <p class="app-eyebrow">
                 Identite
-              </span>
-              <h2 class="mt-2 text-2xl font-bold text-[#1a1c1c] dark:text-white">
+              </p>
+              <h2 class="app-section-title mt-1 truncate">
                 {{ fullName }}
               </h2>
-              <p class="mt-2 text-sm text-[#40493e] dark:text-[#c0c9ba]">
+              <p class="mt-1 truncate text-sm text-[color:var(--ep-text-muted)]">
                 {{ profile?.email || 'Email indisponible' }}
               </p>
             </div>
-            <div class="flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-[#6b3414] text-xl font-bold text-white">
-              {{ profile?.firstname?.[0] || 'U' }}{{ profile?.lastname?.[0] || '' }}
-            </div>
           </div>
 
-          <div class="mt-6 grid gap-3 md:grid-cols-2">
-            <div class="rounded-3xl bg-[#f3f3f3] dark:bg-[#2f3131] p-4 border border-[#c0c9ba]/20 dark:border-white/5">
-              <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
-                Role
-              </p>
-              <p class="mt-2 font-bold text-[#1a1c1c] dark:text-white">
-                {{ profile?.role || '-' }}
-              </p>
-            </div>
-            <div class="rounded-3xl bg-[#f3f3f3] dark:bg-[#2f3131] p-4 border border-[#c0c9ba]/20 dark:border-white/5">
-              <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
-                Fournisseur de connexion
-              </p>
-              <p class="mt-2 font-bold text-[#1a1c1c] dark:text-white">
-                {{ profile?.authProvider || '-' }}
-              </p>
-            </div>
-            <div class="rounded-3xl bg-[#f3f3f3] dark:bg-[#2f3131] p-4 border border-[#c0c9ba]/20 dark:border-white/5">
-              <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
-                Compte actif
-              </p>
-              <p class="mt-2 font-bold text-[#1a1c1c] dark:text-white">
-                {{ profile?.active ? 'Oui' : 'Non' }}
-              </p>
-            </div>
-            <div class="rounded-3xl bg-[#f3f3f3] dark:bg-[#2f3131] p-4 border border-[#c0c9ba]/20 dark:border-white/5">
-              <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
-                Double authentification
-              </p>
-              <p class="mt-2 font-bold text-[#1a1c1c] dark:text-white">
-                {{ securityStatus }}
-              </p>
+          <div class="mt-5 grid gap-2 sm:grid-cols-2">
+            <div
+              v-for="fact in identityFacts"
+              :key="fact.label"
+              class="app-inset flex items-center gap-3"
+            >
+              <div class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-[color:var(--ep-primary)] dark:bg-[#1a1c1c]">
+                <UIcon
+                  :name="fact.icon"
+                  class="size-4"
+                />
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs text-[color:var(--ep-text-muted)]">
+                  {{ fact.label }}
+                </p>
+                <p class="truncate font-semibold text-[color:var(--ep-text)]">
+                  {{ fact.value }}
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="space-y-6">
-          <form
-            class="rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5 bg-white dark:bg-[#1a1c1c] p-6 shadow-sm"
-            @submit.prevent="saveAccountSettings"
-          >
-            <div class="flex items-start justify-between gap-4">
-              <div>
-                <span class="text-[10px] font-bold uppercase tracking-widest text-[#40493e]/60 dark:text-[#c0c9ba]/60">
-                  Restaurant
-                </span>
-                <h2 class="mt-2 text-xl font-bold text-[#1a1c1c] dark:text-white">
-                  Parametres de calcul
-                </h2>
-              </div>
-              <span class="px-3 py-1 bg-[#e8e8e8] dark:bg-[#2f3131] text-[#40493e] dark:text-[#c0c9ba] text-[11px] font-bold rounded-full border border-[#c0c9ba]/20 dark:border-white/10">Compte</span>
+        <form
+          class="app-section"
+          @submit.prevent="saveAccountSettings"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="app-eyebrow">
+                Restaurant
+              </p>
+              <h2 class="app-section-title mt-1">
+                Parametres de calcul
+              </h2>
+            </div>
+            <span class="app-pill">Compte</span>
+          </div>
+
+          <div class="mt-4 grid gap-4">
+            <div>
+              <label
+                for="account-restaurant"
+                class="app-label"
+              >Nom du restaurant</label>
+              <input
+                id="account-restaurant"
+                v-model="settingsForm.restaurantName"
+                class="app-input"
+                type="text"
+                required
+              >
             </div>
 
-            <div class="mt-5 grid gap-3">
-              <label class="grid gap-2 text-sm">
-                <span class="text-[#40493e] dark:text-[#c0c9ba] font-medium">Nom du restaurant</span>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label
+                  for="account-margin"
+                  class="app-label"
+                >Marge globale (%)</label>
                 <input
-                  v-model="settingsForm.restaurantName"
-                  class="bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236]"
-                  type="text"
+                  id="account-margin"
+                  v-model.number="settingsForm.defaultMarginPercent"
+                  class="app-input"
+                  type="number"
+                  min="0"
+                  max="95"
+                  step="1"
                   required
                 >
-              </label>
-
-              <div class="grid gap-3 sm:grid-cols-2">
-                <label class="grid gap-2 text-sm">
-                  <span class="text-[#40493e] dark:text-[#c0c9ba] font-medium">Marge globale (%)</span>
-                  <input
-                    v-model.number="settingsForm.defaultMarginPercent"
-                    class="bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236]"
-                    type="number"
-                    min="0"
-                    max="95"
-                    step="1"
-                    required
-                  >
-                </label>
-
-                <label class="grid gap-2 text-sm">
-                  <span class="text-[#40493e] dark:text-[#c0c9ba] font-medium">TVA (%)</span>
-                  <input
-                    v-model.number="settingsForm.vatPercent"
-                    class="bg-[#f3f3f3] dark:bg-[#2f3131] border border-[#c0c9ba]/30 dark:border-white/10 text-[#1a1c1c] dark:text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#feb236]"
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    required
-                  >
-                </label>
+                <p class="app-hint">
+                  Marge par defaut appliquee aux plats.
+                </p>
               </div>
-            </div>
 
-            <button
-              class="mt-5 w-full bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] font-bold px-4 py-3 rounded-full shadow-sm hover:shadow-md transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-              :disabled="savingSettings"
-            >
-              {{ savingSettings ? 'Enregistrement...' : 'Enregistrer les parametres' }}
-            </button>
-          </form>
-
-          <div class="rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5 bg-white dark:bg-[#1a1c1c] p-6 shadow-sm">
-            <h2 class="text-xl font-bold text-[#1a1c1c] dark:text-white">
-              Raccourcis compte
-            </h2>
-            <div class="mt-5 grid gap-3">
-              <NuxtLink
-                to="/security"
-                class="rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] px-4 py-4 font-medium text-[#1a1c1c] dark:text-white transition-all hover:shadow-md"
-              >
-                Configurer la securite 2FA
-              </NuxtLink>
-              <NuxtLink
-                to="/login"
-                class="rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] px-4 py-4 font-medium text-[#1a1c1c] dark:text-white transition-all hover:shadow-md"
-              >
-                Retester le parcours de connexion
-              </NuxtLink>
-              <NuxtLink
-                to="/"
-                class="rounded-3xl border border-[#c0c9ba]/20 dark:border-white/5 bg-[#f3f3f3] dark:bg-[#2f3131] px-4 py-4 font-medium text-[#1a1c1c] dark:text-white transition-all hover:shadow-md"
-              >
-                Revenir au dashboard
-              </NuxtLink>
-              <button
-                type="button"
-                class="flex items-center gap-2 rounded-3xl border border-[#ba1a1a]/30 px-4 py-4 text-left font-medium text-[#ba1a1a] dark:text-[#ff897d] transition-all hover:bg-[#ba1a1a]/10"
-                @click="handleLogout"
-              >
-                <UIcon
-                  name="i-lucide-log-out"
-                  class="size-4 shrink-0"
-                />
-                Se deconnecter
-              </button>
+              <div>
+                <label
+                  for="account-vat"
+                  class="app-label"
+                >TVA (%)</label>
+                <input
+                  id="account-vat"
+                  v-model.number="settingsForm.vatPercent"
+                  class="app-input"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  required
+                >
+                <p class="app-hint">
+                  Taux utilise pour les calculs TTC.
+                </p>
+              </div>
             </div>
           </div>
 
-          <div class="rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5 bg-white dark:bg-[#1a1c1c] p-6 shadow-sm">
-            <h2 class="text-xl font-bold text-[#1a1c1c] dark:text-white">
-              Niveau de securite
-            </h2>
-            <p class="mt-2 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
-              {{ profile?.twoFactorEnabled
-                ? 'Ton compte est deja protege par un code TOTP en plus du mot de passe.'
-                : 'Ton compte peut encore etre renforce avec une double authentification TOTP.' }}
-            </p>
+          <button
+            class="btn-primary mt-5 w-full"
+            :disabled="savingSettings"
+          >
+            <UIcon
+              v-if="savingSettings"
+              name="i-lucide-loader-circle"
+              class="size-4 animate-spin"
+            />
+            {{ savingSettings ? 'Enregistrement...' : 'Enregistrer les parametres' }}
+          </button>
+        </form>
+      </section>
+
+      <section class="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <div class="app-section">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="app-eyebrow">
+                Securite
+              </p>
+              <h2 class="app-section-title mt-1">
+                Niveau de protection
+              </h2>
+            </div>
+            <span
+              class="ep-badge"
+              :class="profile?.twoFactorEnabled ? 'ep-badge--success' : 'ep-badge--warning'"
+            >
+              {{ profile?.twoFactorEnabled ? '2FA active' : '2FA inactive' }}
+            </span>
+          </div>
+          <p class="mt-3 text-sm leading-6 text-[color:var(--ep-text-muted)]">
+            {{ profile?.twoFactorEnabled
+              ? 'Ton compte est deja protege par un code TOTP en plus du mot de passe.'
+              : 'Ton compte peut encore etre renforce avec une double authentification TOTP.' }}
+          </p>
+          <NuxtLink
+            to="/security"
+            class="btn-accent mt-4"
+          >
+            <UIcon
+              name="i-lucide-shield-check"
+              class="size-4"
+            />
+            {{ profile?.twoFactorEnabled ? 'Voir la securite' : 'Activer la 2FA' }}
+          </NuxtLink>
+        </div>
+
+        <div class="app-section">
+          <p class="app-eyebrow">
+            Raccourcis
+          </p>
+          <h2 class="app-section-title mt-1">
+            Gerer le compte
+          </h2>
+          <div class="mt-4 grid gap-2 sm:grid-cols-2">
             <NuxtLink
               to="/security"
-              class="mt-5 inline-flex rounded-full bg-[#feb236] text-[#6d4700] hover:bg-[#ffc059] px-6 py-2.5 text-sm font-bold transition-all shadow-sm hover:shadow-md"
+              class="app-inset flex items-center gap-3 transition hover:border-[color:var(--ep-primary-soft-border)]"
             >
-              {{ profile?.twoFactorEnabled ? 'Voir la securite' : 'Activer la 2FA' }}
+              <UIcon
+                name="i-lucide-shield"
+                class="size-4 shrink-0 text-[color:var(--ep-primary)]"
+              />
+              <span class="font-medium text-[color:var(--ep-text)]">Configurer la 2FA</span>
             </NuxtLink>
+            <NuxtLink
+              to="/login"
+              class="app-inset flex items-center gap-3 transition hover:border-[color:var(--ep-primary-soft-border)]"
+            >
+              <UIcon
+                name="i-lucide-log-in"
+                class="size-4 shrink-0 text-[color:var(--ep-primary)]"
+              />
+              <span class="font-medium text-[color:var(--ep-text)]">Parcours de connexion</span>
+            </NuxtLink>
+            <NuxtLink
+              to="/"
+              class="app-inset flex items-center gap-3 transition hover:border-[color:var(--ep-primary-soft-border)]"
+            >
+              <UIcon
+                name="i-lucide-layout-dashboard"
+                class="size-4 shrink-0 text-[color:var(--ep-primary)]"
+              />
+              <span class="font-medium text-[color:var(--ep-text)]">Revenir au dashboard</span>
+            </NuxtLink>
+            <button
+              type="button"
+              class="app-inset flex items-center gap-3 border-[color:rgb(220_38_38/30%)] text-left transition hover:bg-[color:rgb(220_38_38/8%)]"
+              @click="handleLogout"
+            >
+              <UIcon
+                name="i-lucide-log-out"
+                class="size-4 shrink-0 text-[color:var(--ep-error)]"
+              />
+              <span class="font-medium text-[color:var(--ep-error)]">Se deconnecter</span>
+            </button>
           </div>
         </div>
       </section>

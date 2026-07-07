@@ -269,12 +269,12 @@ onMounted(loadDashboard)
         </div>
       </div>
 
-      <NuxtLink
+      <AppButton
         :to="primaryAction.to"
-        class="inline-flex items-center justify-center rounded-full bg-[#feb236] px-6 py-2.5 text-sm font-bold text-[#6d4700] shadow-sm transition hover:bg-[#ffc059]"
+        trailing-icon="i-lucide-arrow-right"
       >
         {{ primaryAction.label }}
-      </NuxtLink>
+      </AppButton>
     </header>
 
     <p

@@ -245,6 +245,30 @@ const stats = computed<PageStat[]>(() => [
 
 const rewards = computed(() => purchaseOrderStore.rewards)
 
+const activeStepIndex = computed(() => stepItems.findIndex(step => step.key === activeStep.value))
+
+function stepState(key: PurchaseStep): 'done' | 'active' | 'todo' {
+  const index = stepItems.findIndex(step => step.key === key)
+  if (index < activeStepIndex.value) {
+    return 'done'
+  }
+  if (index === activeStepIndex.value) {
+    return 'active'
+  }
+  return 'todo'
+}
+
+function stepMarkerClass(key: PurchaseStep) {
+  const state = stepState(key)
+  if (state === 'done') {
+    return 'border-transparent bg-[color:var(--ep-primary)] text-white'
+  }
+  if (state === 'active') {
+    return 'border-transparent bg-[#feb236] text-[#6d4700] shadow-sm ring-4 ring-[#feb236]/25'
+  }
+  return 'border-[color:var(--ep-border-strong)] bg-[color:var(--ep-surface-muted)] text-[color:var(--ep-text-muted)]'
+}
+
 async function loadPage() {
   loading.value = true
   errorMessage.value = ''
@@ -708,49 +732,81 @@ onMounted(loadPage)
         />
       </div>
 
-      <section class="grid gap-4 xl:grid-cols-[1fr_0.48fr]">
-        <div class="app-section">
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="step in stepItems"
+      <section class="app-section">
+        <div class="overflow-x-auto pb-1">
+          <div class="flex min-w-max items-center gap-1">
+            <template
+              v-for="(step, index) in stepItems"
               :key="step.key"
-              type="button"
-              class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold transition"
-              :class="activeStep === step.key
-                ? 'border-[#feb236] bg-[#feb236] text-[#6d4700] dark:border-[#feb236] dark:bg-[#feb236] dark:text-[#6d4700]'
-                : 'border-[#c0c9ba]/30 bg-white text-[#40493e] hover:bg-[#f3f3f3] dark:border-white/10 dark:bg-[#2f3131] dark:text-[#c0c9ba] dark:hover:bg-[#3a3d3d]'"
-              @click="activeStep = step.key"
             >
-              <UIcon
-                :name="step.icon"
-                class="size-4"
+              <button
+                type="button"
+                class="flex shrink-0 flex-col items-center gap-1.5 px-1"
+                @click="activeStep = step.key"
+              >
+                <span
+                  class="flex size-9 items-center justify-center rounded-lg border transition"
+                  :class="stepMarkerClass(step.key)"
+                >
+                  <UIcon
+                    :name="stepState(step.key) === 'done' ? 'i-lucide-check' : step.icon"
+                    class="size-4"
+                  />
+                </span>
+                <span
+                  class="text-xs font-semibold transition"
+                  :class="stepState(step.key) === 'todo'
+                    ? 'text-[color:var(--ep-text-subtle)]'
+                    : 'text-[color:var(--ep-text)]'"
+                >
+                  {{ step.label }}
+                </span>
+              </button>
+              <span
+                v-if="index < stepItems.length - 1"
+                class="mb-5 h-0.5 w-8 shrink-0 rounded-full transition sm:w-12"
+                :class="index < activeStepIndex
+                  ? 'bg-[color:var(--ep-primary)]'
+                  : 'bg-[color:var(--ep-border-strong)]'"
               />
-              {{ step.label }}
-            </button>
+            </template>
           </div>
         </div>
 
-        <div class="app-section">
-          <div class="flex items-center justify-between gap-3">
+        <div class="mt-4 flex flex-col gap-4 border-t border-[color:var(--ep-border)] pt-4 md:flex-row md:items-center md:justify-between">
+          <div class="flex items-center gap-3">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[color:var(--ep-primary-soft)] text-[color:var(--ep-primary)]">
+              <UIcon
+                name="i-lucide-trophy"
+                class="size-5"
+              />
+            </div>
             <div>
               <p class="app-eyebrow">
                 Score achats
               </p>
-              <h2 class="app-section-title mt-1">
+              <p class="font-semibold text-[color:var(--ep-text)]">
                 {{ rewards?.level || 'Gestion debutante' }}
-              </h2>
+              </p>
             </div>
-            <span class="app-pill">{{ rewards?.score || 0 }} pts</span>
           </div>
-          <div class="mt-3 h-2 overflow-hidden rounded-full bg-[#e8e8e8] dark:bg-[#2f3131]">
-            <div
-              class="h-full rounded-full bg-[linear-gradient(90deg,#feb236,#005013)]"
-              :style="{ width: `${rewards?.levelProgress || 0}%` }"
-            />
+
+          <div class="w-full md:max-w-xs">
+            <div class="flex items-center justify-between text-xs text-[color:var(--ep-text-muted)]">
+              <span>Progression</span>
+              <span class="font-semibold text-[color:var(--ep-text)]">{{ rewards?.score || 0 }} pts</span>
+            </div>
+            <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-[color:var(--ep-surface-muted)]">
+              <div
+                class="h-full rounded-full bg-[linear-gradient(90deg,#feb236,#005013)]"
+                :style="{ width: `${rewards?.levelProgress || 0}%` }"
+              />
+            </div>
           </div>
-          <div class="mt-3 flex flex-wrap gap-2">
+
+          <div class="flex flex-wrap gap-1.5">
             <span
-              v-for="badge in rewards?.badges || []"
+              v-for="badge in (rewards?.badges || []).slice(0, 3)"
               :key="badge"
               class="app-pill"
             >

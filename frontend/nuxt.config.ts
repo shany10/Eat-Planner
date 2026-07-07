@@ -16,6 +16,12 @@ const umamiScript = umamiSrc && umamiWebsiteId
 export default defineNuxtConfig({
   modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt', '@sentry/nuxt/module'],
 
+  // Register components without the directory prefix so shared primitives in
+  // `components/common` are usable by their bare name (<AppButton>, <PageHeader>,
+  // <AppBadge>…) instead of <CommonAppButton>. Basenames are unique across the
+  // components tree, so there are no collisions.
+  components: [{ path: '~/components', pathPrefix: false }],
+
   app: {
     head: {
       script: umamiScript

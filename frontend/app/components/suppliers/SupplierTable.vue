@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { Supplier } from '~/types/business'
+import DataTable, { type DataTableColumn } from '~/components/common/DataTable.vue'
+import TableRowActions from '~/components/common/TableRowActions.vue'
 
 withDefaults(defineProps<{
   items: Supplier[]
   emptyMessage?: string
 }>(), {
-  emptyMessage: 'Aucun fournisseur pour le moment. Utilise le bouton Ajouter fournisseur pour creer la premiere fiche.'
+  emptyMessage: 'Aucun fournisseur pour le moment. Utilise le bouton Ajouter fournisseur pour créer la première fiche.'
 })
 
 defineEmits<{
@@ -13,94 +15,55 @@ defineEmits<{
   remove: [item: Supplier]
 }>()
 
+const columns: DataTableColumn[] = [
+  { key: 'name', label: 'Fournisseur' },
+  { key: 'products', label: 'Produits' },
+  { key: 'delivery', label: 'Livraison' },
+  { key: 'minimum', label: 'Minimum', align: 'right' },
+  { key: 'contact', label: 'Contact' },
+  { key: 'actions', label: 'Actions', align: 'right' }
+]
+
 function formatCurrency(value?: number) {
-  return `${Number(value || 0).toFixed(2)} EUR`
+  return `${Number(value || 0).toFixed(2)} €`
 }
 </script>
 
 <template>
-  <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
-    <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-      <thead class="bg-slate-50 dark:bg-slate-900/60">
-        <tr>
-          <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Fournisseur
-          </th>
-          <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Produits
-          </th>
-          <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Livraison
-          </th>
-          <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Minimum
-          </th>
-          <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Contact
-          </th>
-          <th class="px-4 py-3 text-right font-medium text-slate-500">
-            Actions
-          </th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-950">
-        <tr
-          v-for="item in items"
-          :key="item._id"
-        >
-          <td class="px-4 py-3 font-medium">
-            {{ item.name }}
-            <span class="block text-xs font-normal text-slate-500 dark:text-slate-400">
-              {{ item.address || 'Adresse non renseignee' }}
-            </span>
-          </td>
-          <td class="px-4 py-3">
-            {{ item.productTypes?.join(', ') || '-' }}
-          </td>
-          <td class="px-4 py-3">
-            {{ item.deliveryLeadTimeDays ?? 0 }} j - {{ formatCurrency(item.deliveryFee) }}
-          </td>
-          <td class="px-4 py-3">
-            {{ formatCurrency(item.minimumOrderAmount) }}
-          </td>
-          <td class="px-4 py-3">
-            <span class="block">{{ item.contactName || '-' }}</span>
-            <span class="block text-xs text-slate-500 dark:text-slate-400">{{ item.email || item.phone || '-' }}</span>
-          </td>
-          <td class="px-4 py-3">
-            <div class="flex justify-end gap-2">
-              <button
-                class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium dark:border-slate-700"
-                @click="$emit('edit', item)"
-              >
-                <UIcon
-                  name="i-lucide-pencil"
-                  class="size-3.5"
-                />
-                Editer
-              </button>
-              <button
-                class="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white"
-                @click="$emit('remove', item)"
-              >
-                <UIcon
-                  name="i-lucide-trash-2"
-                  class="size-3.5"
-                />
-                Supprimer
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr v-if="items.length === 0">
-          <td
-            colspan="6"
-            class="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
-          >
-            {{ emptyMessage }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <DataTable
+    :columns="columns"
+    :rows="items"
+    empty-title="Aucun fournisseur"
+    :empty-message="emptyMessage"
+    empty-icon="i-lucide-truck"
+  >
+    <template #cell-name="{ row }">
+      <span class="ep-cell-strong">{{ row.name }}</span>
+      <span class="ep-cell-sub">{{ row.address || 'Adresse non renseignée' }}</span>
+    </template>
+
+    <template #cell-products="{ row }">
+      <span class="text-[color:var(--ep-text-muted)]">{{ row.productTypes?.join(', ') || '—' }}</span>
+    </template>
+
+    <template #cell-delivery="{ row }">
+      {{ row.deliveryLeadTimeDays ?? 0 }} j · {{ formatCurrency(row.deliveryFee) }}
+    </template>
+
+    <template #cell-minimum="{ row }">
+      {{ formatCurrency(row.minimumOrderAmount) }}
+    </template>
+
+    <template #cell-contact="{ row }">
+      <span class="ep-cell-strong">{{ row.contactName || '—' }}</span>
+      <span class="ep-cell-sub">{{ row.email || row.phone || '—' }}</span>
+    </template>
+
+    <template #cell-actions="{ row }">
+      <TableRowActions
+        @edit="$emit('edit', row)"
+        @remove="$emit('remove', row)"
+      />
+    </template>
+  </DataTable>
 </template>

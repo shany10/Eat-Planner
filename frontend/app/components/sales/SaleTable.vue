@@ -1,66 +1,82 @@
 <script setup lang="ts">
 import type { Sale } from '~/types/business'
+import DataTable, { type DataTableColumn } from '~/components/common/DataTable.vue'
+import TableRowActions from '~/components/common/TableRowActions.vue'
 
 withDefaults(defineProps<{
   items: Sale[]
   emptyMessage?: string
 }>(), {
-  emptyMessage: 'Aucune vente enregistree. Cree ton premier ticket pour commencer a alimenter les previsions.'
+  emptyMessage: 'Aucune vente enregistrée. Crée ton premier ticket pour commencer à alimenter les prévisions.'
 })
 
 defineEmits<{
   remove: [item: Sale]
 }>()
+
+const columns: DataTableColumn[] = [
+  { key: 'date', label: 'Date service' },
+  { key: 'amount', label: 'Montant', align: 'right' },
+  { key: 'lines', label: 'Articles', align: 'right' },
+  { key: 'notes', label: 'Note' },
+  { key: 'actions', label: 'Actions', align: 'right' }
+]
+
+function dishName(dish: Sale['items'][number]['dish']) {
+  return typeof dish === 'object' ? dish.name : dish
+}
 </script>
 
 <template>
-  <div
-    v-if="items.length === 0"
-    class="rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50/80 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300"
+  <DataTable
+    :columns="columns"
+    :rows="items"
+    expandable
+    empty-title="Aucune vente"
+    :empty-message="emptyMessage"
+    empty-icon="i-lucide-receipt-euro"
   >
-    {{ emptyMessage }}
-  </div>
+    <template #cell-date="{ row }">
+      <span class="ep-cell-strong">{{ row.serviceDate.slice(0, 10) }}</span>
+    </template>
 
-  <div
-    v-else
-    class="space-y-4"
-  >
-    <article
-      v-for="sale in items"
-      :key="sale._id"
-      class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-    >
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">
-            {{ sale.serviceDate.slice(0, 10) }}
-          </p>
-          <h3 class="mt-1 text-lg font-semibold">
-            {{ sale.totalAmount.toFixed(2) }} EUR
-          </h3>
-          <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-            {{ sale.notes || 'Aucune note de service.' }}
-          </p>
-        </div>
+    <template #cell-amount="{ row }">
+      <span class="ep-cell-strong">{{ row.totalAmount.toFixed(2) }} €</span>
+    </template>
 
-        <button
-          class="rounded-xl bg-red-600 px-3 py-2 text-sm font-medium text-white"
-          @click="$emit('remove', sale)"
-        >
-          Supprimer
-        </button>
-      </div>
+    <template #cell-lines="{ row }">
+      {{ row.items.length }}
+    </template>
 
-      <div class="mt-4 grid gap-2">
-        <div
-          v-for="(item, index) in sale.items"
-          :key="`${sale._id}-${index}`"
-          class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 text-sm dark:bg-slate-950"
-        >
-          <span>{{ typeof item.dish === 'object' ? item.dish.name : item.dish }}</span>
-          <span>{{ item.quantity }} x {{ item.unitPrice.toFixed(2) }} EUR</span>
+    <template #cell-notes="{ row }">
+      <span class="text-[color:var(--ep-text-muted)]">{{ row.notes || '—' }}</span>
+    </template>
+
+    <template #cell-actions="{ row }">
+      <TableRowActions
+        :show-edit="false"
+        @remove="$emit('remove', row)"
+      />
+    </template>
+
+    <template #expanded="{ row }">
+      <div class="py-2">
+        <p class="app-eyebrow mb-2">
+          Détail du ticket
+        </p>
+        <div class="grid gap-1.5">
+          <div
+            v-for="(item, index) in row.items"
+            :key="`${row._id}-${index}`"
+            class="flex items-center justify-between gap-3 rounded-md bg-[color:var(--ep-surface)] px-3 py-2 text-sm"
+          >
+            <span>{{ dishName(item.dish) }}</span>
+            <span class="text-[color:var(--ep-text-muted)] ep-num">
+              {{ item.quantity }} × {{ item.unitPrice.toFixed(2) }} €
+            </span>
+          </div>
         </div>
       </div>
-    </article>
-  </div>
+    </template>
+  </DataTable>
 </template>

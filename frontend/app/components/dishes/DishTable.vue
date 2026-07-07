@@ -1,188 +1,184 @@
 <script setup lang="ts">
-import type { Dish } from "~/types/business";
+import type { Dish } from '~/types/business'
+import DataTable, { type DataTableColumn } from '~/components/common/DataTable.vue'
+import TableRowActions from '~/components/common/TableRowActions.vue'
+import AppBadge from '~/components/common/AppBadge.vue'
 
 withDefaults(
   defineProps<{
-    items: Dish[];
-    emptyMessage?: string;
+    items: Dish[]
+    emptyMessage?: string
   }>(),
   {
     emptyMessage:
-      "Aucun plat pour le moment. Cree une recette pour voir apparaitre le cout matiere, la part de charges et le prix conseille.",
-  },
-);
+      'Aucun plat pour le moment. Crée une recette pour voir le coût matière, la part de charges et le prix conseillé.'
+  }
+)
 
 defineEmits<{
-  edit: [item: Dish];
-  remove: [item: Dish];
-}>();
+  edit: [item: Dish]
+  remove: [item: Dish]
+}>()
+
+const columns: DataTableColumn[] = [
+  { key: 'name', label: 'Plat' },
+  { key: 'totalCost', label: 'Coût HT', align: 'right' },
+  { key: 'margin', label: 'Marge', align: 'right' },
+  { key: 'suggested', label: 'Prix conseillé TTC', align: 'right' },
+  { key: 'actual', label: 'Prix réel TTC', align: 'right' },
+  { key: 'gap', label: 'Écart', align: 'right' },
+  { key: 'actions', label: 'Actions', align: 'right' }
+]
 
 function formatCurrency(value?: number) {
-  return `${(value ?? 0).toFixed(2)} EUR`;
+  return `${(value ?? 0).toFixed(2)} €`
 }
 
 function formatPercent(value?: number | null) {
-  return `${Math.round((value ?? 0) * 100)}%`;
+  return `${Math.round((value ?? 0) * 100)}%`
 }
 
 function getMarginSourceLabel(item: Dish) {
-  if (item.profitability?.marginSource === "account") {
-    return "Globale";
+  if (item.profitability?.marginSource === 'account') {
+    return 'Globale'
   }
 
-  if (item.profitability?.marginSource === "dish") {
-    return "Specifique";
+  if (item.profitability?.marginSource === 'dish') {
+    return 'Spécifique'
   }
 
-  return "Systeme";
+  return 'Système'
 }
 
 function getGapClass(item: Dish) {
-  const gap = item.profitability?.priceGapIncludingTax ?? 0;
-
   if (!item.profitability?.actualPriceIncludingTax) {
-    return "text-slate-500 dark:text-slate-400";
+    return 'text-[color:var(--ep-text-subtle)]'
   }
 
-  return gap >= 0
-    ? "text-emerald-700 dark:text-emerald-300"
-    : "text-red-700 dark:text-red-300";
+  return (item.profitability?.priceGapIncludingTax ?? 0) >= 0 ? 'text-success' : 'text-error'
 }
 </script>
 
 <template>
-  <div
-    v-if="items.length === 0"
-    class="rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50/80 p-6 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300"
+  <DataTable
+    :columns="columns"
+    :rows="items"
+    expandable
+    empty-title="Aucun plat"
+    :empty-message="emptyMessage"
+    empty-icon="i-lucide-utensils-crossed"
   >
-    {{ emptyMessage }}
-  </div>
+    <template #cell-name="{ row }">
+      <span class="ep-cell-strong">{{ row.name }}</span>
+      <span class="ep-cell-sub">{{ row.category }}</span>
+    </template>
 
-  <div v-else class="space-y-2 grid gap-4 grid-cols-3">
-    <article
-      v-for="item in items"
-      :key="item._id"
-      class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-    >
-      <div class="">
+    <template #cell-totalCost="{ row }">
+      {{ formatCurrency(row.profitability?.totalCost) }}
+    </template>
+
+    <template #cell-margin="{ row }">
+      <span class="inline-flex items-center gap-1.5">
+        {{ formatPercent(row.profitability?.effectiveMarginRate ?? row.targetMarginRate) }}
+        <AppBadge>{{ getMarginSourceLabel(row) }}</AppBadge>
+      </span>
+    </template>
+
+    <template #cell-suggested="{ row }">
+      <span class="ep-cell-strong">
+        {{ formatCurrency(row.profitability?.suggestedPriceIncludingTax ?? row.profitability?.suggestedPrice) }}
+      </span>
+    </template>
+
+    <template #cell-actual="{ row }">
+      <span :class="row.profitability?.actualPriceIncludingTax ? '' : 'text-[color:var(--ep-text-subtle)]'">
+        {{ row.profitability?.actualPriceIncludingTax ? formatCurrency(row.profitability.actualPriceIncludingTax) : 'Non renseigné' }}
+      </span>
+    </template>
+
+    <template #cell-gap="{ row }">
+      <span
+        class="font-semibold"
+        :class="getGapClass(row)"
+      >
+        {{ row.profitability?.actualPriceIncludingTax ? formatCurrency(row.profitability?.priceGapIncludingTax) : '—' }}
+      </span>
+    </template>
+
+    <template #cell-actions="{ row }">
+      <TableRowActions
+        @edit="$emit('edit', row)"
+        @remove="$emit('remove', row)"
+      />
+    </template>
+
+    <template #expanded="{ row }">
+      <div class="grid gap-4 py-2 md:grid-cols-2">
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">
-            {{ item.category }}
+          <p class="app-eyebrow mb-2">
+            Décomposition du coût
           </p>
-          <h3 class="mt-1 text-xl font-semibold">
-            {{ item.name }}
-          </h3>
-          <p class="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
-            {{ item.description || "Aucune description pour le moment." }}
-          </p>
+          <dl class="grid grid-cols-2 gap-y-1.5 text-sm">
+            <dt class="text-[color:var(--ep-text-muted)]">
+              Coût matière
+            </dt>
+            <dd class="ep-num">
+              {{ formatCurrency(row.profitability?.foodCost) }}
+            </dd>
+            <dt class="text-[color:var(--ep-text-muted)]">
+              Charges / portion
+            </dt>
+            <dd class="ep-num">
+              {{ formatCurrency(row.profitability?.chargeCost) }}
+            </dd>
+            <dt class="text-[color:var(--ep-text-muted)]">
+              Prix conseillé HT
+            </dt>
+            <dd class="ep-num">
+              {{ formatCurrency(row.profitability?.suggestedPriceExcludingTax) }}
+            </dd>
+            <dt class="text-[color:var(--ep-text-muted)]">
+              TVA ({{ formatPercent(row.profitability?.vatRate) }})
+            </dt>
+            <dd class="ep-num">
+              {{ formatCurrency(row.profitability?.suggestedVatAmount) }}
+            </dd>
+            <dt class="text-[color:var(--ep-text-muted)]">
+              Portions / jour
+            </dt>
+            <dd class="ep-num">
+              {{ row.estimatedDailyServings }}
+            </dd>
+          </dl>
         </div>
 
-        <div class="grid gap-2 text-sm mt-2 text-slate-600 dark:text-slate-300">
-          <div
-            class="grid gap-1 grid-cols-2 rounded-xl bg-slate-50 p-2 dark:bg-slate-950"
+        <div>
+          <p class="app-eyebrow mb-2">
+            Recette
+          </p>
+          <p
+            v-if="row.description"
+            class="mb-3 text-sm text-[color:var(--ep-text-muted)]"
           >
-            <span>Cout matiere</span>
-            <strong class="text-right">{{
-              formatCurrency(item.profitability?.foodCost)
-            }}</strong>
-            <span>Charges / portion</span>
-            <strong class="text-right">{{
-              formatCurrency(item.profitability?.chargeCost)
-            }}</strong>
-            <span>Cout total HT</span>
-            <strong class="text-right">{{
-              formatCurrency(item.profitability?.totalCost)
-            }}</strong>
-          </div>
-
-          <div
-            class="grid gap-1 grid-cols-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-950"
-          >
-            <span>Marge {{ getMarginSourceLabel(item) }}</span>
-            <strong class="text-right">{{
-              formatPercent(
-                item.profitability?.effectiveMarginRate ??
-                  item.targetMarginRate,
-              )
-            }}</strong>
-            <span>Prix conseille HT</span>
-            <strong class="text-right">{{
-              formatCurrency(item.profitability?.suggestedPriceExcludingTax)
-            }}</strong>
-            <span>TVA</span>
-            <strong class="text-right">
-              {{ formatCurrency(item.profitability?.suggestedVatAmount) }}
-              <span class="text-xs font-normal text-slate-500"
-                >({{ formatPercent(item.profitability?.vatRate) }})</span
-              >
-            </strong>
-            <span>Prix conseille TTC</span>
-            <strong class="text-right">{{
-              formatCurrency(
-                item.profitability?.suggestedPriceIncludingTax ??
-                  item.profitability?.suggestedPrice,
-              )
-            }}</strong>
-          </div>
-
-          <div
-            class="grid gap-1 grid-cols-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-950"
-          >
-            <span>Prix reel TTC</span>
-            <strong class="text-right">
-              {{
-                item.profitability?.actualPriceIncludingTax
-                  ? formatCurrency(item.profitability.actualPriceIncludingTax)
-                  : "Non renseigne"
-              }}
-            </strong>
-            <span>Ecart TTC</span>
-            <strong class="text-right" :class="getGapClass(item)">
-              {{
-                item.profitability?.actualPriceIncludingTax
-                  ? formatCurrency(item.profitability?.priceGapIncludingTax)
-                  : "-"
-              }}
-              <span
-                v-if="item.profitability?.actualPriceIncludingTax"
-                class="text-xs font-normal"
-              >
-                ({{ formatPercent(item.profitability?.priceGapRate) }})
-              </span>
-            </strong>
-            <span>Portions / jour</span>
-            <strong class="text-right">{{
-              item.estimatedDailyServings
-            }}</strong>
+            {{ row.description }}
+          </p>
+          <div class="flex flex-wrap gap-1.5">
+            <span
+              v-for="line in row.profitability?.lines || []"
+              :key="`${row._id}-${line.ingredientId}`"
+              class="ep-badge"
+            >
+              {{ line.ingredientName }} · {{ line.recipeQuantity }} {{ line.recipeUnit }}
+            </span>
+            <span
+              v-if="!(row.profitability?.lines || []).length"
+              class="text-sm text-[color:var(--ep-text-subtle)]"
+            >
+              Aucun ingrédient associé.
+            </span>
           </div>
         </div>
       </div>
-
-      <div class="mt-4 flex flex-wrap gap-2">
-        <span
-          v-for="line in item.profitability?.lines || []"
-          :key="`${item._id}-${line.ingredientId}`"
-          class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-200"
-        >
-          {{ line.ingredientName }} - {{ line.recipeQuantity }}
-          {{ line.recipeUnit }}
-        </span>
-      </div>
-
-      <div class="mt-5 flex justify-end gap-2">
-        <button
-          class="rounded-xl border border-slate-300 px-3 py-2 text-sm dark:border-slate-700"
-          @click="$emit('edit', item)"
-        >
-          Editer
-        </button>
-        <button
-          class="rounded-xl bg-red-600 px-3 py-2 text-sm font-medium text-white"
-          @click="$emit('remove', item)"
-        >
-          Supprimer
-        </button>
-      </div>
-    </article>
-  </div>
+    </template>
+  </DataTable>
 </template>

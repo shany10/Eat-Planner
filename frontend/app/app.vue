@@ -110,7 +110,7 @@ useHead({
           <div class="h-full">
             <BusinessNav />
           </div>
-          <div class="app-content bg-[#f9f9f9] dark:bg-[#1a1c1c]">
+          <div class="app-content bg-[#f9f9f9] dark:bg-[#131514]">
             <div class="mx-auto w-full max-w-6xl">
               <NuxtPage />
             </div>

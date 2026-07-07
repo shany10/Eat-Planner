@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import type { Ingredient } from '~/types/business'
+import DataTable, { type DataTableColumn } from '~/components/common/DataTable.vue'
+import TableRowActions from '~/components/common/TableRowActions.vue'
+import AppBadge from '~/components/common/AppBadge.vue'
 
 withDefaults(defineProps<{
   items: Ingredient[]
   emptyMessage?: string
 }>(), {
-  emptyMessage: 'Aucun ingredient pour le moment. Cree ta premiere matiere premiere pour activer le calcul des plats.'
+  emptyMessage: 'Aucun ingrédient pour le moment. Crée ta première matière première pour activer le calcul des plats.'
 })
 
 defineEmits<{
@@ -13,8 +16,19 @@ defineEmits<{
   remove: [item: Ingredient]
 }>()
 
+const columns: DataTableColumn[] = [
+  { key: 'name', label: 'Ingrédient' },
+  { key: 'category', label: 'Catégorie' },
+  { key: 'price', label: 'Prix', align: 'right' },
+  { key: 'stock', label: 'Stock', align: 'right' },
+  { key: 'threshold', label: 'Seuil', align: 'right' },
+  { key: 'reco', label: 'Reco 7j', align: 'right' },
+  { key: 'supplier', label: 'Fournisseur' },
+  { key: 'actions', label: 'Actions', align: 'right' }
+]
+
 function getSupplierName(item: Ingredient) {
-  return typeof item.supplier === 'object' ? item.supplier?.name ?? '-' : '-'
+  return typeof item.supplier === 'object' ? item.supplier?.name ?? '—' : '—'
 }
 
 function getRecommendedQuantity(item: Ingredient) {
@@ -29,105 +43,61 @@ function getRecommendedQuantity(item: Ingredient) {
 function formatQuantity(value: number, unit: Ingredient['unit']) {
   return `${Number(value || 0).toFixed(value % 1 === 0 ? 0 : 1)} ${unit}`
 }
+
+function isLowStock(item: Ingredient) {
+  return item.stockQuantity <= item.minimumStock
+}
 </script>
 
 <template>
-  <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
-    <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-      <thead class="bg-slate-50 dark:bg-slate-900/60">
-        <tr>
-          <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Ingredient
-          </th>
-          <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Categorie
-          </th>
-          <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Prix
-          </th>
-          <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Stock
-          </th>
-          <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Seuil
-          </th>
-          <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Reco 7j
-          </th>
-          <th class="px-4 py-3 text-left font-medium text-slate-500">
-            Fournisseur
-          </th>
-          <th class="px-4 py-3 text-right font-medium text-slate-500">
-            Actions
-          </th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-950">
-        <tr
-          v-for="item in items"
-          :key="item._id"
-        >
-          <td class="px-4 py-3 font-medium">
-            {{ item.name }}
-            <span class="block text-xs font-normal text-slate-500 dark:text-slate-400">
-              Achat en {{ item.orderUnit || item.unit }}
-            </span>
-          </td>
-          <td class="px-4 py-3 text-slate-700 dark:text-slate-200">
-            {{ item.category }}
-          </td>
-          <td class="px-4 py-3">
-            {{ item.purchasePrice.toFixed(2) }} EUR / {{ item.unit }}
-          </td>
-          <td
-            class="px-4 py-3 font-medium"
-            :class="item.stockQuantity <= item.minimumStock ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-200'"
-          >
-            {{ formatQuantity(item.stockQuantity, item.unit) }}
-          </td>
-          <td class="px-4 py-3 text-slate-700 dark:text-slate-200">
-            {{ formatQuantity(item.minimumStock, item.unit) }}
-          </td>
-          <td class="px-4 py-3 font-semibold text-slate-900 dark:text-white">
-            {{ formatQuantity(getRecommendedQuantity(item), item.unit) }}
-          </td>
-          <td class="px-4 py-3">
-            {{ getSupplierName(item) }}
-          </td>
-          <td class="px-4 py-3">
-            <div class="flex justify-end gap-2">
-              <button
-                class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium dark:border-slate-700"
-                @click="$emit('edit', item)"
-              >
-                <UIcon
-                  name="i-lucide-pencil"
-                  class="size-3.5"
-                />
-                Editer
-              </button>
-              <button
-                class="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white"
-                @click="$emit('remove', item)"
-              >
-                <UIcon
-                  name="i-lucide-trash-2"
-                  class="size-3.5"
-                />
-                Supprimer
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr v-if="items.length === 0">
-          <td
-            colspan="8"
-            class="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
-          >
-            {{ emptyMessage }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <DataTable
+    :columns="columns"
+    :rows="items"
+    empty-title="Aucun ingrédient"
+    :empty-message="emptyMessage"
+    empty-icon="i-lucide-carrot"
+  >
+    <template #cell-name="{ row }">
+      <span class="ep-cell-strong">{{ row.name }}</span>
+      <span class="ep-cell-sub">Achat en {{ row.orderUnit || row.unit }}</span>
+    </template>
+
+    <template #cell-category="{ row }">
+      <span class="text-[color:var(--ep-text-muted)]">{{ row.category }}</span>
+    </template>
+
+    <template #cell-price="{ row }">
+      {{ row.purchasePrice.toFixed(2) }} € / {{ row.unit }}
+    </template>
+
+    <template #cell-stock="{ row }">
+      <span
+        v-if="isLowStock(row)"
+        class="inline-flex items-center gap-1.5"
+      >
+        {{ formatQuantity(row.stockQuantity, row.unit) }}
+        <AppBadge variant="warning">Bas</AppBadge>
+      </span>
+      <span v-else>{{ formatQuantity(row.stockQuantity, row.unit) }}</span>
+    </template>
+
+    <template #cell-threshold="{ row }">
+      {{ formatQuantity(row.minimumStock, row.unit) }}
+    </template>
+
+    <template #cell-reco="{ row }">
+      <span class="ep-cell-strong">{{ formatQuantity(getRecommendedQuantity(row), row.unit) }}</span>
+    </template>
+
+    <template #cell-supplier="{ row }">
+      {{ getSupplierName(row) }}
+    </template>
+
+    <template #cell-actions="{ row }">
+      <TableRowActions
+        @edit="$emit('edit', row)"
+        @remove="$emit('remove', row)"
+      />
+    </template>
+  </DataTable>
 </template>

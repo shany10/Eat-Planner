@@ -8,15 +8,15 @@ defineProps<{
 
 <template>
   <article class="app-card">
-    <p class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">
+    <p class="app-eyebrow">
       {{ title }}
     </p>
-    <p class="my-1 text-3xl font-black text-[#1a1c1c] dark:text-white">
+    <p class="my-1 text-2xl font-bold text-[color:var(--ep-text)]">
       {{ value }}
     </p>
     <p
       v-if="hint"
-      class="text-xs leading-5 text-[#40493e] dark:text-[#c0c9ba]"
+      class="text-xs leading-5 text-[color:var(--ep-text-muted)]"
     >
       {{ hint }}
     </p>
