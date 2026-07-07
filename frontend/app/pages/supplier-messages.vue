@@ -57,10 +57,17 @@ async function loadPage() {
       await authStore.loadProfile()
     }
 
-    await Promise.all([
+    const results = await Promise.allSettled([
       supplierStore.load(),
       messageStore.load()
     ])
+
+    const firstFailure = results.find(result => result.status === 'rejected')
+
+    if (firstFailure?.status === 'rejected') {
+      errorMessage.value = getFetchErrorMessage(firstFailure.reason, 'Impossible de charger toute la messagerie fournisseurs')
+      appToast.error('Chargement partiel', errorMessage.value)
+    }
 
     form.supplier = suppliersWithEmail.value[0]?._id ?? ''
     form.subject = isSupplierPortal.value ? 'Reponse fournisseur' : ''

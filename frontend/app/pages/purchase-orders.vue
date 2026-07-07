@@ -250,12 +250,19 @@ async function loadPage() {
   errorMessage.value = ''
 
   try {
-    await Promise.all([
+    const results = await Promise.allSettled([
       supplierStore.load(),
       ingredientStore.load(),
       purchaseOrderStore.load(),
       purchaseOrderStore.loadRewards()
     ])
+
+    const firstFailure = results.find(result => result.status === 'rejected')
+
+    if (firstFailure?.status === 'rejected') {
+      errorMessage.value = getFetchErrorMessage(firstFailure.reason, 'Impossible de charger tous les elements du module achat')
+      appToast.error('Chargement partiel', errorMessage.value)
+    }
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(error, 'Impossible de charger le module achat')
     appToast.error('Chargement impossible', errorMessage.value)

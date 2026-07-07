@@ -27,6 +27,7 @@ const users = ref<ManagedUser[]>([])
 const loading = ref(true)
 const errorMessage = ref('')
 const lastUpdatedAt = ref<Date | null>(null)
+const syncState = ref<'idle' | 'loading' | 'ready' | 'partial'>('idle')
 
 type DashboardStat = {
   title: string
@@ -59,6 +60,17 @@ const isSupplier = computed(() => profile.value?.role === 'supplier')
 const firstName = computed(() => profile.value?.firstname || 'Equipe')
 const restaurantName = computed(() => profile.value?.restaurantName || 'Restaurant')
 const roleLabel = computed(() => isAdmin.value ? 'Admin' : isSupplier.value ? 'Fournisseur' : 'Manager')
+const dashboardSyncLabel = computed(() => {
+  if (loading.value || syncState.value === 'loading') {
+    return 'Chargement'
+  }
+
+  if (syncState.value === 'partial') {
+    return 'Partiel'
+  }
+
+  return lastUpdatedAt.value ? 'A jour' : 'Vide'
+})
 
 const projectedRevenue = computed(() => forecastStore.forecast?.totals.totalProjectedRevenue ?? 0)
 const projectedPlates = computed(() => forecastStore.forecast?.totals.totalProjectedPlates ?? 0)
@@ -187,6 +199,7 @@ async function fetchAdminUsers() {
 
 async function loadDashboard() {
   loading.value = true
+  syncState.value = 'loading'
   errorMessage.value = ''
 
   try {
@@ -211,9 +224,18 @@ async function loadDashboard() {
       users.value = []
     }
 
-    await Promise.all(tasks)
+    const results = await Promise.allSettled(tasks)
+    const firstFailure = results.find(result => result.status === 'rejected')
+
     lastUpdatedAt.value = new Date()
+    syncState.value = firstFailure ? 'partial' : 'ready'
+
+    if (firstFailure?.status === 'rejected') {
+      errorMessage.value = getFetchErrorMessage(firstFailure.reason, 'Certaines donnees du dashboard sont indisponibles')
+      appToast.error('Dashboard partiel', errorMessage.value)
+    }
   } catch (error) {
+    syncState.value = 'partial'
     errorMessage.value = getFetchErrorMessage(error, 'Impossible de charger le dashboard')
     appToast.error('Dashboard indisponible', errorMessage.value)
   } finally {
@@ -242,7 +264,7 @@ onMounted(loadDashboard)
             {{ restaurantName }}
           </span>
           <span class="rounded-full bg-[#e8e8e8] px-3 py-1 text-[11px] font-bold text-[#40493e] dark:bg-[#2f3131] dark:text-[#c0c9ba]">
-            {{ lastUpdatedAt ? 'A jour' : 'Chargement' }}
+            {{ dashboardSyncLabel }}
           </span>
         </div>
       </div>

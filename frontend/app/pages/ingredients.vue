@@ -162,7 +162,13 @@ async function loadPage() {
   loading.value = true
   errorMessage.value = ''
   try {
-    await Promise.all([ingredientStore.load(), supplierStore.load()])
+    const results = await Promise.allSettled([ingredientStore.load(), supplierStore.load()])
+    const firstFailure = results.find(result => result.status === 'rejected')
+
+    if (firstFailure?.status === 'rejected') {
+      errorMessage.value = getFetchErrorMessage(firstFailure.reason, 'Impossible de charger tous les elements des ingredients')
+      appToast.error('Chargement partiel', errorMessage.value)
+    }
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(error, 'Impossible de charger les ingredients')
     appToast.error('Chargement impossible', errorMessage.value)

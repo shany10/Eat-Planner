@@ -218,11 +218,21 @@ async function loadPage() {
   loading.value = true;
   errorMessage.value = "";
   try {
-    await Promise.all([
+    const results = await Promise.allSettled([
       authStore.loadProfile(),
       dishStore.load(),
       ingredientStore.load(),
     ]);
+
+    const firstFailure = results.find(result => result.status === "rejected");
+
+    if (firstFailure?.status === "rejected") {
+      errorMessage.value = getFetchErrorMessage(
+        firstFailure.reason,
+        "Impossible de charger tous les elements des plats",
+      );
+      appToast.error("Chargement partiel", errorMessage.value);
+    }
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(
       error,

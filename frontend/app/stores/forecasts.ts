@@ -1,5 +1,21 @@
 import type { ForecastResponse } from '~/types/business'
 
+function buildEmptyForecast(date?: string): ForecastResponse {
+  return {
+    persisted: false,
+    targetDate: date ?? new Date().toISOString().slice(0, 10),
+    generatedAt: new Date().toISOString(),
+    dishes: [],
+    ingredientNeeds: [],
+    totals: {
+      totalProjectedRevenue: 0,
+      totalProjectedPlates: 0,
+      chargePerServing: 0
+    },
+    alerts: []
+  }
+}
+
 export const useForecastStore = defineStore('forecasts', () => {
   const forecast = ref<ForecastResponse | null>(null)
   const pending = ref(false)
@@ -9,6 +25,9 @@ export const useForecastStore = defineStore('forecasts', () => {
     try {
       const query = date ? `?date=${encodeURIComponent(date)}` : ''
       forecast.value = await $fetch<ForecastResponse>(`/api/forecasts/daily${query}`)
+    } catch (error) {
+      forecast.value = buildEmptyForecast(date)
+      throw error
     } finally {
       pending.value = false
     }
