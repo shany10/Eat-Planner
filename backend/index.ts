@@ -1,6 +1,7 @@
 import './instrument';
 import * as Sentry from '@sentry/node';
 import express from 'express';
+import { createServer } from 'http';
 import {
   userRouter,
   supplierRouter,
@@ -12,10 +13,12 @@ import {
   purchaseOrderRouter
 } from './src/routes';
 import { connectMongoose } from "./src/db/mangoose";
+import { attachVideoSignaling } from "./src/realtime/videoSignaling";
 import { ensureUserAccessBootstrap } from "./src/services/userAccessBootstrap";
 import "dotenv/config";
 
 const app = express();
+const httpServer = createServer(app);
 
 app.use(express.json());
 
@@ -56,7 +59,9 @@ async function startServer() {
       console.log(`Extra admin accounts demoted to manager: ${bootstrap.demotedExtraAdmins}`);
     }
 
-    app.listen(port, () => {
+    attachVideoSignaling(httpServer);
+
+    httpServer.listen(port, () => {
       console.log(`Server is running at http://localhost:${port}`);
     });
   } catch (err) {

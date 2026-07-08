@@ -2,7 +2,7 @@ COMPOSE := docker compose
 COMPOSE_FULL := docker compose -f docker-compose.yml -f docker-compose.monitoring.yml
 
 .DEFAULT_GOAL := help
-.PHONY: help setup env install up up-app down restart build logs logs-backend \
+.PHONY: help setup env install up up-watch up-app up-app-watch down restart build logs logs-backend \
         logs-frontend ps seed seed-business shell-backend shell-mongo \
         lint typecheck check clean
 
@@ -32,8 +32,14 @@ install:
 up: ## Lance app + monitoring (GlitchTip + Umami)
 	$(COMPOSE_FULL) up -d --build
 
+up-watch: ## Lance app + monitoring avec hot reload Docker Compose Watch
+	$(COMPOSE_FULL) up --build --watch
+
 up-app: ## Lance uniquement la stack applicative (sans monitoring)
 	$(COMPOSE) up -d --build
+
+up-app-watch: ## Lance uniquement l'app avec hot reload Docker Compose Watch
+	$(COMPOSE) up --build --watch
 
 down: ## Arrete et supprime les conteneurs
 	$(COMPOSE_FULL) down

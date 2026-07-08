@@ -10,11 +10,17 @@ const env = (globalThis as typeof globalThis & {
 const umamiSrc = env.NUXT_PUBLIC_UMAMI_SRC || ''
 const umamiWebsiteId = env.NUXT_PUBLIC_UMAMI_WEBSITE_ID || ''
 const umamiScript = umamiSrc && umamiWebsiteId
-  ? [{ src: umamiSrc, defer: true, 'data-website-id': umamiWebsiteId }]
+  ? [{ 'src': umamiSrc, 'defer': true, 'data-website-id': umamiWebsiteId }]
   : []
+const sentryEnabled = Boolean(env.NUXT_PUBLIC_SENTRY_DSN || env.SENTRY_SERVER_DSN)
+const modules = ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt']
 
-export default defineNuxtConfig({
-  modules: ['@nuxt/eslint', '@nuxt/ui', '@pinia/nuxt', '@sentry/nuxt/module'],
+if (sentryEnabled) {
+  modules.push('@sentry/nuxt/module')
+}
+
+const nuxtConfig = defineNuxtConfig({
+  modules,
 
   // Register components without the directory prefix so shared primitives in
   // `components/common` are usable by their bare name (<AppButton>, <PageHeader>,
@@ -25,13 +31,6 @@ export default defineNuxtConfig({
   app: {
     head: {
       script: umamiScript
-    }
-  },
-
-  // Self-hosted GlitchTip: disable source map upload to sentry.io (no auth token).
-  sentry: {
-    sourceMapsUploadOptions: {
-      enabled: false
     }
   },
 
@@ -53,6 +52,15 @@ export default defineNuxtConfig({
     },
     public: {
       googleClientId: env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || env.GOOGLE_CLIENT_ID || '',
+      realtimeBaseUrl: env.NUXT_PUBLIC_REALTIME_BASE_URL || 'http://localhost:3000',
+      // Serveurs ICE pour la visio WebRTC.
+      // - En local, le STUN public Google suffit (les pairs se joignent en direct).
+      // - En prod derriere des NAT/firewalls stricts, renseigne un serveur TURN
+      //   (ex: coturn) via ces variables, sinon l appel echoue a se connecter.
+      stunUrl: env.NUXT_PUBLIC_STUN_URL || 'stun:stun.l.google.com:19302',
+      turnUrl: env.NUXT_PUBLIC_TURN_URL || '',
+      turnUsername: env.NUXT_PUBLIC_TURN_USERNAME || '',
+      turnCredential: env.NUXT_PUBLIC_TURN_CREDENTIAL || '',
       // Browser-side Sentry DSN — host must be localhost (reachable from the browser).
       sentry: {
         dsn: env.NUXT_PUBLIC_SENTRY_DSN || ''
@@ -77,3 +85,16 @@ export default defineNuxtConfig({
     }
   }
 })
+
+if (sentryEnabled) {
+  Object.assign(nuxtConfig, {
+    // Self-hosted GlitchTip: disable source map upload to sentry.io (no auth token).
+    sentry: {
+      sourceMapsUploadOptions: {
+        enabled: false
+      }
+    }
+  })
+}
+
+export default nuxtConfig

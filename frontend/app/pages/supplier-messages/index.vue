@@ -240,6 +240,13 @@ onBeforeUnmount(() => {
             <UIcon name="i-lucide-truck" class="size-4" />
             Fournisseurs
           </NuxtLink>
+          <NuxtLink
+            to="/supplier-messages/call"
+            class="btn-secondary"
+          >
+            <UIcon name="i-lucide-video" class="size-4" />
+            Visio
+          </NuxtLink>
           <a
             v-if="!isSupplierPortal"
             :href="mailpitUrl"

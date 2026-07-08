@@ -4,7 +4,7 @@
  * is provided, otherwise a <button>. Variants map to the .btn-* token classes
  * so hover / focus / disabled states stay consistent everywhere.
  */
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'danger'
   size?: 'md' | 'sm'
   to?: string
@@ -20,30 +20,52 @@ withDefaults(defineProps<{
   block: false,
   disabled: false
 })
+
+const buttonClasses = computed(() => [
+  `btn-${props.variant}`,
+  props.size === 'sm' ? 'btn-sm' : '',
+  props.block ? 'w-full' : '',
+  props.disabled ? 'pointer-events-none opacity-60' : ''
+])
 </script>
 
 <template>
-  <component
-    :is="to ? resolveComponent('NuxtLink') : 'button'"
-    :to="to"
-    :type="to ? undefined : type"
-    :disabled="to ? undefined : disabled"
-    :class="[
-      `btn-${variant}`,
-      size === 'sm' ? 'btn-sm' : '',
-      block ? 'w-full' : ''
-    ]"
+  <NuxtLink
+    v-if="props.to"
+    :to="props.to"
+    :aria-disabled="props.disabled ? 'true' : undefined"
+    :tabindex="props.disabled ? -1 : undefined"
+    :class="buttonClasses"
   >
     <UIcon
-      v-if="icon"
-      :name="icon"
+      v-if="props.icon"
+      :name="props.icon"
       class="size-4 shrink-0"
     />
     <slot />
     <UIcon
-      v-if="trailingIcon"
-      :name="trailingIcon"
+      v-if="props.trailingIcon"
+      :name="props.trailingIcon"
       class="size-4 shrink-0"
     />
-  </component>
+  </NuxtLink>
+
+  <button
+    v-else
+    :type="props.type"
+    :disabled="props.disabled"
+    :class="buttonClasses"
+  >
+    <UIcon
+      v-if="props.icon"
+      :name="props.icon"
+      class="size-4 shrink-0"
+    />
+    <slot />
+    <UIcon
+      v-if="props.trailingIcon"
+      :name="props.trailingIcon"
+      class="size-4 shrink-0"
+    />
+  </button>
 </template>

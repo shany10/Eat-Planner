@@ -13,6 +13,7 @@ Le projet est pense comme un outil de gestion interne pour manager de restaurant
 - Gestion des ventes avec saisie manuelle et import CSV.
 - Gestion des charges fixes et variables.
 - Previsions de production avec explication des donnees, besoins matieres et corrections manager.
+- Appel visio fournisseur gratuit via WebRTC et Socket.IO dans le module messagerie.
 - Panier d'achat fournisseur professionnel avec quantites recommandees, totaux HT/TVA/TTC et validation.
 - Paiement fournisseur par virement trace: IBAN/BIC saisis pour validation, reference de virement, statut paye et confirmation email fournisseur.
 - Confirmation et historique des commandes fournisseurs.
@@ -27,6 +28,7 @@ Le projet est pense comme un outil de gestion interne pour manager de restaurant
 | Backend | Node.js, Express, TypeScript, Zod |
 | Base de donnees | MongoDB, Mongoose |
 | Auth | JWT, Argon2, TOTP 2FA |
+| Visio | WebRTC, Socket.IO |
 | Infra locale | Docker Compose |
 
 ## Structure du projet
@@ -91,6 +93,14 @@ Les deux stacks doivent etre lancees ensemble pour partager le meme reseau Docke
 make up         # docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d --build
 ```
 
+Pour developper avec hot reload moderne sans polling, utilisez Docker Compose Watch :
+
+```bash
+make up-watch   # docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up --build --watch
+```
+
+Le frontend n'utilise pas de bind mount en mode Docker. En developpement, gardez donc la commande `up --watch` ouverte pour synchroniser les fichiers vers le conteneur et laisser Nuxt faire le HMR.
+
 5. Ouvrir l'application :
 
 - Frontend : http://localhost:3001
@@ -116,7 +126,9 @@ Un `Makefile` regroupe les commandes courantes. `make` ou `make help` affiche la
 | --- | --- |
 | `make setup` | Cree le `.env` et installe les dependances Node |
 | `make up` | Lance app + monitoring (GlitchTip + Umami) |
+| `make up-watch` | Lance app + monitoring avec hot reload Docker Compose Watch |
 | `make up-app` | Lance uniquement la stack applicative |
+| `make up-app-watch` | Lance uniquement l'app avec hot reload Docker Compose Watch |
 | `make down` | Arrete et supprime les conteneurs |
 | `make restart` | Redemarre toute la stack |
 | `make logs` | Suit les logs de tous les services |
@@ -159,12 +171,40 @@ Comptes crees par le seed complet :
 ### Docker
 
 ```bash
-docker compose up -d --build
+docker compose up -d --build        # demarrage classique
+docker compose up --build --watch   # developpement avec hot reload
 docker compose ps
 docker compose logs -f backend
 docker compose logs -f frontend
 docker compose down
 ```
+
+### Appel visio WebRTC local
+
+Installer les dependances de signaling :
+
+```bash
+cd backend
+npm install socket.io
+cd frontend
+npm install socket.io-client
+```
+
+Ajouter l'URL publique du backend temps reel dans `.env` :
+
+```bash
+NUXT_PUBLIC_REALTIME_BASE_URL=http://localhost:3000
+```
+
+La page `/supplier-messages/call` utilise le cookie `auth_token`, se connecte au backend Socket.IO, puis etablit les flux audio/video en WebRTC entre navigateurs. Aucune cle API payante n'est requise.
+
+Test local :
+
+1. Lance l'app avec `make up-app-watch` ou `docker compose up --build --watch`.
+2. Ouvre `http://localhost:3001/supplier-messages/call`.
+3. Entre un ID de room, par exemple `eat-planner-demo`.
+4. Ouvre la meme page dans un second navigateur ou une fenetre privee, avec le meme ID.
+5. Autorise camera/micro dans le navigateur.
 
 ### Backend
 

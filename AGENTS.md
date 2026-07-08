@@ -11,6 +11,7 @@ Eat Planner est une application full-stack de gestion restaurant.
 - Base de donnees: MongoDB avec Mongoose.
 - Auth: JWT, Argon2, 2FA TOTP.
 - Emails locaux: Mailpit.
+- Visio: WebRTC avec Socket.IO pour le signaling local.
 
 Le produit est un outil interne pour manager de restaurant: ingredients, fournisseurs, plats, ventes, charges, previsions, commandes, paiement par virement trace et messagerie fournisseur.
 
@@ -44,6 +45,7 @@ frontend/server/api/  Proxys API Nuxt vers le backend
 - Ne pas contourner les middlewares d'authentification existants.
 - Valider les payloads backend avec Zod quand une route accepte du body.
 - Ne jamais logger de secrets, tokens, IBAN complets ou mots de passe.
+- La visio locale n'utilise pas de cle API externe; le socket doit rester authentifie avec le JWT existant.
 - Pour les paiements, l'application trace un virement declare par l'utilisateur. Elle ne doit pas pretendre executer un vrai transfert bancaire sans integration bancaire reelle.
 
 ## Frontend
@@ -62,6 +64,7 @@ frontend/server/api/  Proxys API Nuxt vers le backend
 - Ajouter ou modifier les modeles dans `backend/src/models`.
 - Garder les erreurs API explicites et compatibles avec le frontend.
 - Les emails fournisseur doivent passer par le service email existant et rester testables avec Mailpit.
+- Le signaling visio se branche dans `backend/src/realtime/videoSignaling.ts` et ne doit pas exposer de rooms anonymes sans auth.
 
 ## Commandes utiles
 
@@ -79,10 +82,22 @@ Lancement Docker app + monitoring:
 docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d --build
 ```
 
+Lancement Docker app + monitoring avec hot reload moderne:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up --build --watch
+```
+
 Lancement app seule:
 
 ```bash
 docker compose up -d --build
+```
+
+Lancement app seule avec hot reload moderne:
+
+```bash
+docker compose up --build --watch
 ```
 
 Frontend local:
