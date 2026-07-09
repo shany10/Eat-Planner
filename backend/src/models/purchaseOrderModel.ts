@@ -50,6 +50,7 @@ export interface IPurchaseOrder extends Document {
   paymentNote?: string;
   paidAt?: Date | null;
   validatedAt?: Date | null;
+  receivedAt?: Date | null;
   managementScoreDelta: number;
   badges: string[];
   created_at: Date;
@@ -101,6 +102,7 @@ const purchaseOrderSchema = new Schema<IPurchaseOrder>({
   paymentNote: { type: String, default: "", trim: true },
   paidAt: { type: Date, default: null },
   validatedAt: { type: Date, default: null },
+  receivedAt: { type: Date, default: null },
   managementScoreDelta: { type: Number, required: true, default: 0 },
   badges: { type: [String], default: [] }
 }, {

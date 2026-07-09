@@ -258,6 +258,7 @@ export type PurchaseOrder = {
   paymentNote?: string
   paidAt?: string | null
   validatedAt?: string | null
+  receivedAt?: string | null
   managementScoreDelta?: number
   badges?: string[]
   created_at?: string

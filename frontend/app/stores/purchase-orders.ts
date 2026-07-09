@@ -80,6 +80,17 @@ export const usePurchaseOrderStore = defineStore('purchase-orders', () => {
     await loadRewards()
   }
 
+  async function receive(id: string, items: Array<{ ingredient: string, receivedQuantity: number }> = []) {
+    const result = await $fetch<{ ok: boolean, updatedIngredients: number, order: PurchaseOrder }>(
+      `/api/purchase-orders/${id}/receive`,
+      { method: 'POST', body: { items } }
+    )
+    lastOrder.value = result.order
+    await load()
+    await loadRewards()
+    return result
+  }
+
   async function payByBankTransfer(id: string, payload: BankTransferPaymentPayload) {
     const result = await $fetch<BankTransferPaymentResult>(`/api/purchase-orders/${id}/payments/bank-transfer`, {
       method: 'POST',
@@ -125,6 +136,7 @@ export const usePurchaseOrderStore = defineStore('purchase-orders', () => {
     create,
     update,
     updateStatus,
+    receive,
     payByBankTransfer,
     sendSupplierEmail,
     remove,

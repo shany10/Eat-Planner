@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getFetchErrorMessage } from '~/utils/fetch-error'
 import StatCard from '~/components/common/StatCard.vue'
-import type { Ingredient, PaymentMethod, PurchaseOrder, PurchaseOrderStatus, Supplier } from '~/types/business'
+import type { Ingredient, PurchaseOrderStatus, Supplier } from '~/types/business'
 import { useIngredientStore } from '~/stores/ingredients'
 import { usePurchaseOrderStore } from '~/stores/purchase-orders'
 import { useSupplierStore } from '~/stores/suppliers'
@@ -10,7 +10,7 @@ definePageMeta({
   middleware: 'auth'
 })
 
-type PurchaseStep = 'forecast' | 'selection' | 'cart' | 'checkout' | 'payment' | 'confirmation' | 'history'
+type PurchaseStep = 'forecast' | 'selection' | 'cart' | 'checkout'
 
 type CartLine = {
   ingredientId: string
@@ -39,12 +39,6 @@ type ForecastLine = {
   lowStock: boolean
 }
 
-type PageStat = {
-  title: string
-  value: string | number
-  hint: string
-}
-
 const VAT_RATE = 0.1
 const DEFAULT_DELIVERY_ADDRESS = 'Restaurant Eat Planner, 12 rue des Chefs, 75002 Paris'
 
@@ -52,36 +46,23 @@ const stepItems: Array<{ key: PurchaseStep, label: string, icon: string }> = [
   { key: 'forecast', label: 'Prevision', icon: 'i-lucide-chart-no-axes-combined' },
   { key: 'selection', label: 'Selection', icon: 'i-lucide-list-plus' },
   { key: 'cart', label: 'Panier', icon: 'i-lucide-shopping-cart' },
-  { key: 'checkout', label: 'Validation', icon: 'i-lucide-clipboard-check' },
-  { key: 'payment', label: 'Paiement', icon: 'i-lucide-credit-card' },
-  { key: 'confirmation', label: 'Confirmation', icon: 'i-lucide-circle-check' },
-  { key: 'history', label: 'Historique', icon: 'i-lucide-history' }
-]
-
-const statusOptions: PurchaseOrderStatus[] = [
-  'draft',
-  'pending_validation',
-  'pending_payment',
-  'paid',
-  'delivering',
-  'delivered',
-  'cancelled'
+  { key: 'checkout', label: 'Validation', icon: 'i-lucide-clipboard-check' }
 ]
 
 const supplierStore = useSupplierStore()
 const ingredientStore = useIngredientStore()
 const purchaseOrderStore = usePurchaseOrderStore()
 const appToast = useAppToast()
+const { roundMoney, formatCurrency, formatQuantity, formatDate } = usePurchaseHelpers()
 
 const loading = ref(true)
+const saving = ref(false)
 const errorMessage = ref('')
 const activeStep = ref<PurchaseStep>('forecast')
 const forecastHorizon = ref<3 | 7>(7)
 const cartLines = ref<CartLine[]>([])
 const deliveryAddress = ref(DEFAULT_DELIVERY_ADDRESS)
 const internalComment = ref('')
-const confirmedOrder = ref<PurchaseOrder | null>(null)
-const sendingOrderEmailId = ref('')
 
 const ingredientFilters = reactive({
   search: '',
@@ -89,26 +70,6 @@ const ingredientFilters = reactive({
   category: 'all',
   stock: 'all'
 })
-
-const orderFilters = reactive({
-  search: '',
-  supplier: 'all',
-  status: 'all',
-  period: 'all'
-})
-
-const paymentMethod = ref<PaymentMethod>('bank_transfer')
-const paymentMethodLabel = computed(() => paymentMethod.value === 'bank_transfer' ? 'Virement bancaire' : 'Paiement fournisseur')
-const paymentForm = reactive({
-  accountHolder: '',
-  iban: '',
-  bic: '',
-  reference: '',
-  executionDate: new Date().toISOString().slice(0, 10),
-  note: '',
-  notifySupplier: true
-})
-const paymentErrors = ref<string[]>([])
 
 const activeSuppliers = computed(() => supplierStore.items.filter(supplier => supplier.active))
 const activeIngredients = computed(() => ingredientStore.items.filter(ingredient => ingredient.active))
@@ -211,39 +172,11 @@ const estimatedDeliveryDate = computed(() => {
   return addDaysIso(maxLeadTime || 2)
 })
 
-const filteredOrders = computed(() => {
-  const search = orderFilters.search.trim().toLowerCase()
-  const now = Date.now()
-
-  return purchaseOrderStore.items.filter((order) => {
-    const orderDate = order.created_at ? new Date(order.created_at).getTime() : now
-    const searchableText = [
-      order.orderNumber,
-      getOrderSupplierNames(order),
-      order.status,
-      order.internalComment,
-      order.notes,
-      ...order.items.map(item => item.ingredientName)
-    ].filter(Boolean).join(' ').toLowerCase()
-
-    const matchesSearch = !search || searchableText.includes(search)
-    const matchesSupplier = orderFilters.supplier === 'all' || getOrderSupplierIds(order).includes(orderFilters.supplier)
-    const matchesStatus = orderFilters.status === 'all' || order.status === orderFilters.status
-    const matchesPeriod = orderFilters.period === 'all'
-      || now - orderDate <= Number(orderFilters.period) * 24 * 60 * 60 * 1000
-
-    return matchesSearch && matchesSupplier && matchesStatus && matchesPeriod
-  })
-})
-
-const stats = computed<PageStat[]>(() => [
+const stats = computed(() => [
   { title: 'A reapprovisionner', value: reorderLines.value.length, hint: `${criticalLines.value.length} sous le seuil` },
   { title: 'Budget previsionnel', value: formatCurrency(forecastBudget.value), hint: `${forecastHorizon.value} jours de besoins` },
-  { title: 'Panier TTC', value: formatCurrency(cartTotalInclTax.value), hint: `${cartLineCount.value} ligne(s)` },
-  { title: 'Commandes payees', value: purchaseOrderStore.paidOrders.length, hint: purchaseOrderStore.rewards?.level || 'Score en attente' }
+  { title: 'Panier TTC', value: formatCurrency(cartTotalInclTax.value), hint: `${cartLineCount.value} ligne(s)` }
 ])
-
-const rewards = computed(() => purchaseOrderStore.rewards)
 
 const activeStepIndex = computed(() => stepItems.findIndex(step => step.key === activeStep.value))
 
@@ -276,27 +209,21 @@ async function loadPage() {
   try {
     const results = await Promise.allSettled([
       supplierStore.load(),
-      ingredientStore.load(),
-      purchaseOrderStore.load(),
-      purchaseOrderStore.loadRewards()
+      ingredientStore.load()
     ])
 
     const firstFailure = results.find(result => result.status === 'rejected')
 
     if (firstFailure?.status === 'rejected') {
-      errorMessage.value = getFetchErrorMessage(firstFailure.reason, 'Impossible de charger tous les elements du module achat')
+      errorMessage.value = getFetchErrorMessage(firstFailure.reason, 'Impossible de charger le catalogue achat')
       appToast.error('Chargement partiel', errorMessage.value)
     }
   } catch (error) {
-    errorMessage.value = getFetchErrorMessage(error, 'Impossible de charger le module achat')
+    errorMessage.value = getFetchErrorMessage(error, 'Impossible de charger le catalogue achat')
     appToast.error('Chargement impossible', errorMessage.value)
   } finally {
     loading.value = false
   }
-}
-
-function roundMoney(value: number) {
-  return Number(value.toFixed(2))
 }
 
 function addDaysIso(days: number) {
@@ -393,16 +320,6 @@ function removeCartLine(ingredientId: string) {
 function clearCart() {
   cartLines.value = []
   internalComment.value = ''
-  paymentErrors.value = []
-}
-
-function prepareBankTransferForm(order: PurchaseOrder) {
-  paymentMethod.value = 'bank_transfer'
-  paymentForm.reference = order.paymentReference || `VIR-${order.orderNumber || order._id}`
-  paymentForm.accountHolder = order.paymentAccountHolder || getOrderSupplierNames(order)
-  paymentForm.bic = order.paymentBic || paymentForm.bic
-  paymentForm.executionDate = order.paymentExecutionDate || new Date().toISOString().slice(0, 10)
-  paymentForm.note = order.paymentNote || paymentForm.note
 }
 
 function buildOrderPayload(status: PurchaseOrderStatus) {
@@ -425,127 +342,38 @@ function buildOrderPayload(status: PurchaseOrderStatus) {
 }
 
 async function saveDraftOrder() {
-  if (!canCreateOrder.value) {
+  if (!canCreateOrder.value || saving.value) {
     return
   }
 
+  saving.value = true
   try {
     const order = await purchaseOrderStore.create(buildOrderPayload('draft'))
-    confirmedOrder.value = order
-    activeStep.value = 'history'
-    appToast.success('Brouillon sauvegarde', `Commande ${order.orderNumber || ''} conservee dans l historique.`)
+    appToast.success('Brouillon sauvegarde', `Commande ${order.orderNumber || ''} conservee dans les commandes.`)
+    await navigateTo('/purchase-orders')
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(error, 'Impossible de sauvegarder le panier')
     appToast.error('Sauvegarde impossible', errorMessage.value)
+  } finally {
+    saving.value = false
   }
 }
 
 async function validateOrder() {
-  if (!canCreateOrder.value) {
+  if (!canCreateOrder.value || saving.value) {
     return
   }
 
+  saving.value = true
   try {
     const order = await purchaseOrderStore.create(buildOrderPayload('pending_payment'))
-    confirmedOrder.value = order
-    prepareBankTransferForm(order)
-    activeStep.value = 'payment'
-    appToast.success('Commande validee', `Commande ${order.orderNumber || ''} en attente de virement fournisseur.`)
+    appToast.success('Commande validee', `Commande ${order.orderNumber || ''} prete a etre payee.`)
+    await navigateTo(`/purchase-orders?pay=${order._id}`)
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(error, 'Impossible de valider la commande')
     appToast.error('Validation impossible', errorMessage.value)
-  }
-}
-
-function validateBankTransferFields() {
-  const missing = [
-    ['Titulaire beneficiaire', paymentForm.accountHolder],
-    ['IBAN fournisseur', paymentForm.iban],
-    ['Date execution', paymentForm.executionDate]
-  ].filter(([, value]) => !String(value || '').trim())
-
-  paymentErrors.value = missing.map(([label]) => `${label} requis`)
-
-  const cleanIban = paymentForm.iban.replace(/\s+/g, '')
-  if (cleanIban && !/^[A-Za-z]{2}[0-9A-Za-z]{12,32}$/.test(cleanIban)) {
-    paymentErrors.value.push('IBAN invalide')
-  }
-
-  if (paymentForm.bic.trim() && !/^[A-Za-z0-9]{8,11}$/.test(paymentForm.bic.trim())) {
-    paymentErrors.value.push('BIC invalide')
-  }
-
-  return paymentErrors.value.length === 0
-}
-
-async function submitBankTransferPayment() {
-  if (!confirmedOrder.value || !validateBankTransferFields()) {
-    return
-  }
-
-  try {
-    const result = await purchaseOrderStore.payByBankTransfer(confirmedOrder.value._id, {
-      accountHolder: paymentForm.accountHolder,
-      iban: paymentForm.iban,
-      bic: paymentForm.bic,
-      reference: paymentForm.reference,
-      executionDate: paymentForm.executionDate,
-      note: paymentForm.note,
-      notifySupplier: paymentForm.notifySupplier
-    })
-    const order = result.order
-    confirmedOrder.value = order
-    clearCart()
-    activeStep.value = 'confirmation'
-    const notificationLabel = result.sent.length > 0
-      ? `${result.sent.length} confirmation(s) envoyee(s) au fournisseur.`
-      : 'Aucun email fournisseur configure, paiement trace en interne.'
-    appToast.success('Virement confirme', `${order.orderNumber || ''} marquee payee. ${notificationLabel}`)
-  } catch (error) {
-    errorMessage.value = getFetchErrorMessage(error, 'Impossible de confirmer le virement')
-    appToast.error('Virement refuse', errorMessage.value)
-  }
-}
-
-async function updateOrderStatus(order: PurchaseOrder, status: PurchaseOrderStatus) {
-  try {
-    await purchaseOrderStore.updateStatus(order._id, status)
-    appToast.success('Statut mis a jour', `Commande ${order.orderNumber || ''}: ${getStatusLabel(status)}.`)
-  } catch (error) {
-    errorMessage.value = getFetchErrorMessage(error, 'Impossible de changer le statut')
-    appToast.error('Mise a jour impossible', errorMessage.value)
-  }
-}
-
-async function sendSupplierEmail(order: PurchaseOrder) {
-  sendingOrderEmailId.value = order._id
-  try {
-    const result = await purchaseOrderStore.sendSupplierEmail(order._id)
-    if (confirmedOrder.value?._id === order._id) {
-      confirmedOrder.value = result.order
-    }
-    appToast.success('Email fournisseur envoye', `${result.sent.length} message(s) visible(s) dans Mailpit.`)
-  } catch (error) {
-    errorMessage.value = getFetchErrorMessage(error, 'Impossible d envoyer le mail fournisseur')
-    appToast.error('Envoi impossible', errorMessage.value)
   } finally {
-    sendingOrderEmailId.value = ''
-  }
-}
-
-function payExistingOrder(order: PurchaseOrder) {
-  confirmedOrder.value = order
-  prepareBankTransferForm(order)
-  activeStep.value = 'payment'
-}
-
-async function removeOrder(order: PurchaseOrder) {
-  try {
-    await purchaseOrderStore.remove(order._id)
-    appToast.success('Commande supprimee', `Commande ${order.orderNumber || ''} retiree.`)
-  } catch (error) {
-    errorMessage.value = getFetchErrorMessage(error, 'Impossible de supprimer la commande')
-    appToast.error('Suppression impossible', errorMessage.value)
+    saving.value = false
   }
 }
 
@@ -554,102 +382,6 @@ function resetIngredientFilters() {
   ingredientFilters.supplier = 'all'
   ingredientFilters.category = 'all'
   ingredientFilters.stock = 'all'
-}
-
-function resetOrderFilters() {
-  orderFilters.search = ''
-  orderFilters.supplier = 'all'
-  orderFilters.status = 'all'
-  orderFilters.period = 'all'
-}
-
-function getOrderSupplierIds(order: PurchaseOrder) {
-  const ids = (order.suppliers || [])
-    .map(supplier => typeof supplier === 'object' ? supplier._id : supplier)
-    .filter(Boolean)
-
-  if (ids.length > 0) {
-    return ids
-  }
-
-  return [typeof order.supplier === 'object' ? order.supplier._id : order.supplier]
-}
-
-function getOrderSupplierNames(order: PurchaseOrder) {
-  const names = (order.suppliers || [])
-    .map(supplier => typeof supplier === 'object' ? supplier.name : supplierStore.items.find(item => item._id === supplier)?.name)
-    .filter(Boolean)
-
-  if (names.length > 0) {
-    return names.join(', ')
-  }
-
-  return typeof order.supplier === 'object' ? order.supplier.name : order.supplier
-}
-
-function getOrderSupplierEmails(order: PurchaseOrder) {
-  const suppliers = (order.suppliers?.length ? order.suppliers : [order.supplier])
-
-  return suppliers
-    .map(supplier => typeof supplier === 'object' ? supplier.email : '')
-    .filter((email): email is string => Boolean(email))
-}
-
-function canSendSupplierEmail(order: PurchaseOrder) {
-  return getOrderSupplierEmails(order).length > 0 && !['cancelled', 'delivered', 'received'].includes(order.status)
-}
-
-function isSendingSupplierEmail(order: PurchaseOrder) {
-  return sendingOrderEmailId.value === order._id
-}
-
-function getStatusLabel(status: PurchaseOrderStatus) {
-  const labels: Record<PurchaseOrderStatus, string> = {
-    draft: 'Brouillon',
-    pending_validation: 'En attente de validation',
-    validated: 'Validee',
-    pending_payment: 'En attente de paiement',
-    paid: 'Payee',
-    delivering: 'En cours de livraison',
-    delivered: 'Livree',
-    cancelled: 'Annulee',
-    sent: 'Envoyee',
-    received: 'Receptionnee'
-  }
-
-  return labels[status]
-}
-
-function getStatusClass(status: PurchaseOrderStatus) {
-  if (status === 'paid' || status === 'delivered' || status === 'received') {
-    return 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200'
-  }
-
-  if (status === 'pending_payment' || status === 'delivering' || status === 'sent') {
-    return 'border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200'
-  }
-
-  if (status === 'cancelled') {
-    return 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200'
-  }
-
-  return 'border-[#c0c9ba]/30 bg-[#f3f3f3] text-[#1a1c1c] dark:border-white/10 dark:bg-[#1a1c1c] dark:text-white'
-}
-
-function formatCurrency(value: number) {
-  return `${Number(value || 0).toFixed(2)} EUR`
-}
-
-function formatQuantity(value: number, unit: Ingredient['unit']) {
-  return `${Number(value || 0).toFixed(value % 1 === 0 ? 0 : 1)} ${unit}`
-}
-
-function formatDate(value?: string | null) {
-  if (!value) {
-    return '-'
-  }
-
-  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(new Date(value))
 }
 
 onMounted(loadPage)
@@ -664,14 +396,24 @@ onMounted(loadPage)
             Achats fournisseur
           </p>
           <h1 class="app-title mt-2">
-            Panier manager restaurant
+            Nouvel achat
           </h1>
           <p class="app-subtitle mt-2">
-            Un parcours achat adapte au stock restaurant: prevision, panier fournisseur, validation, virement et confirmation fournisseur.
+            Prevision des besoins, panier fournisseur puis validation. Le paiement se fait ensuite depuis la liste des commandes.
           </p>
         </div>
 
         <div class="flex flex-wrap gap-2">
+          <NuxtLink
+            to="/purchase-orders"
+            class="btn-secondary"
+          >
+            <UIcon
+              name="i-lucide-arrow-left"
+              class="size-4"
+            />
+            Commandes
+          </NuxtLink>
           <button
             type="button"
             class="btn-primary"
@@ -683,24 +425,7 @@ onMounted(loadPage)
             />
             Ajouter stock bas
           </button>
-          <NuxtLink
-            to="/suppliers"
-            class="btn-secondary"
-          >
-            <UIcon
-              name="i-lucide-truck"
-              class="size-4"
-            />
-            Fournisseurs
-          </NuxtLink>
         </div>
-      </div>
-
-      <div class="mt-4 flex flex-wrap gap-2">
-        <span class="app-pill">{{ activeSuppliers.length }} fournisseur(s)</span>
-        <span class="app-pill">{{ activeIngredients.length }} ingredient(s)</span>
-        <span class="app-pill">{{ reorderLines.length }} a commander</span>
-        <span class="app-pill">{{ loading ? 'Synchronisation' : 'Achats a jour' }}</span>
       </div>
     </section>
 
@@ -712,9 +437,9 @@ onMounted(loadPage)
     </p>
 
     <template v-if="loading">
-      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-3 md:grid-cols-3">
         <div
-          v-for="index in 4"
+          v-for="index in 3"
           :key="index"
           class="h-24 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800"
         />
@@ -722,7 +447,7 @@ onMounted(loadPage)
     </template>
 
     <template v-else>
-      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-3 md:grid-cols-3">
         <StatCard
           v-for="stat in stats"
           :key="stat.title"
@@ -764,60 +489,12 @@ onMounted(loadPage)
               </button>
               <span
                 v-if="index < stepItems.length - 1"
-                class="mb-5 h-0.5 w-8 shrink-0 rounded-full transition sm:w-12"
+                class="mb-5 h-0.5 w-10 shrink-0 rounded-full transition sm:w-16"
                 :class="index < activeStepIndex
                   ? 'bg-[color:var(--ep-primary)]'
                   : 'bg-[color:var(--ep-border-strong)]'"
               />
             </template>
-          </div>
-        </div>
-
-        <div class="mt-4 flex flex-col gap-4 border-t border-[color:var(--ep-border)] pt-4 md:flex-row md:items-center md:justify-between">
-          <div class="flex items-center gap-3">
-            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[color:var(--ep-primary-soft)] text-[color:var(--ep-primary)]">
-              <UIcon
-                name="i-lucide-trophy"
-                class="size-5"
-              />
-            </div>
-            <div>
-              <p class="app-eyebrow">
-                Score achats
-              </p>
-              <p class="font-semibold text-[color:var(--ep-text)]">
-                {{ rewards?.level || 'Gestion debutante' }}
-              </p>
-            </div>
-          </div>
-
-          <div class="w-full md:max-w-xs">
-            <div class="flex items-center justify-between text-xs text-[color:var(--ep-text-muted)]">
-              <span>Progression</span>
-              <span class="font-semibold text-[color:var(--ep-text)]">{{ rewards?.score || 0 }} pts</span>
-            </div>
-            <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-[color:var(--ep-surface-muted)]">
-              <div
-                class="h-full rounded-full bg-[linear-gradient(90deg,#feb236,#005013)]"
-                :style="{ width: `${rewards?.levelProgress || 0}%` }"
-              />
-            </div>
-          </div>
-
-          <div class="flex flex-wrap gap-1.5">
-            <span
-              v-for="badge in (rewards?.badges || []).slice(0, 3)"
-              :key="badge"
-              class="app-pill"
-            >
-              {{ badge }}
-            </span>
-            <span
-              v-if="!rewards?.badges?.length"
-              class="app-pill"
-            >
-              Premier badge a debloquer
-            </span>
           </div>
         </div>
       </section>
@@ -836,14 +513,14 @@ onMounted(loadPage)
                 Quantites recommandees avant achat
               </h2>
               <p class="mt-2 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
-                La recommandation calcule: consommation moyenne par jour x horizon + seuil minimum - stock actuel. Le minimum de commande fournisseur est applique si besoin.
+                Recommandation = consommation moyenne par jour x horizon + seuil minimum - stock actuel, en respectant le minimum de commande fournisseur.
               </p>
             </div>
             <div class="flex rounded-md border border-[#c0c9ba]/30 p-1 dark:border-white/10">
               <button
                 type="button"
                 class="rounded px-3 py-1.5 text-sm font-semibold"
-                :class="forecastHorizon === 3 ? 'bg-[#feb236] text-[#6d4700] dark:bg-[#feb236] dark:text-[#6d4700]' : 'text-[#40493e] dark:text-[#c0c9ba]'"
+                :class="forecastHorizon === 3 ? 'bg-[#feb236] text-[#6d4700]' : 'text-[#40493e] dark:text-[#c0c9ba]'"
                 @click="forecastHorizon = 3"
               >
                 3 jours
@@ -851,7 +528,7 @@ onMounted(loadPage)
               <button
                 type="button"
                 class="rounded px-3 py-1.5 text-sm font-semibold"
-                :class="forecastHorizon === 7 ? 'bg-[#feb236] text-[#6d4700] dark:bg-[#feb236] dark:text-[#6d4700]' : 'text-[#40493e] dark:text-[#c0c9ba]'"
+                :class="forecastHorizon === 7 ? 'bg-[#feb236] text-[#6d4700]' : 'text-[#40493e] dark:text-[#c0c9ba]'"
                 @click="forecastHorizon = 7"
               >
                 7 jours
@@ -901,29 +578,37 @@ onMounted(loadPage)
             >
               Ajouter les ingredients critiques
             </button>
+            <button
+              type="button"
+              class="btn-secondary"
+              @click="activeStep = 'selection'"
+            >
+              Choisir manuellement
+            </button>
           </div>
         </div>
 
         <div class="app-section">
           <p class="app-eyebrow">
-            Conseils manager
+            Comment ca marche
           </p>
           <h2 class="app-section-title mt-1">
-            Lecture simple des donnees
+            3 etapes avant paiement
           </h2>
           <div class="mt-4 grid gap-3">
-            <div
-              v-for="tip in rewards?.tips || []"
-              :key="tip"
-              class="app-inset"
-            >
+            <div class="app-inset">
               <p class="text-sm leading-6 text-[#1a1c1c] dark:text-white">
-                {{ tip }}
+                1. La prevision propose les quantites a racheter selon ton stock et ta consommation.
               </p>
             </div>
             <div class="app-inset">
               <p class="text-sm leading-6 text-[#1a1c1c] dark:text-white">
-                Exemple: 5 kg/jour de farine sur 7 jours = 35 kg. Si le stock est a 18 kg et le seuil a 20 kg, le panier recommande environ 37 kg, puis respecte le minimum fournisseur.
+                2. Tu ajustes le panier fournisseur (quantites, prix), puis tu valides la commande.
+              </p>
+            </div>
+            <div class="app-inset">
+              <p class="text-sm leading-6 text-[#1a1c1c] dark:text-white">
+                3. La commande apparait dans "Commandes & paiements" ou tu payes le fournisseur par virement.
               </p>
             </div>
           </div>
@@ -1090,6 +775,17 @@ onMounted(loadPage)
             </tbody>
           </table>
         </div>
+
+        <div class="mt-4 flex justify-end">
+          <button
+            type="button"
+            class="btn-primary"
+            :disabled="cartLines.length === 0"
+            @click="activeStep = 'cart'"
+          >
+            Voir le panier ({{ cartLineCount }})
+          </button>
+        </div>
       </section>
 
       <section
@@ -1137,9 +833,6 @@ onMounted(loadPage)
                     Fournisseur
                   </th>
                   <th class="px-3 py-2 text-left font-medium text-[#40493e]">
-                    Stock / seuil
-                  </th>
-                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
                     Reco
                   </th>
                   <th class="px-3 py-2 text-left font-medium text-[#40493e]">
@@ -1171,17 +864,6 @@ onMounted(loadPage)
                   </td>
                   <td class="px-3 py-3 text-[#1a1c1c] dark:text-white">
                     {{ line.supplierName }}
-                  </td>
-                  <td class="px-3 py-3">
-                    <span
-                      class="font-medium"
-                      :class="line.stockQuantity <= line.minimumStock ? 'text-amber-700 dark:text-amber-300' : 'text-[#1a1c1c] dark:text-white'"
-                    >
-                      {{ formatQuantity(line.stockQuantity, line.unit) }}
-                    </span>
-                    <span class="block text-xs text-[#40493e] dark:text-[#c0c9ba]">
-                      seuil {{ formatQuantity(line.minimumStock, line.unit) }}
-                    </span>
                   </td>
                   <td class="px-3 py-3 font-semibold text-[#1a1c1c] dark:text-white">
                     {{ formatQuantity(line.recommendedQuantity, line.unit) }}
@@ -1230,10 +912,10 @@ onMounted(loadPage)
                 </tr>
                 <tr v-if="cartLines.length === 0">
                   <td
-                    colspan="8"
+                    colspan="7"
                     class="px-3 py-8 text-center text-sm text-[#40493e] dark:text-[#c0c9ba]"
                   >
-                    Le panier est vide. Passe par la selection ou ajoute directement les ingredients a reapprovisionner.
+                    Le panier est vide. Passe par la prevision ou la selection pour ajouter des ingredients.
                   </td>
                 </tr>
               </tbody>
@@ -1287,24 +969,14 @@ onMounted(loadPage)
               </div>
             </div>
           </div>
-          <div class="mt-4 grid gap-2">
-            <button
-              type="button"
-              class="btn-secondary w-full"
-              :disabled="!canCreateOrder"
-              @click="saveDraftOrder"
-            >
-              Sauvegarder brouillon
-            </button>
-            <button
-              type="button"
-              class="btn-primary w-full"
-              :disabled="!canCreateOrder"
-              @click="activeStep = 'checkout'"
-            >
-              Passer a la validation
-            </button>
-          </div>
+          <button
+            type="button"
+            class="btn-primary mt-4 w-full"
+            :disabled="!canCreateOrder"
+            @click="activeStep = 'checkout'"
+          >
+            Passer a la validation
+          </button>
         </aside>
       </section>
 
@@ -1317,7 +989,7 @@ onMounted(loadPage)
             Validation commande
           </p>
           <h2 class="app-section-title mt-1">
-            Verifier avant virement fournisseur
+            Verifier avant de valider
           </h2>
 
           <div class="mt-4 grid gap-3 md:grid-cols-2">
@@ -1414,458 +1086,20 @@ onMounted(loadPage)
           <button
             type="button"
             class="btn-primary mt-4 w-full"
-            :disabled="!canCreateOrder"
+            :disabled="!canCreateOrder || saving"
             @click="validateOrder"
           >
-            Valider la commande
+            {{ saving ? 'Validation...' : 'Valider la commande' }}
           </button>
-        </aside>
-      </section>
-
-      <section
-        v-if="activeStep === 'payment'"
-        class="grid gap-4 xl:grid-cols-[0.95fr_0.55fr]"
-      >
-        <div class="app-section">
-          <p class="app-eyebrow">
-            Paiement fournisseur
-          </p>
-          <h2 class="app-section-title mt-1">
-            Confirmer un virement
-          </h2>
-          <p class="mt-2 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
-            Enregistre la reference du virement effectue depuis ta banque, marque la commande comme payee et previent le fournisseur par email et messagerie.
-          </p>
-
-          <div class="mt-4 grid gap-3 md:grid-cols-2">
-            <input
-              v-model="paymentForm.accountHolder"
-              class="app-input"
-              placeholder="Titulaire beneficiaire"
-            >
-            <input
-              v-model="paymentForm.iban"
-              class="app-input"
-              placeholder="IBAN / RIB fournisseur"
-            >
-            <input
-              v-model="paymentForm.bic"
-              class="app-input"
-              placeholder="BIC fournisseur"
-            >
-            <input
-              v-model="paymentForm.executionDate"
-              class="app-input"
-              type="date"
-            >
-            <input
-              v-model="paymentForm.reference"
-              class="app-input md:col-span-2"
-              placeholder="Reference de virement"
-            >
-            <textarea
-              v-model="paymentForm.note"
-              class="app-input min-h-20 md:col-span-2"
-              placeholder="Note paiement visible dans le dossier commande"
-            />
-          </div>
-
-          <label class="app-inset mt-4 flex cursor-pointer items-start gap-3">
-            <input
-              v-model="paymentForm.notifySupplier"
-              type="checkbox"
-              class="mt-1"
-            >
-            <span>
-              <span class="block font-semibold text-[#1a1c1c] dark:text-white">Notifier le fournisseur</span>
-              <span class="mt-1 block text-sm text-[#40493e] dark:text-[#c0c9ba]">
-                Envoie un email de confirmation et ajoute le message dans le portail fournisseur.
-              </span>
-            </span>
-          </label>
-
-          <div
-            v-if="paymentErrors.length > 0"
-            class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
-          >
-            <p
-              v-for="message in paymentErrors"
-              :key="message"
-            >
-              {{ message }}
-            </p>
-          </div>
-
           <button
             type="button"
-            class="btn-primary mt-4"
-            :disabled="!confirmedOrder"
-            @click="submitBankTransferPayment"
+            class="btn-secondary mt-2 w-full"
+            :disabled="!canCreateOrder || saving"
+            @click="saveDraftOrder"
           >
-            Confirmer le virement
+            Sauvegarder en brouillon
           </button>
-        </div>
-
-        <aside class="app-section h-fit">
-          <p class="app-eyebrow">
-            Commande a payer
-          </p>
-          <h2 class="app-section-title mt-1">
-            {{ confirmedOrder?.orderNumber || 'Aucune commande' }}
-          </h2>
-          <div class="mt-4 grid gap-2 text-sm">
-            <div class="flex justify-between gap-3">
-              <span class="text-[#40493e] dark:text-[#c0c9ba]">Fournisseur(s)</span>
-              <span class="text-right font-semibold">{{ confirmedOrder ? getOrderSupplierNames(confirmedOrder) : '-' }}</span>
-            </div>
-            <div class="flex justify-between gap-3">
-              <span class="text-[#40493e] dark:text-[#c0c9ba]">Total TTC</span>
-              <span class="font-semibold">{{ formatCurrency(confirmedOrder?.totalInclTax || confirmedOrder?.totalAmount || 0) }}</span>
-            </div>
-            <div class="flex justify-between gap-3">
-              <span class="text-[#40493e] dark:text-[#c0c9ba]">Moyen</span>
-              <span class="font-semibold">{{ paymentMethodLabel }}</span>
-            </div>
-            <div class="flex justify-between gap-3">
-              <span class="text-[#40493e] dark:text-[#c0c9ba]">Livraison estimee</span>
-              <span class="font-semibold">{{ formatDate(confirmedOrder?.estimatedDeliveryDate) }}</span>
-            </div>
-          </div>
         </aside>
-      </section>
-
-      <section
-        v-if="activeStep === 'confirmation'"
-        class="app-section"
-      >
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p class="app-eyebrow">
-              Confirmation
-            </p>
-            <h2 class="app-section-title mt-1">
-              Commande fournisseur confirmee
-            </h2>
-            <p class="mt-2 text-sm leading-6 text-[#40493e] dark:text-[#c0c9ba]">
-              La commande est enregistree dans l historique avec une reference de virement et une confirmation fournisseur.
-            </p>
-          </div>
-          <span
-            v-if="confirmedOrder"
-            class="inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold"
-            :class="getStatusClass(confirmedOrder.status)"
-          >
-            {{ getStatusLabel(confirmedOrder.status) }}
-          </span>
-        </div>
-
-        <div
-          v-if="confirmedOrder"
-          class="mt-5 grid gap-4 lg:grid-cols-[0.65fr_0.35fr]"
-        >
-          <div class="overflow-x-auto rounded-lg border border-[#c0c9ba]/30 dark:border-white/10">
-            <table class="min-w-full divide-y divide-[#c0c9ba]/30 text-sm dark:divide-white/10">
-              <thead class="bg-[#f3f3f3] dark:bg-[#2f3131]/60">
-                <tr>
-                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
-                    Ingredient
-                  </th>
-                  <th class="px-3 py-2 text-left font-medium text-[#40493e]">
-                    Quantite
-                  </th>
-                  <th class="px-3 py-2 text-right font-medium text-[#40493e]">
-                    Total
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-[#c0c9ba]/30 bg-white dark:divide-white/10 dark:bg-[#1a1c1c]">
-                <tr
-                  v-for="item in confirmedOrder.items"
-                  :key="`${confirmedOrder._id}-${item.ingredientName}`"
-                >
-                  <td class="px-3 py-2 font-medium">
-                    {{ item.ingredientName }}
-                  </td>
-                  <td class="px-3 py-2">
-                    {{ formatQuantity(item.quantity, item.unit) }}
-                  </td>
-                  <td class="px-3 py-2 text-right font-semibold">
-                    {{ formatCurrency(item.lineTotal) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="app-inset">
-            <p class="text-sm font-semibold text-[#1a1c1c] dark:text-white">
-              {{ confirmedOrder.orderNumber }}
-            </p>
-            <div class="mt-3 grid gap-2 text-sm">
-              <div class="flex justify-between gap-3">
-                <span class="text-[#40493e] dark:text-[#c0c9ba]">Date</span>
-                <span class="font-semibold">{{ formatDate(confirmedOrder.created_at) }}</span>
-              </div>
-              <div class="flex justify-between gap-3">
-                <span class="text-[#40493e] dark:text-[#c0c9ba]">Fournisseur</span>
-                <span class="text-right font-semibold">{{ getOrderSupplierNames(confirmedOrder) }}</span>
-              </div>
-              <div class="flex justify-between gap-3">
-                <span class="text-[#40493e] dark:text-[#c0c9ba]">Total paye</span>
-                <span class="font-semibold">{{ formatCurrency(confirmedOrder.totalInclTax || confirmedOrder.totalAmount) }}</span>
-              </div>
-              <div
-                v-if="confirmedOrder.paymentReference"
-                class="flex justify-between gap-3"
-              >
-                <span class="text-[#40493e] dark:text-[#c0c9ba]">Reference</span>
-                <span class="text-right font-semibold">{{ confirmedOrder.paymentReference }}</span>
-              </div>
-              <div
-                v-if="confirmedOrder.paymentIbanLast4"
-                class="flex justify-between gap-3"
-              >
-                <span class="text-[#40493e] dark:text-[#c0c9ba]">IBAN</span>
-                <span class="font-semibold">****{{ confirmedOrder.paymentIbanLast4 }}</span>
-              </div>
-              <div class="flex justify-between gap-3">
-                <span class="text-[#40493e] dark:text-[#c0c9ba]">Livraison</span>
-                <span class="font-semibold">{{ formatDate(confirmedOrder.estimatedDeliveryDate) }}</span>
-              </div>
-            </div>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <button
-                type="button"
-                class="btn-primary"
-                :disabled="!canSendSupplierEmail(confirmedOrder) || isSendingSupplierEmail(confirmedOrder)"
-                @click="sendSupplierEmail(confirmedOrder)"
-              >
-                <UIcon
-                  name="i-lucide-send"
-                  class="size-4"
-                />
-                {{ isSendingSupplierEmail(confirmedOrder) ? 'Envoi...' : 'Envoyer au fournisseur' }}
-              </button>
-              <a
-                href="http://localhost:8025"
-                target="_blank"
-                rel="noreferrer"
-                class="btn-secondary"
-              >
-                <UIcon
-                  name="i-lucide-mail-open"
-                  class="size-4"
-                />
-                Mailpit
-              </a>
-              <button
-                type="button"
-                class="btn-secondary"
-                @click="activeStep = 'history'"
-              >
-                Voir historique
-              </button>
-              <NuxtLink
-                to="/"
-                class="btn-secondary"
-              >
-                Dashboard
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        v-if="activeStep === 'history'"
-        class="app-section"
-      >
-        <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p class="app-eyebrow">
-              Historique achats
-            </p>
-            <h2 class="app-section-title mt-1">
-              Commandes fournisseurs
-            </h2>
-          </div>
-          <span class="app-pill">{{ filteredOrders.length }} / {{ purchaseOrderStore.items.length }} commande(s)</span>
-        </div>
-
-        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
-          <input
-            v-model="orderFilters.search"
-            class="app-input"
-            type="search"
-            placeholder="Rechercher numero, fournisseur, ingredient"
-            aria-label="Rechercher une commande"
-          >
-          <select
-            v-model="orderFilters.supplier"
-            class="app-input"
-            aria-label="Filtrer historique par fournisseur"
-          >
-            <option value="all">
-              Tous fournisseurs
-            </option>
-            <option
-              v-for="supplier in supplierStore.items"
-              :key="supplier._id"
-              :value="supplier._id"
-            >
-              {{ supplier.name }}
-            </option>
-          </select>
-          <select
-            v-model="orderFilters.status"
-            class="app-input"
-            aria-label="Filtrer historique par statut"
-          >
-            <option value="all">
-              Tous statuts
-            </option>
-            <option
-              v-for="status in statusOptions"
-              :key="status"
-              :value="status"
-            >
-              {{ getStatusLabel(status) }}
-            </option>
-          </select>
-          <select
-            v-model="orderFilters.period"
-            class="app-input"
-            aria-label="Filtrer historique par periode"
-          >
-            <option value="all">
-              Toute periode
-            </option>
-            <option value="7">
-              7 derniers jours
-            </option>
-            <option value="30">
-              30 derniers jours
-            </option>
-            <option value="90">
-              90 derniers jours
-            </option>
-          </select>
-          <button
-            type="button"
-            class="btn-secondary"
-            @click="resetOrderFilters"
-          >
-            Reset
-          </button>
-        </div>
-
-        <div class="mt-4 grid gap-3">
-          <article
-            v-for="order in filteredOrders"
-            :key="order._id"
-            class="rounded-lg border border-[#c0c9ba]/30 bg-white p-4 dark:border-white/10 dark:bg-[#1a1c1c]"
-          >
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <div class="flex flex-wrap gap-2">
-                  <span
-                    class="inline-flex rounded-md border px-2.5 py-1 text-xs font-semibold"
-                    :class="getStatusClass(order.status)"
-                  >
-                    {{ getStatusLabel(order.status) }}
-                  </span>
-                  <span class="app-pill">{{ order.orderNumber || order._id }}</span>
-                  <span class="app-pill">{{ formatDate(order.created_at) }}</span>
-                </div>
-                <h3 class="mt-3 font-semibold text-[#1a1c1c] dark:text-white">
-                  {{ getOrderSupplierNames(order) }}
-                </h3>
-                <p class="mt-1 text-sm text-[#40493e] dark:text-[#c0c9ba]">
-                  {{ order.items.length }} article(s), total {{ formatCurrency(order.totalInclTax || order.totalAmount) }}
-                </p>
-                <p
-                  v-if="order.internalComment || order.notes"
-                  class="mt-1 text-sm text-[#40493e] dark:text-[#c0c9ba]"
-                >
-                  {{ order.internalComment || order.notes }}
-                </p>
-                <p
-                  v-if="order.paymentReference"
-                  class="mt-1 text-sm font-semibold text-[#005013] dark:text-[#8ad986]"
-                >
-                  Virement {{ order.paymentReference }}
-                  <span v-if="order.paymentIbanLast4">- IBAN ****{{ order.paymentIbanLast4 }}</span>
-                </p>
-              </div>
-
-              <div class="flex flex-wrap gap-2 lg:justify-end">
-                <button
-                  type="button"
-                  class="btn-secondary"
-                  :disabled="!canSendSupplierEmail(order) || isSendingSupplierEmail(order)"
-                  @click="sendSupplierEmail(order)"
-                >
-                  <UIcon
-                    name="i-lucide-send"
-                    class="size-4"
-                  />
-                  {{ isSendingSupplierEmail(order) ? 'Envoi...' : 'Mail fournisseur' }}
-                </button>
-                <button
-                  v-if="order.status === 'pending_payment'"
-                  type="button"
-                  class="btn-primary"
-                  @click="payExistingOrder(order)"
-                >
-                  Payer
-                </button>
-                <button
-                  v-if="order.status === 'paid'"
-                  type="button"
-                  class="btn-secondary"
-                  @click="updateOrderStatus(order, 'delivering')"
-                >
-                  En livraison
-                </button>
-                <button
-                  v-if="order.status === 'delivering'"
-                  type="button"
-                  class="btn-secondary"
-                  @click="updateOrderStatus(order, 'delivered')"
-                >
-                  Livree
-                </button>
-                <button
-                  type="button"
-                  class="btn-danger"
-                  @click="removeOrder(order)"
-                >
-                  Supprimer
-                </button>
-              </div>
-            </div>
-
-            <div class="mt-3 grid gap-2 md:grid-cols-2">
-              <div
-                v-for="item in order.items"
-                :key="`${order._id}-${item.ingredientName}`"
-                class="flex items-center justify-between gap-3 rounded-lg bg-[#f3f3f3] px-3 py-2 text-sm dark:bg-[#2f3131]"
-              >
-                <span class="font-medium text-[#1a1c1c] dark:text-white">{{ item.ingredientName }}</span>
-                <span class="text-[#40493e] dark:text-[#c0c9ba]">
-                  {{ formatQuantity(item.quantity, item.unit) }} - {{ formatCurrency(item.lineTotal) }}
-                </span>
-              </div>
-            </div>
-          </article>
-
-          <div
-            v-if="filteredOrders.length === 0"
-            class="rounded-lg border border-dashed border-[#c0c9ba]/40 bg-[#f3f3f3] p-6 text-center text-sm text-[#40493e] dark:border-white/10 dark:bg-[#1a1c1c] dark:text-[#c0c9ba]"
-          >
-            Aucune commande fournisseur ne correspond aux filtres.
-          </div>
-        </div>
       </section>
     </template>
   </div>

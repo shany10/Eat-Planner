@@ -2,7 +2,8 @@ import "dotenv/config";
 import { connectMongoose, closeMongoose } from "../src/db/mangoose";
 import { businessSeeder } from "./businessSeeder";
 import { userSeeder } from "./userSeeder";
-import { IngredientModel, PurchaseOrderModel, SupplierModel, UserModel } from "../src/models";
+import { ensureUserAccessBootstrap } from "../src/services/userAccessBootstrap";
+import { DishModel, IngredientModel, PurchaseOrderModel, SupplierModel, UserModel } from "../src/models";
 
 if (!process.env.MONGODB_URI) {
   console.error("MONGODB_URI is not defined in environment variables.");
@@ -15,6 +16,7 @@ async function clearDatabase() {
   console.log("\nClearing existing data...");
 
   await PurchaseOrderModel.deleteMany({});
+  await DishModel.deleteMany({});
   await IngredientModel.deleteMany({});
   await SupplierModel.deleteMany({});
   await UserModel.deleteMany({});
@@ -39,18 +41,27 @@ async function seedDatabase() {
     }
     const business = {
       suppliers: businessResults.flatMap(result => result.suppliers),
-      ingredients: businessResults.flatMap(result => result.ingredients)
+      ingredients: businessResults.flatMap(result => result.ingredients),
+      dishes: businessResults.flatMap(result => result.dishes),
+      orders: businessResults.flatMap(result => result.orders)
     };
+
+    // Restore the demo supplier-portal account (login + linked Supplier) that
+    // the wipe above removed, using the shared bootstrap as single source.
+    await ensureUserAccessBootstrap();
 
     console.log("\nDatabase seeding completed successfully!");
     console.log("\nSummary:");
     console.log(`   - Users: ${users.length}`);
     console.log(`   - Suppliers: ${business.suppliers.length}`);
     console.log(`   - Ingredients: ${business.ingredients.length}`);
+    console.log(`   - Dishes: ${business.dishes.length}`);
+    console.log(`   - Purchase orders: ${business.orders.length}`);
     console.log("\nDemo accounts:");
     console.log(`   Admin: ${process.env.ADMIN_EMAIL ?? "admin@eatplanner.local"} / ${process.env.ADMIN_PASSWORD ?? "Admin123!"}`);
     console.log("   Manager: jean.manager@eatplanner.local / Manager123!");
     console.log("   Manager: camille.manager@eatplanner.local / Manager123!");
+    console.log(`   Supplier: ${process.env.SUPPLIER_PORTAL_EMAIL ?? "tovincentngo@gmail.com"} / ${process.env.SUPPLIER_PORTAL_PASSWORD ?? "Fournisseur123!"}`);
   } catch (error) {
     console.error("\nError seeding database:", error);
     process.exit(1);

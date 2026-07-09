@@ -6,6 +6,8 @@ import {
   BankTransferPaymentInput,
   createPurchaseOrderBody,
   CreatePurchaseOrderInput,
+  receivePurchaseOrderBody,
+  ReceivePurchaseOrderInput,
   updatePurchaseOrderBody,
   updatePurchaseOrderStatusBody,
   UpdatePurchaseOrderStatusInput
@@ -671,6 +673,68 @@ purchaseOrderRouter.patch(
     }
 
     res.json(order);
+  }
+);
+
+// Goods reception: marks the order delivered and increments each ingredient's
+// stock by the received quantity. `receivedAt` guards against applying the
+// stock movement twice for the same order.
+purchaseOrderRouter.post(
+  "/:id/receive",
+  authMiddleware,
+  roleMiddleware(["admin", "manager"]),
+  validateMiddleware({ body: receivePurchaseOrderBody }),
+  async (req, res): Promise<void> => {
+    const user = await loadRequestUser(req);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const payload = req.body as ReceivePurchaseOrderInput;
+
+    const order = await PurchaseOrderModel.findOne(buildAccountScope(user, { _id: req.params.id })).exec();
+    if (!order) {
+      res.status(404).json({ error: "Purchase order not found" });
+      return;
+    }
+
+    if (order.status === "cancelled") {
+      res.status(400).json({ error: "Commande annulee, reception impossible" });
+      return;
+    }
+
+    if (order.receivedAt) {
+      res.status(400).json({ error: "Commande deja receptionnee" });
+      return;
+    }
+
+    const adjustedByIngredient = new Map(
+      payload.items.map(item => [item.ingredient, item.receivedQuantity])
+    );
+
+    let updatedIngredients = 0;
+    for (const item of order.items) {
+      const ingredientId = String(item.ingredient);
+      const received = adjustedByIngredient.has(ingredientId)
+        ? adjustedByIngredient.get(ingredientId)!
+        : item.quantity;
+
+      if (received > 0) {
+        const result = await IngredientModel.updateOne(
+          buildAccountScope(user, { _id: ingredientId }),
+          { $inc: { stockQuantity: received } }
+        ).exec();
+        updatedIngredients += result.modifiedCount ?? 0;
+      }
+    }
+
+    order.status = "delivered";
+    order.receivedAt = new Date();
+    await order.save();
+
+    const populatedOrder = await order.populate(orderPopulate);
+    res.json({ ok: true, updatedIngredients, order: populatedOrder });
   }
 );
 

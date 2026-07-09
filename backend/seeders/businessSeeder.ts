@@ -1,6 +1,15 @@
-import { IngredientModel, SupplierModel } from "../src/models";
-import { BusinessUnit, IngredientCategory } from "../src/types/business";
-import { Types } from "mongoose";
+import { DishModel, IngredientModel, PurchaseOrderModel, SupplierModel } from "../src/models";
+import { BusinessUnit, IngredientCategory, PaymentMethod, PurchaseOrderStatus } from "../src/types/business";
+import { InsertManyOptions, Types } from "mongoose";
+
+// Mongoose insertMany returns hydrated documents whose inferred type is not
+// portable across packages; the callers only need counts, so keep it loose.
+type BusinessSeedResult = {
+  suppliers: unknown[];
+  ingredients: unknown[];
+  dishes: unknown[];
+  orders: unknown[];
+};
 
 type SupplierSeed = {
   name: string;
@@ -225,15 +234,313 @@ const ingredients: IngredientSeed[] = [
   { name: "Liquide vaisselle pro", category: "Produits d entretien", unit: "l", orderUnit: "carton", purchasePrice: 3.2, stockQuantity: 10, minimumStock: 8, averageDailyUsage: 0.8, minimumOrderQuantity: 6, supplierName: "TransGourmet", active: true }
 ];
 
-export const businessSeeder = async (owner?: unknown) => {
+type RecipeLine = {
+  ingredientName: string;
+  quantity: number;
+};
+
+type DishSeed = {
+  name: string;
+  category: string;
+  description: string;
+  targetMarginRate: number;
+  actualPriceIncludingTax: number;
+  estimatedDailyServings: number;
+  recipe: RecipeLine[];
+};
+
+// Recipes reference ingredients by name; the quantity is expressed in the
+// ingredient base unit (see the ingredients array above).
+const dishes: DishSeed[] = [
+  {
+    name: "Burger maison",
+    category: "Plats",
+    description: "Pain brioche, boeuf hache, cheddar fondu et oignons.",
+    targetMarginRate: 0.68,
+    actualPriceIncludingTax: 13.9,
+    estimatedDailyServings: 40,
+    recipe: [
+      { ingredientName: "Pain burger", quantity: 1 },
+      { ingredientName: "Boeuf hache", quantity: 0.15 },
+      { ingredientName: "Fromage rape", quantity: 0.03 },
+      { ingredientName: "Oignons jaunes", quantity: 0.02 },
+      { ingredientName: "Sauce tomate", quantity: 0.03 }
+    ]
+  },
+  {
+    name: "Frites maison",
+    category: "Accompagnements",
+    description: "Frites croustillantes, cuisson double.",
+    targetMarginRate: 0.74,
+    actualPriceIncludingTax: 4.5,
+    estimatedDailyServings: 60,
+    recipe: [
+      { ingredientName: "Frites surgelees", quantity: 0.2 },
+      { ingredientName: "Sel fin", quantity: 0.005 }
+    ]
+  },
+  {
+    name: "Penne bolognaise",
+    category: "Plats",
+    description: "Penne, sauce bolognaise maison et fromage rape.",
+    targetMarginRate: 0.7,
+    actualPriceIncludingTax: 12.5,
+    estimatedDailyServings: 30,
+    recipe: [
+      { ingredientName: "Pates penne", quantity: 0.12 },
+      { ingredientName: "Boeuf hache", quantity: 0.1 },
+      { ingredientName: "Tomates concassees", quantity: 0.15 },
+      { ingredientName: "Oignons jaunes", quantity: 0.03 },
+      { ingredientName: "Huile d olive", quantity: 0.01 },
+      { ingredientName: "Fromage rape", quantity: 0.02 }
+    ]
+  },
+  {
+    name: "Pave de saumon, riz",
+    category: "Plats",
+    description: "Saumon poele, riz basmati et creme legere.",
+    targetMarginRate: 0.62,
+    actualPriceIncludingTax: 16.9,
+    estimatedDailyServings: 20,
+    recipe: [
+      { ingredientName: "Saumon frais", quantity: 0.15 },
+      { ingredientName: "Riz basmati", quantity: 0.1 },
+      { ingredientName: "Creme liquide", quantity: 0.05 },
+      { ingredientName: "Carottes", quantity: 0.05 }
+    ]
+  },
+  {
+    name: "Cabillaud, pommes vapeur",
+    category: "Plats",
+    description: "Dos de cabillaud, pommes de terre et beurre.",
+    targetMarginRate: 0.6,
+    actualPriceIncludingTax: 17.5,
+    estimatedDailyServings: 15,
+    recipe: [
+      { ingredientName: "Cabillaud", quantity: 0.16 },
+      { ingredientName: "Pommes de terre", quantity: 0.2 },
+      { ingredientName: "Beurre doux", quantity: 0.02 },
+      { ingredientName: "Sel fin", quantity: 0.005 }
+    ]
+  },
+  {
+    name: "Poulet roti, frites",
+    category: "Plats",
+    description: "Cuisse de poulet fermier roti et frites maison.",
+    targetMarginRate: 0.66,
+    actualPriceIncludingTax: 14.5,
+    estimatedDailyServings: 30,
+    recipe: [
+      { ingredientName: "Poulet fermier", quantity: 0.25 },
+      { ingredientName: "Frites surgelees", quantity: 0.2 },
+      { ingredientName: "Huile d olive", quantity: 0.01 }
+    ]
+  },
+  {
+    name: "Salade Cesar",
+    category: "Entrees",
+    description: "Salade, poulet grille, oeuf et copeaux de fromage.",
+    targetMarginRate: 0.7,
+    actualPriceIncludingTax: 11.5,
+    estimatedDailyServings: 25,
+    recipe: [
+      { ingredientName: "Salade verte", quantity: 1 },
+      { ingredientName: "Poulet fermier", quantity: 0.1 },
+      { ingredientName: "Oeufs frais", quantity: 1 },
+      { ingredientName: "Fromage rape", quantity: 0.02 }
+    ]
+  },
+  {
+    name: "Pizza Margherita",
+    category: "Plats",
+    description: "Pate maison, tomate, mozzarella et huile d olive.",
+    targetMarginRate: 0.72,
+    actualPriceIncludingTax: 12.9,
+    estimatedDailyServings: 35,
+    recipe: [
+      { ingredientName: "Farine T55", quantity: 0.25 },
+      { ingredientName: "Tomates concassees", quantity: 0.1 },
+      { ingredientName: "Mozzarella", quantity: 0.12 },
+      { ingredientName: "Huile d olive", quantity: 0.01 },
+      { ingredientName: "Levure boulangere", quantity: 0.005 }
+    ]
+  },
+  {
+    name: "Croque-monsieur",
+    category: "Snacks",
+    description: "Jambon blanc, fromage fondu et beurre.",
+    targetMarginRate: 0.68,
+    actualPriceIncludingTax: 8.9,
+    estimatedDailyServings: 40,
+    recipe: [
+      { ingredientName: "Pain burger", quantity: 2 },
+      { ingredientName: "Jambon blanc", quantity: 0.08 },
+      { ingredientName: "Fromage rape", quantity: 0.05 },
+      { ingredientName: "Beurre doux", quantity: 0.01 }
+    ]
+  },
+  {
+    name: "Mousse au chocolat",
+    category: "Desserts",
+    description: "Chocolat noir 70 %, oeufs et sucre de canne.",
+    targetMarginRate: 0.75,
+    actualPriceIncludingTax: 6.5,
+    estimatedDailyServings: 30,
+    recipe: [
+      { ingredientName: "Chocolat noir 70 %", quantity: 0.06 },
+      { ingredientName: "Oeufs frais", quantity: 2 },
+      { ingredientName: "Sucre de canne", quantity: 0.03 },
+      { ingredientName: "Creme liquide", quantity: 0.05 }
+    ]
+  },
+  {
+    name: "Cafe gourmand",
+    category: "Desserts",
+    description: "Cafe, mini mousse chocolat et creme.",
+    targetMarginRate: 0.78,
+    actualPriceIncludingTax: 5.5,
+    estimatedDailyServings: 25,
+    recipe: [
+      { ingredientName: "Cafe en grains", quantity: 0.012 },
+      { ingredientName: "Chocolat noir 70 %", quantity: 0.02 },
+      { ingredientName: "Creme liquide", quantity: 0.03 }
+    ]
+  },
+  {
+    name: "Riz au lait",
+    category: "Desserts",
+    description: "Riz basmati mijote au lait et sucre de canne.",
+    targetMarginRate: 0.77,
+    actualPriceIncludingTax: 5,
+    estimatedDailyServings: 20,
+    recipe: [
+      { ingredientName: "Riz basmati", quantity: 0.06 },
+      { ingredientName: "Lait entier", quantity: 0.2 },
+      { ingredientName: "Sucre de canne", quantity: 0.03 }
+    ]
+  }
+];
+
+type OrderItemSeed = {
+  ingredientName: string;
+  quantity: number;
+};
+
+type OrderSeed = {
+  supplierName: string;
+  status: PurchaseOrderStatus;
+  daysAgo: number;
+  requestedInDays: number;
+  items: OrderItemSeed[];
+  paid: boolean;
+  paymentMethod?: PaymentMethod;
+};
+
+const orders: OrderSeed[] = [
+  {
+    supplierName: "Metro Pro",
+    status: "delivered",
+    daysAgo: 12,
+    requestedInDays: -9,
+    paid: true,
+    paymentMethod: "bank_transfer",
+    items: [
+      { ingredientName: "Riz basmati", quantity: 20 },
+      { ingredientName: "Tomates concassees", quantity: 24 },
+      { ingredientName: "Eau minerale", quantity: 192 },
+      { ingredientName: "Sel fin", quantity: 5 }
+    ]
+  },
+  {
+    supplierName: "Boucherie Centrale Pro",
+    status: "paid",
+    daysAgo: 5,
+    requestedInDays: 1,
+    paid: true,
+    paymentMethod: "bank_transfer",
+    items: [
+      { ingredientName: "Poulet fermier", quantity: 20 },
+      { ingredientName: "Boeuf hache", quantity: 16 },
+      { ingredientName: "Jambon blanc", quantity: 10 }
+    ]
+  },
+  {
+    supplierName: "PassionFroid",
+    status: "delivering",
+    daysAgo: 3,
+    requestedInDays: 1,
+    paid: true,
+    paymentMethod: "payment_on_delivery",
+    items: [
+      { ingredientName: "Frites surgelees", quantity: 40 },
+      { ingredientName: "Saumon frais", quantity: 10 }
+    ]
+  },
+  {
+    supplierName: "Laiterie du Val",
+    status: "pending_payment",
+    daysAgo: 2,
+    requestedInDays: 2,
+    paid: false,
+    items: [
+      { ingredientName: "Beurre doux", quantity: 10 },
+      { ingredientName: "Lait entier", quantity: 24 },
+      { ingredientName: "Creme liquide", quantity: 12 },
+      { ingredientName: "Fromage rape", quantity: 10 },
+      { ingredientName: "Mozzarella", quantity: 10 }
+    ]
+  },
+  {
+    supplierName: "Maree Express",
+    status: "pending_validation",
+    daysAgo: 1,
+    requestedInDays: 2,
+    paid: false,
+    items: [
+      { ingredientName: "Cabillaud", quantity: 10 },
+      { ingredientName: "Saumon frais", quantity: 10 }
+    ]
+  },
+  {
+    supplierName: "Fournil Distribution",
+    status: "draft",
+    daysAgo: 0,
+    requestedInDays: 1,
+    paid: false,
+    items: [
+      { ingredientName: "Farine T55", quantity: 50 },
+      { ingredientName: "Pain burger", quantity: 120 },
+      { ingredientName: "Levure boulangere", quantity: 2 }
+    ]
+  }
+];
+
+const VAT_RATE = 0.1;
+
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function daysFromNow(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date;
+}
+
+function buildOrderNumber(reference: Date, sequence: number) {
+  const datePart = reference.toISOString().slice(0, 10).replace(/-/g, "");
+  return `CMD-${datePart}-${String(1000 + sequence)}`;
+}
+
+export const businessSeeder = async (owner?: unknown): Promise<BusinessSeedResult> => {
   const ownerId = owner ? new Types.ObjectId(String(owner)) : null;
-  console.log(`Seeding suppliers and ingredients${ownerId ? ` for user ${ownerId}` : ""}...`);
+  console.log(`Seeding suppliers, ingredients, dishes and orders${ownerId ? ` for user ${ownerId}` : ""}...`);
 
   const createdSuppliers = await SupplierModel.insertMany(suppliers.map(supplier => ({
     ...supplier,
     owner: ownerId
   })));
-  const supplierByName = new Map(createdSuppliers.map(supplier => [supplier.name, supplier._id]));
+  const supplierByName = new Map(createdSuppliers.map(supplier => [supplier.name, supplier]));
 
   const missingSupplierNames = ingredients
     .map(ingredient => ingredient.supplierName)
@@ -256,17 +563,136 @@ export const businessSeeder = async (owner?: unknown) => {
       minimumStock: ingredient.minimumStock,
       averageDailyUsage: ingredient.averageDailyUsage,
       minimumOrderQuantity: ingredient.minimumOrderQuantity,
-      supplier,
+      supplier: supplier?._id,
       owner: ownerId,
       active: ingredient.active
     };
   }));
 
+  const ingredientByName = new Map(createdIngredients.map(ingredient => [ingredient.name, ingredient]));
+
+  const missingRecipeIngredients = dishes
+    .flatMap(dish => dish.recipe.map(line => line.ingredientName))
+    .filter(name => !ingredientByName.has(name));
+
+  if (missingRecipeIngredients.length > 0) {
+    throw new Error(`Missing ingredients in dish recipes: ${[...new Set(missingRecipeIngredients)].join(", ")}`);
+  }
+
+  const createdDishes = await DishModel.insertMany(dishes.map(dish => ({
+    name: dish.name,
+    category: dish.category,
+    description: dish.description,
+    targetMarginRate: dish.targetMarginRate,
+    actualPriceIncludingTax: dish.actualPriceIncludingTax,
+    estimatedDailyServings: dish.estimatedDailyServings,
+    owner: ownerId,
+    active: true,
+    ingredients: dish.recipe.map((line) => {
+      const ingredient = ingredientByName.get(line.ingredientName)!;
+      return {
+        ingredient: ingredient._id,
+        quantity: line.quantity,
+        unit: ingredient.unit
+      };
+    })
+  })));
+
+  const missingOrderIngredients = orders
+    .flatMap(order => order.items.map(item => item.ingredientName))
+    .filter(name => !ingredientByName.has(name));
+
+  if (missingOrderIngredients.length > 0) {
+    throw new Error(`Missing ingredients in orders: ${[...new Set(missingOrderIngredients)].join(", ")}`);
+  }
+
+  const orderDocuments = orders.map((order, index) => {
+    const supplier = supplierByName.get(order.supplierName)!;
+    const createdAt = daysFromNow(-order.daysAgo);
+
+    const items = order.items.map((item) => {
+      const ingredient = ingredientByName.get(item.ingredientName)!;
+      const unitPrice = roundMoney(ingredient.purchasePrice);
+      const lineTotal = roundMoney(item.quantity * unitPrice);
+
+      return {
+        ingredient: ingredient._id,
+        ingredientName: ingredient.name,
+        category: ingredient.category,
+        supplier: supplier._id,
+        supplierName: supplier.name,
+        quantity: item.quantity,
+        unit: ingredient.orderUnit,
+        unitPrice,
+        stockQuantity: ingredient.stockQuantity,
+        minimumStock: ingredient.minimumStock,
+        recommendedQuantity: item.quantity,
+        lineTotal
+      };
+    });
+
+    const itemsTotal = roundMoney(items.reduce((sum, item) => sum + item.lineTotal, 0));
+    const deliveryFee = roundMoney(supplier.deliveryFee);
+    const totalExclTax = roundMoney(itemsTotal + deliveryFee);
+    const vatAmount = roundMoney(totalExclTax * VAT_RATE);
+    const totalInclTax = roundMoney(totalExclTax + vatAmount);
+    const orderNumber = buildOrderNumber(createdAt, index);
+
+    const validated = order.status !== "draft" && order.status !== "pending_validation";
+
+    const document: Record<string, unknown> = {
+      orderNumber,
+      supplier: supplier._id,
+      suppliers: [supplier._id],
+      owner: ownerId,
+      status: order.status,
+      requestedDeliveryDate: daysFromNow(order.requestedInDays).toISOString().slice(0, 10),
+      estimatedDeliveryDate: daysFromNow(order.requestedInDays).toISOString().slice(0, 10),
+      deliveryAddress: "Restaurant Eat Planner, 12 rue des Chefs, 75002 Paris",
+      internalComment: "",
+      notes: "",
+      items,
+      deliveryFee,
+      vatRate: VAT_RATE,
+      totalExclTax,
+      vatAmount,
+      totalInclTax,
+      totalAmount: totalInclTax,
+      managementScoreDelta: 0,
+      badges: [] as string[],
+      validatedAt: validated ? createdAt : null,
+      created_at: createdAt,
+      updated_at: createdAt
+    };
+
+    if (order.paid) {
+      const paymentMethod = order.paymentMethod ?? "bank_transfer";
+      document.paymentMethod = paymentMethod;
+      document.paymentReference = `VIR-${orderNumber}`;
+      document.paymentAccountHolder = "Eat Planner";
+      document.paymentIbanLast4 = paymentMethod === "bank_transfer" ? "4021" : "";
+      document.paymentBic = paymentMethod === "bank_transfer" ? "AGRIFRPP" : "";
+      document.paymentExecutionDate = createdAt.toISOString().slice(0, 10);
+      document.paymentNote = "";
+      document.paidAt = createdAt;
+    }
+
+    return document;
+  });
+
+  // timestamps: false so the backdated created_at/updated_at above are kept and
+  // the order history shows a realistic spread of dates instead of "now".
+  const createdOrders = await PurchaseOrderModel.insertMany(orderDocuments, { timestamps: false } as unknown as InsertManyOptions);
+
   console.log(`${createdSuppliers.length} suppliers created`);
   console.log(`${createdIngredients.length} ingredients created`);
+  console.log(`${createdDishes.length} dishes created`);
+  console.log(`${createdOrders.length} purchase orders created`);
 
   return {
     suppliers: createdSuppliers,
-    ingredients: createdIngredients
+    ingredients: createdIngredients,
+    dishes: createdDishes,
+    orders: createdOrders
   };
 };

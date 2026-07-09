@@ -29,6 +29,15 @@ export const updatePurchaseOrderStatusBody = z.object({
   status: z.enum(PURCHASE_ORDER_STATUSES)
 });
 
+export const receivePurchaseOrderBody = z.object({
+  // Optional per-ingredient adjustment; when omitted the ordered quantity is
+  // received as-is. Used to increment ingredient stock on delivery.
+  items: z.array(z.object({
+    ingredient: z.string().min(1),
+    receivedQuantity: z.number().nonnegative()
+  })).optional().default([])
+});
+
 export const bankTransferPaymentBody = z.object({
   accountHolder: z.string().min(2).max(120),
   iban: z.string().min(14).max(42).regex(/^[A-Za-z]{2}[0-9A-Za-z ]+$/),
@@ -42,4 +51,5 @@ export const bankTransferPaymentBody = z.object({
 export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderBody>;
 export type UpdatePurchaseOrderInput = z.infer<typeof updatePurchaseOrderBody>;
 export type UpdatePurchaseOrderStatusInput = z.infer<typeof updatePurchaseOrderStatusBody>;
+export type ReceivePurchaseOrderInput = z.infer<typeof receivePurchaseOrderBody>;
 export type BankTransferPaymentInput = z.infer<typeof bankTransferPaymentBody>;

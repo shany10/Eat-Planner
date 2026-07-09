@@ -49,7 +49,7 @@ export function useBusinessNav() {
           { to: '/ingredients', label: 'Ingredients', hint: 'Matieres premieres et prix achat', icon: 'i-lucide-wheat' },
           { to: '/suppliers', label: 'Fournisseurs', hint: 'Partenaires et contacts achats', icon: 'i-lucide-truck' },
           { to: '/supplier-messages', label: 'Messagerie', hint: 'Emails fournisseurs via Mailpit', icon: 'i-lucide-mails' },
-          { to: '/purchase-orders', label: 'Panier achats', hint: 'Commandes ingredients fournisseurs', icon: 'i-lucide-shopping-cart' },
+          { to: '/purchase-orders', label: 'Achats', hint: 'Commandes & paiements fournisseurs', icon: 'i-lucide-shopping-cart' },
           { to: '/dishes', label: 'Plats', hint: 'Recettes et prix conseilles', icon: 'i-lucide-utensils' },
           { to: '/charges', label: 'Charges', hint: 'Couts fixes et variables', icon: 'i-lucide-receipt' },
           { to: '/sales', label: 'Ventes', hint: 'Tickets et historique', icon: 'i-lucide-banknote' }
