@@ -283,6 +283,7 @@ Puis :
 ```bash
 docker compose up -d --build
 docker compose ps
+docker compose exec backend npm run seed:business
 ```
 
 ## Notes
