@@ -35,7 +35,7 @@ const receivedCount = computed(() => messageStore.items.filter(message => messag
 const failedCount = computed(() => messageStore.items.filter(message => message.status === 'failed').length)
 const selectedSupplier = computed(() =>
   supplierStore.items.find(supplier => supplier._id === form.supplier)
-    ?? getMessageSupplier(messageStore.items[0])
+  ?? getMessageSupplier(messageStore.items[0])
 )
 const canSend = computed(() => {
   const hasText = form.subject.trim().length >= 2 && form.body.trim().length >= 2 && !sending.value
@@ -237,14 +237,20 @@ onBeforeUnmount(() => {
             to="/suppliers"
             class="btn-secondary"
           >
-            <UIcon name="i-lucide-truck" class="size-4" />
+            <UIcon
+              name="i-lucide-truck"
+              class="size-4"
+            />
             Fournisseurs
           </NuxtLink>
           <NuxtLink
             to="/supplier-messages/call"
             class="btn-secondary"
           >
-            <UIcon name="i-lucide-video" class="size-4" />
+            <UIcon
+              name="i-lucide-video"
+              class="size-4"
+            />
             Visio
           </NuxtLink>
           <a
@@ -254,7 +260,10 @@ onBeforeUnmount(() => {
             rel="noreferrer"
             class="btn-primary"
           >
-            <UIcon name="i-lucide-inbox" class="size-4" />
+            <UIcon
+              name="i-lucide-inbox"
+              class="size-4"
+            />
             Mailpit
           </a>
         </div>
@@ -285,10 +294,16 @@ onBeforeUnmount(() => {
               {{ isSupplierPortal ? 'Repondre au restaurant' : 'Contacter un fournisseur' }}
             </h2>
           </div>
-          <UIcon name="i-lucide-send" class="size-5 text-[#825500] dark:text-[#feb236]" />
+          <UIcon
+            name="i-lucide-send"
+            class="size-5 text-[#825500] dark:text-[#feb236]"
+          />
         </div>
 
-        <form class="space-y-4" @submit.prevent="sendMessage">
+        <form
+          class="space-y-4"
+          @submit.prevent="sendMessage"
+        >
           <label
             v-if="!isSupplierPortal"
             class="block space-y-1.5"
@@ -336,7 +351,10 @@ onBeforeUnmount(() => {
             v-if="selectedSupplier"
             class="app-inset flex items-start gap-3"
           >
-            <UIcon name="i-lucide-message-circle" class="mt-0.5 size-4 text-[#005013] dark:text-[#8ad986]" />
+            <UIcon
+              name="i-lucide-message-circle"
+              class="mt-0.5 size-4 text-[#005013] dark:text-[#8ad986]"
+            />
             <div class="min-w-0 text-sm">
               <p class="font-bold text-[#1a1c1c] dark:text-white">
                 {{ selectedSupplier.name }}
@@ -359,7 +377,10 @@ onBeforeUnmount(() => {
             class="btn-primary w-full"
             :disabled="!canSend"
           >
-            <UIcon name="i-lucide-send" class="size-4" />
+            <UIcon
+              name="i-lucide-send"
+              class="size-4"
+            />
             {{ sending ? 'Envoi...' : (isSupplierPortal ? 'Envoyer la reponse' : 'Envoyer le message') }}
           </button>
         </form>
@@ -379,7 +400,10 @@ onBeforeUnmount(() => {
             :disabled="messageStore.pending"
             @click="refreshMessages(false)"
           >
-            <UIcon name="i-lucide-refresh-cw" class="size-4" />
+            <UIcon
+              name="i-lucide-refresh-cw"
+              class="size-4"
+            />
             Actualiser
           </button>
         </div>

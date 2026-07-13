@@ -289,23 +289,39 @@ onMounted(loadPage)
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div class="bg-[#f3f3f3] dark:bg-[#1a1c1c] p-6 rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5">
           <span class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">Utilisateurs</span>
-          <div class="text-3xl font-black text-[#1a1c1c] dark:text-white my-1">{{ users.length }}</div>
-          <div class="text-xs text-[#40493e] dark:text-[#c0c9ba]">Tous les comptes de la plateforme</div>
+          <div class="text-3xl font-black text-[#1a1c1c] dark:text-white my-1">
+            {{ users.length }}
+          </div>
+          <div class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
+            Tous les comptes de la plateforme
+          </div>
         </div>
         <div class="bg-[#f3f3f3] dark:bg-[#1a1c1c] p-6 rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5">
           <span class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">Managers</span>
-          <div class="text-3xl font-black text-[#1a1c1c] dark:text-white my-1">{{ managerCount }}</div>
-          <div class="text-xs text-[#40493e] dark:text-[#c0c9ba]">Comptes metier avec acces complet produit</div>
+          <div class="text-3xl font-black text-[#1a1c1c] dark:text-white my-1">
+            {{ managerCount }}
+          </div>
+          <div class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
+            Comptes metier avec acces complet produit
+          </div>
         </div>
         <div class="bg-[#f3f3f3] dark:bg-[#1a1c1c] p-6 rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5">
           <span class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">Admin</span>
-          <div class="text-3xl font-black text-[#1a1c1c] dark:text-white my-1">{{ adminAccount ? 1 : 0 }}</div>
-          <div class="text-xs text-[#40493e] dark:text-[#c0c9ba]">Compte admin principal unique</div>
+          <div class="text-3xl font-black text-[#1a1c1c] dark:text-white my-1">
+            {{ adminAccount ? 1 : 0 }}
+          </div>
+          <div class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
+            Compte admin principal unique
+          </div>
         </div>
         <div class="bg-[#f3f3f3] dark:bg-[#1a1c1c] p-6 rounded-[2.5rem] border border-[#c0c9ba]/20 dark:border-white/5">
           <span class="text-[10px] font-bold uppercase text-[#40493e]/70 dark:text-[#c0c9ba]/70">Inactifs</span>
-          <div class="text-3xl font-black text-[#1a1c1c] dark:text-white my-1">{{ inactiveCount }}</div>
-          <div class="text-xs text-[#40493e] dark:text-[#c0c9ba]">Comptes suspendus</div>
+          <div class="text-3xl font-black text-[#1a1c1c] dark:text-white my-1">
+            {{ inactiveCount }}
+          </div>
+          <div class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
+            Comptes suspendus
+          </div>
         </div>
       </div>
 

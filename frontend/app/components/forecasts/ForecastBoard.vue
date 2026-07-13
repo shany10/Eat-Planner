@@ -117,11 +117,21 @@ function submitCorrection(dish: ForecastDishView) {
         <table class="w-full min-w-[760px] text-left text-sm">
           <thead class="border-b border-[#c0c9ba]/20 text-xs uppercase text-[#40493e] dark:border-white/10 dark:text-[#c0c9ba]">
             <tr>
-              <th class="px-3 py-2 font-bold">Plat</th>
-              <th class="px-3 py-2 font-bold">Quantite</th>
-              <th class="px-3 py-2 font-bold">Confiance</th>
-              <th class="px-3 py-2 font-bold">Prix</th>
-              <th class="px-3 py-2 font-bold">CA</th>
+              <th class="px-3 py-2 font-bold">
+                Plat
+              </th>
+              <th class="px-3 py-2 font-bold">
+                Quantite
+              </th>
+              <th class="px-3 py-2 font-bold">
+                Confiance
+              </th>
+              <th class="px-3 py-2 font-bold">
+                Prix
+              </th>
+              <th class="px-3 py-2 font-bold">
+                CA
+              </th>
               <th
                 v-if="forecast.persisted && forecast._id"
                 class="px-3 py-2 font-bold"

@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "crypto";
 import { Router } from "express";
-import { validateMiddleware, authMiddleware, roleMiddleware } from "../middlewares";
+import { validateMiddleware, authMiddleware, roleMiddleware, authRateLimiter } from "../middlewares";
 import {
   createUserBody,
   CreateUserInput,
@@ -43,6 +43,15 @@ type GoogleTokenInfo = {
 };
 
 const userRouter = Router();
+
+// Brute-force / abus : on limite les endpoints d'authentification non
+// authentifiés. Le prefixe couvre login (/auth) + 2FA de connexion (/auth/2fa),
+// l'inscription, l'OAuth Google et le forgot/reset de mot de passe (/password).
+userRouter.use("/auth", authRateLimiter);
+userRouter.use("/register", authRateLimiter);
+userRouter.use("/oauth", authRateLimiter);
+userRouter.use("/password", authRateLimiter);
+
 const TOTP_ISSUER = process.env.TOTP_ISSUER ?? "EatPlanner";
 const APP_URL = process.env.APP_URL ?? process.env.FRONTEND_BASE_URL ?? "http://localhost:3001";
 const PASSWORD_RESET_TTL_MINUTES = Number(process.env.PASSWORD_RESET_TTL_MINUTES ?? 30);

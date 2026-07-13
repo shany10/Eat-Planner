@@ -1,6 +1,7 @@
 import './instrument';
 import * as Sentry from '@sentry/node';
 import express from 'express';
+import helmet from 'helmet';
 import { createServer } from 'http';
 import {
   userRouter,
@@ -10,7 +11,8 @@ import {
   chargeRouter,
   saleRouter,
   forecastRouter,
-  purchaseOrderRouter
+  purchaseOrderRouter,
+  debugRouter
 } from './src/routes';
 import { connectMongoose } from "./src/db/mangoose";
 import { attachVideoSignaling } from "./src/realtime/videoSignaling";
@@ -20,6 +22,15 @@ import "dotenv/config";
 const app = express();
 const httpServer = createServer(app);
 
+// En prod l'app tourne derriere un reverse proxy (TLS). Sans ceci, req.ip vaut
+// l'IP du proxy et le rate-limit s'appliquerait globalement au lieu de par
+// client. "1" = un seul proxy de confiance en amont.
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
+// Headers de sécurité HTTP (API JSON) : X-Content-Type-Options, HSTS, etc.
+app.use(helmet());
 app.use(express.json());
 
 app.get('/', (req, res) => {    
@@ -34,6 +45,7 @@ app.use('/charges', chargeRouter);
 app.use('/sales', saleRouter);
 app.use('/forecasts', forecastRouter);
 app.use('/purchase-orders', purchaseOrderRouter);
+app.use('/debug', debugRouter);
 
 // Must be registered after all routes so Sentry can capture errors thrown in
 // route handlers and forward them to GlitchTip.

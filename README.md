@@ -286,6 +286,61 @@ docker compose ps
 docker compose exec backend npm run seed:business
 ```
 
+## Deploiement en production
+
+Stack prod : `docker-compose.prod.yml` (Dockerfile.prod multi-stage, user non-root,
+`NODE_ENV=production`, healthchecks, `restart: unless-stopped`). Les routes de debug
+(`/debug/error`, `/api/debug/*`) sont automatiquement desactivees hors developpement.
+
+### 1. Secrets (obligatoire avant toute exposition)
+
+Dans le `.env` de prod, remplacer TOUTES les valeurs par defaut :
+
+- `MONGO_USER` / `MONGO_PASS` (ne pas laisser `root` / `example`)
+- `JWT_SECRET`, `TOTP_ENCRYPTION_KEY`, `NUXT_SESSION_SECRET`
+- `GLITCHTIP_SECRET_KEY`, `UMAMI_APP_SECRET`
+- `GLITCHTIP_ENABLE_REGISTRATION=false` une fois le compte admin GlitchTip cree
+
+Generer un secret : `openssl rand -hex 32`.
+
+### 2. Reverse proxy + HTTPS (obligatoire)
+
+Le compose prod sert en HTTP nu (3000/3001). Mettre Caddy / Traefik / Nginx devant
+pour terminer le TLS. Sans HTTPS, la visio ne fonctionne pas (`getUserMedia` et
+`wss://` sont bloques par le navigateur).
+
+- Routage : `mydomain.com` -> `frontend:3001`, `api.mydomain.com` -> `backend:3000`
+- Binder les ports en `127.0.0.1:3000:3000` pour n'exposer que le proxy
+
+### 3. Variables prod a renseigner
+
+- `CORS_ORIGIN=https://mydomain.com`
+- `NUXT_PUBLIC_REALTIME_BASE_URL=https://api.mydomain.com`
+- Serveur TURN (`NUXT_PUBLIC_TURN_*`) : requis derriere un NAT strict, sinon la visio echoue
+- Google OAuth : vrai client id + origine autorisee = le domaine de prod
+- SMTP reel (`MAIL_MODE=smtp` + fournisseur) : Mailpit est uniquement pour le dev
+- Monitoring : les DSN Sentry / l'URL Umami doivent pointer vers des hotes joignables
+  depuis la prod (le monitoring n'est pas inclus dans `docker-compose.prod.yml`)
+
+### 4. Limites d'authentification (optionnel)
+
+Rate-limit configurable via `AUTH_RATE_LIMIT_WINDOW_MS` (defaut 15 min) et
+`AUTH_RATE_LIMIT_MAX` (defaut 20 tentatives par IP).
+
+### 5. Lancement
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Ne jamais lancer `npm run seed` en prod (il efface la base). Le compte admin est
+cree automatiquement au demarrage du backend depuis `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+
+### 6. Sauvegardes
+
+Prevoir un dump regulier du volume `mongo-data` (et des bases GlitchTip / Umami si
+elles tournent sur le meme hote).
+
 ## Notes
 
 - Le projet utilise MongoDB, donc les donnees sont stockees en NoSQL.

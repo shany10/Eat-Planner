@@ -16,6 +16,7 @@
     "@nuxt/ui": "^4.4.0",
     "@pinia/nuxt": "^0.11.3",
     "@sentry/nuxt": "^10.56.0",
+    "html2pdf.js": "^0.14.0",
     "nuxt": "^4.3.0",
     "pinia": "^3.0.4",
     "qrcode": "^1.5.4",
@@ -27,6 +28,5 @@
     "eslint": "^9.39.2",
     "typescript": "^5.9.3",
     "vue-tsc": "^3.2.4"
-  },
-  "packageManager": "pnpm@10.28.2"
+  }
 }
