@@ -8,7 +8,7 @@ import { useIngredientStore } from '~/stores/ingredients'
 import { useSupplierStore } from '~/stores/suppliers'
 
 definePageMeta({
-  middleware: 'auth'
+  middleware: 'manager'
 })
 
 const ingredientStore = useIngredientStore()

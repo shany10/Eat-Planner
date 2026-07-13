@@ -1,248 +1,248 @@
 <script setup lang="ts">
-import { getFetchErrorMessage } from "~/utils/fetch-error";
-import AppModal from "~/components/common/AppModal.vue";
-import EmptyStateCard from "~/components/common/EmptyStateCard.vue";
-import DishForm from "~/components/dishes/DishForm.vue";
-import DishTable from "~/components/dishes/DishTable.vue";
-import type { Dish, DishIngredientLine } from "~/types/business";
-import { useAuthStore } from "~/stores/auth";
-import { useDishStore } from "~/stores/dishes";
-import { useIngredientStore } from "~/stores/ingredients";
+import { getFetchErrorMessage } from '~/utils/fetch-error'
+import AppModal from '~/components/common/AppModal.vue'
+import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
+import DishForm from '~/components/dishes/DishForm.vue'
+import DishTable from '~/components/dishes/DishTable.vue'
+import type { Dish, DishIngredientLine } from '~/types/business'
+import { useAuthStore } from '~/stores/auth'
+import { useDishStore } from '~/stores/dishes'
+import { useIngredientStore } from '~/stores/ingredients'
 
 definePageMeta({
-  middleware: "auth",
-});
+  middleware: 'manager'
+})
 
-const authStore = useAuthStore();
-const dishStore = useDishStore();
-const ingredientStore = useIngredientStore();
-const appToast = useAppToast();
+const authStore = useAuthStore()
+const dishStore = useDishStore()
+const ingredientStore = useIngredientStore()
+const appToast = useAppToast()
 
-const editingDish = ref<Dish | null>(null);
-const dishModalOpen = ref(false);
-const errorMessage = ref("");
-const loading = ref(true);
-const showFilters = ref(false);
+const editingDish = ref<Dish | null>(null)
+const dishModalOpen = ref(false)
+const errorMessage = ref('')
+const loading = ref(true)
+const showFilters = ref(false)
 
 const dishFilters = reactive({
-  search: "",
-  category: "all",
-  status: "all",
-  health: "all",
-});
+  search: '',
+  category: 'all',
+  status: 'all',
+  health: 'all'
+})
 
 type DishPayload = {
-  name: string;
-  category: string;
-  description?: string;
-  targetMarginRate: number | null;
-  actualPriceIncludingTax: number;
-  estimatedDailyServings: number;
-  active?: boolean;
-  ingredients: DishIngredientLine[];
-};
+  name: string
+  category: string
+  description?: string
+  targetMarginRate: number | null
+  actualPriceIncludingTax: number
+  estimatedDailyServings: number
+  active?: boolean
+  ingredients: DishIngredientLine[]
+}
 
 type PageStat = {
-  title: string;
-  value: string | number;
-  hint: string;
-};
+  title: string
+  value: string | number
+  hint: string
+}
 
-const dishCount = computed(() => dishStore.items.length);
+const dishCount = computed(() => dishStore.items.length)
 const activeDishCount = computed(
-  () => dishStore.items.filter((item) => item.active).length,
-);
+  () => dishStore.items.filter(item => item.active).length
+)
 const profitableDishCount = computed(
   () =>
     dishStore.items.filter(
-      (item) => (item.profitability?.expectedGrossProfit || 0) > 0,
-    ).length,
-);
+      item => (item.profitability?.expectedGrossProfit || 0) > 0
+    ).length
+)
 const estimatedDailyServings = computed(() =>
-  dishStore.items.reduce((sum, item) => sum + item.estimatedDailyServings, 0),
-);
+  dishStore.items.reduce((sum, item) => sum + item.estimatedDailyServings, 0)
+)
 
 const averageSuggestedPrice = computed(() => {
   if (dishCount.value === 0) {
-    return 0;
+    return 0
   }
 
   return (
     dishStore.items.reduce(
       (sum, item) =>
-        sum +
-        (item.profitability?.suggestedPriceIncludingTax ||
-          item.profitability?.suggestedPrice ||
-          0),
-      0,
+        sum
+        + (item.profitability?.suggestedPriceIncludingTax
+          || item.profitability?.suggestedPrice
+          || 0),
+      0
     ) / dishCount.value
-  );
-});
+  )
+})
 
 const dishCategoryOptions = computed(() =>
   [
-    ...new Set(dishStore.items.map((item) => item.category).filter(Boolean)),
-  ].sort((a, b) => a.localeCompare(b, "fr")),
-);
+    ...new Set(dishStore.items.map(item => item.category).filter(Boolean))
+  ].sort((a, b) => a.localeCompare(b, 'fr'))
+)
 
 const filteredDishes = computed(() => {
-  const search = dishFilters.search.trim().toLowerCase();
+  const search = dishFilters.search.trim().toLowerCase()
 
   return dishStore.items.filter((item) => {
     const searchableText = [
       item.name,
       item.category,
       item.description,
-      ...(item.profitability?.lines?.map((line) => line.ingredientName) ?? []),
+      ...(item.profitability?.lines?.map(line => line.ingredientName) ?? [])
     ]
       .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
+      .join(' ')
+      .toLowerCase()
 
-    const matchesSearch = !search || searchableText.includes(search);
-    const matchesCategory =
-      dishFilters.category === "all" || item.category === dishFilters.category;
-    const matchesStatus =
-      dishFilters.status === "all" ||
-      (dishFilters.status === "active" && item.active) ||
-      (dishFilters.status === "inactive" && !item.active);
-    const isProfitable = (item.profitability?.expectedGrossProfit || 0) > 0;
-    const needsReview =
-      !item.profitability ||
-      !item.profitability.lines.length ||
-      (item.profitability.priceGapIncludingTax ?? 0) < 0 ||
-      !isProfitable;
-    const matchesHealth =
-      dishFilters.health === "all" ||
-      (dishFilters.health === "profitable" && isProfitable) ||
-      (dishFilters.health === "review" && needsReview);
+    const matchesSearch = !search || searchableText.includes(search)
+    const matchesCategory
+      = dishFilters.category === 'all' || item.category === dishFilters.category
+    const matchesStatus
+      = dishFilters.status === 'all'
+        || (dishFilters.status === 'active' && item.active)
+        || (dishFilters.status === 'inactive' && !item.active)
+    const isProfitable = (item.profitability?.expectedGrossProfit || 0) > 0
+    const needsReview
+      = !item.profitability
+        || !item.profitability.lines.length
+        || (item.profitability.priceGapIncludingTax ?? 0) < 0
+        || !isProfitable
+    const matchesHealth
+      = dishFilters.health === 'all'
+        || (dishFilters.health === 'profitable' && isProfitable)
+        || (dishFilters.health === 'review' && needsReview)
 
-    return matchesSearch && matchesCategory && matchesStatus && matchesHealth;
-  });
-});
+    return matchesSearch && matchesCategory && matchesStatus && matchesHealth
+  })
+})
 
 const dishTableEmptyMessage = computed(() =>
   dishStore.items.length === 0
-    ? "Aucun plat pour le moment. Cree une recette pour voir apparaitre le cout matiere, la part de charges et le prix conseille."
-    : "Aucun plat ne correspond aux filtres actifs.",
-);
+    ? 'Aucun plat pour le moment. Cree une recette pour voir apparaitre le cout matiere, la part de charges et le prix conseille.'
+    : 'Aucun plat ne correspond aux filtres actifs.'
+)
 
 const defaultMarginRate = computed(
-  () => authStore.profile?.defaultMarginRate ?? 0.72,
-);
+  () => authStore.profile?.defaultMarginRate ?? 0.72
+)
 
 const stats = computed<PageStat[]>(() => [
   {
-    title: "Plats actifs",
+    title: 'Plats actifs',
     value: activeDishCount.value,
-    hint: "Carte exploitable",
+    hint: 'Carte exploitable'
   },
   {
-    title: "Plats rentables",
+    title: 'Plats rentables',
     value: profitableDishCount.value,
-    hint: "Marge brute positive",
+    hint: 'Marge brute positive'
   },
   {
-    title: "Prix conseille TTC moyen",
+    title: 'Prix conseille TTC moyen',
     value: formatCurrency(averageSuggestedPrice.value),
-    hint: "Repere pricing rapide",
+    hint: 'Repere pricing rapide'
   },
   {
-    title: "Portions / jour",
+    title: 'Portions / jour',
     value: estimatedDailyServings.value,
-    hint: "Capacite estimee totale",
-  },
-]);
+    hint: 'Capacite estimee totale'
+  }
+])
 
 async function loadPage() {
-  loading.value = true;
-  errorMessage.value = "";
+  loading.value = true
+  errorMessage.value = ''
   try {
     const results = await Promise.allSettled([
       authStore.loadProfile(),
       dishStore.load(),
-      ingredientStore.load(),
-    ]);
+      ingredientStore.load()
+    ])
 
-    const firstFailure = results.find(result => result.status === "rejected");
+    const firstFailure = results.find(result => result.status === 'rejected')
 
-    if (firstFailure?.status === "rejected") {
+    if (firstFailure?.status === 'rejected') {
       errorMessage.value = getFetchErrorMessage(
         firstFailure.reason,
-        "Impossible de charger tous les elements des plats",
-      );
-      appToast.error("Chargement partiel", errorMessage.value);
+        'Impossible de charger tous les elements des plats'
+      )
+      appToast.error('Chargement partiel', errorMessage.value)
     }
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(
       error,
-      "Impossible de charger les plats",
-    );
-    appToast.error("Chargement impossible", errorMessage.value);
+      'Impossible de charger les plats'
+    )
+    appToast.error('Chargement impossible', errorMessage.value)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 async function saveDish(payload: DishPayload) {
   try {
     if (editingDish.value) {
-      await dishStore.update(editingDish.value._id, payload);
-      appToast.success("Plat mis a jour", `${payload.name} a ete modifie.`);
+      await dishStore.update(editingDish.value._id, payload)
+      appToast.success('Plat mis a jour', `${payload.name} a ete modifie.`)
     } else {
-      await dishStore.create(payload);
+      await dishStore.create(payload)
       appToast.success(
-        "Plat ajoute",
-        `${payload.name} est maintenant dans la carte.`,
-      );
+        'Plat ajoute',
+        `${payload.name} est maintenant dans la carte.`
+      )
     }
-    closeDishModal();
+    closeDishModal()
   } catch (error) {
     errorMessage.value = getFetchErrorMessage(
       error,
-      "Echec lors de l enregistrement du plat",
-    );
-    appToast.error("Enregistrement impossible", errorMessage.value);
+      'Echec lors de l enregistrement du plat'
+    )
+    appToast.error('Enregistrement impossible', errorMessage.value)
   }
 }
 
 async function removeDish(item: Dish) {
   try {
-    await dishStore.remove(item._id);
-    appToast.success("Plat supprime", `${item.name} a ete retire de la carte.`);
+    await dishStore.remove(item._id)
+    appToast.success('Plat supprime', `${item.name} a ete retire de la carte.`)
   } catch (error) {
-    errorMessage.value = getFetchErrorMessage(error, "Suppression impossible");
-    appToast.error("Suppression impossible", errorMessage.value);
+    errorMessage.value = getFetchErrorMessage(error, 'Suppression impossible')
+    appToast.error('Suppression impossible', errorMessage.value)
   }
 }
 
 function openDishModal() {
-  editingDish.value = null;
-  dishModalOpen.value = true;
+  editingDish.value = null
+  dishModalOpen.value = true
 }
 
 function editDish(item: Dish) {
-  editingDish.value = item;
-  dishModalOpen.value = true;
+  editingDish.value = item
+  dishModalOpen.value = true
 }
 
 function closeDishModal() {
-  dishModalOpen.value = false;
-  editingDish.value = null;
+  dishModalOpen.value = false
+  editingDish.value = null
 }
 
 function resetDishFilters() {
-  dishFilters.search = "";
-  dishFilters.category = "all";
-  dishFilters.status = "all";
-  dishFilters.health = "all";
+  dishFilters.search = ''
+  dishFilters.category = 'all'
+  dishFilters.status = 'all'
+  dishFilters.health = 'all'
 }
 
 function formatCurrency(value: number) {
-  return `${value.toFixed(2)} €`;
+  return `${value.toFixed(2)} €`
 }
 
-onMounted(loadPage);
+onMounted(loadPage)
 </script>
 
 <template>

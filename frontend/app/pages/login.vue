@@ -54,7 +54,13 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 async function navigateAfterLogin() {
   await authStore.loadProfile()
-  await navigateTo(authStore.profile?.role === 'supplier' ? '/supplier-messages' : '/')
+  const role = authStore.profile?.role
+  const destination = role === 'supplier'
+    ? '/supplier-messages'
+    : role === 'admin'
+      ? '/admin'
+      : '/'
+  await navigateTo(destination)
 }
 
 async function handleSubmit() {

@@ -10,7 +10,7 @@ import { useDishStore } from '~/stores/dishes'
 import { useSaleStore } from '~/stores/sales'
 
 definePageMeta({
-  middleware: 'auth'
+  middleware: 'manager'
 })
 
 const saleStore = useSaleStore()

@@ -7,7 +7,7 @@ import type { Charge } from '~/types/business'
 import { useChargeStore } from '~/stores/charges'
 
 definePageMeta({
-  middleware: 'auth'
+  middleware: 'manager'
 })
 
 const chargeStore = useChargeStore()

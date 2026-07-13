@@ -8,7 +8,7 @@ import type { Supplier } from '~/types/business'
 import { useSupplierStore } from '~/stores/suppliers'
 
 definePageMeta({
-  middleware: 'auth'
+  middleware: 'manager'
 })
 
 const supplierStore = useSupplierStore()

@@ -32,12 +32,12 @@ onMounted(async () => {
     <section class="app-page-header app-page-header--compact">
       <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <span class="app-eyebrow">Messagerie fournisseurs</span>
+          <span class="app-eyebrow">Module visio</span>
           <h1 class="app-title">
             Appel visio fournisseur
           </h1>
           <p class="app-subtitle">
-            Echange en visio avec ton fournisseur en direct.
+            Echange en visio avec ton fournisseur en direct, en complement de la messagerie.
           </p>
         </div>
 

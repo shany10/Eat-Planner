@@ -144,7 +144,7 @@ const priorityAlerts = computed<DashboardAlert[]>(() => {
     items.push({ title: 'Creer les plats', to: '/dishes', action: 'Plats' })
   }
 
-  if (saleStore.items.length === 0) {
+  if (!isAdmin.value && saleStore.items.length === 0) {
     items.push({ title: 'Saisir des ventes', to: '/sales', action: 'Ventes' })
   }
 
@@ -155,7 +155,7 @@ const quickActions = computed<DashboardAction[]>(() => isAdmin.value
   ? [
       { label: 'Utilisateurs', to: '/admin', icon: 'i-lucide-users-round' },
       { label: 'Securite', to: '/security', icon: 'i-lucide-shield-check' },
-      { label: 'Previsions', to: '/forecasts', icon: 'i-lucide-chart-no-axes-combined' }
+      { label: 'Mon compte', to: '/account', icon: 'i-lucide-user-round' }
     ]
   : [
       { label: 'Previsions', to: '/forecasts', icon: 'i-lucide-chart-no-axes-combined' },
@@ -404,7 +404,10 @@ onMounted(loadDashboard)
               class="flex items-center justify-between rounded-xl border border-[#c0c9ba]/20 bg-[#f3f3f3] px-4 py-3 text-sm dark:border-white/5 dark:bg-[#2f3131]"
             >
               <span class="font-bold text-[#1a1c1c] dark:text-white">{{ step.title }}</span>
-              <span class="text-xs font-bold" :class="step.ready ? 'text-[#005013] dark:text-[#8ad986]' : 'text-[#40493e] dark:text-[#c0c9ba]'">
+              <span
+                class="text-xs font-bold"
+                :class="step.ready ? 'text-[#005013] dark:text-[#8ad986]' : 'text-[#40493e] dark:text-[#c0c9ba]'"
+              >
                 {{ step.count }}
               </span>
             </NuxtLink>
@@ -431,16 +434,28 @@ onMounted(loadDashboard)
 
           <div class="mt-4 grid gap-3 sm:grid-cols-3">
             <div class="rounded-xl bg-[#f3f3f3] p-4 dark:bg-[#2f3131]">
-              <p class="text-xs text-[#40493e] dark:text-[#c0c9ba]">Portions</p>
-              <p class="mt-1 text-xl font-black text-[#1a1c1c] dark:text-white">{{ projectedPlates }}</p>
+              <p class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
+                Portions
+              </p>
+              <p class="mt-1 text-xl font-black text-[#1a1c1c] dark:text-white">
+                {{ projectedPlates }}
+              </p>
             </div>
             <div class="rounded-xl bg-[#f3f3f3] p-4 dark:bg-[#2f3131]">
-              <p class="text-xs text-[#40493e] dark:text-[#c0c9ba]">CA projete</p>
-              <p class="mt-1 text-xl font-black text-[#1a1c1c] dark:text-white">{{ formatCurrency(projectedRevenue) }}</p>
+              <p class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
+                CA projete
+              </p>
+              <p class="mt-1 text-xl font-black text-[#1a1c1c] dark:text-white">
+                {{ formatCurrency(projectedRevenue) }}
+              </p>
             </div>
             <div class="rounded-xl bg-[#f3f3f3] p-4 dark:bg-[#2f3131]">
-              <p class="text-xs text-[#40493e] dark:text-[#c0c9ba]">Besoins</p>
-              <p class="mt-1 text-xl font-black text-[#1a1c1c] dark:text-white">{{ ingredientNeedsCount }}</p>
+              <p class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
+                Besoins
+              </p>
+              <p class="mt-1 text-xl font-black text-[#1a1c1c] dark:text-white">
+                {{ ingredientNeedsCount }}
+              </p>
             </div>
           </div>
 
@@ -464,7 +479,7 @@ onMounted(loadDashboard)
       </section>
 
       <EmptyStateCard
-        v-if="ingredientStore.items.length === 0 && dishStore.items.length === 0"
+        v-if="!isAdmin && ingredientStore.items.length === 0 && dishStore.items.length === 0"
         eyebrow="Base vide"
         title="Ajoute les donnees de demo."
         description="Ingredients, plats et ventes suffisent pour rendre la soutenance lisible."
@@ -474,7 +489,10 @@ onMounted(loadDashboard)
         secondary-to="/dishes"
       />
 
-      <p class="text-xs text-[#40493e] dark:text-[#c0c9ba]">
+      <p
+        v-if="!isAdmin"
+        class="text-xs text-[#40493e] dark:text-[#c0c9ba]"
+      >
         {{ latestSale ? `Derniere vente : ${formatDate(latestSale.serviceDate)}` : 'Aucune vente recente' }}
       </p>
     </template>

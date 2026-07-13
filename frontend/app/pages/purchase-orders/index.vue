@@ -6,10 +6,8 @@ import { usePurchaseOrderStore } from '~/stores/purchase-orders'
 import { useSupplierStore } from '~/stores/suppliers'
 
 definePageMeta({
-  middleware: 'auth'
+  middleware: 'manager'
 })
-
-const MAILPIT_URL = 'http://localhost:8025'
 
 const statusOptions: PurchaseOrderStatus[] = [
   'draft',

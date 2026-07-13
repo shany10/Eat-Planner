@@ -5,7 +5,7 @@ import ForecastBoard from '~/components/forecasts/ForecastBoard.vue'
 import { useForecastStore } from '~/stores/forecasts'
 
 definePageMeta({
-  middleware: 'auth'
+  middleware: 'manager'
 })
 
 const forecastStore = useForecastStore()
