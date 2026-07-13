@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getFetchErrorMessage } from '~/utils/fetch-error'
+import { trackEvent } from '~/utils/analytics'
 import StatCard from '~/components/common/StatCard.vue'
 import type { Ingredient, PurchaseOrderStatus, Supplier } from '~/types/business'
 import { useIngredientStore } from '~/stores/ingredients'
@@ -7,7 +8,7 @@ import { usePurchaseOrderStore } from '~/stores/purchase-orders'
 import { useSupplierStore } from '~/stores/suppliers'
 
 definePageMeta({
-  middleware: 'auth'
+  middleware: 'manager'
 })
 
 type PurchaseStep = 'forecast' | 'selection' | 'cart' | 'checkout'
@@ -349,6 +350,12 @@ async function saveDraftOrder() {
   saving.value = true
   try {
     const order = await purchaseOrderStore.create(buildOrderPayload('draft'))
+    trackEvent('commande-creee', {
+      statut: 'brouillon',
+      montant: cartTotalInclTax.value,
+      fournisseur: selectedSuppliers.value.map(supplier => supplier.name).join(', '),
+      lignes: cartLineCount.value
+    })
     appToast.success('Brouillon sauvegarde', `Commande ${order.orderNumber || ''} conservee dans les commandes.`)
     await navigateTo('/purchase-orders')
   } catch (error) {
@@ -367,6 +374,12 @@ async function validateOrder() {
   saving.value = true
   try {
     const order = await purchaseOrderStore.create(buildOrderPayload('pending_payment'))
+    trackEvent('commande-creee', {
+      statut: 'validee',
+      montant: cartTotalInclTax.value,
+      fournisseur: selectedSuppliers.value.map(supplier => supplier.name).join(', '),
+      lignes: cartLineCount.value
+    })
     appToast.success('Commande validee', `Commande ${order.orderNumber || ''} prete a etre payee.`)
     await navigateTo(`/purchase-orders?pay=${order._id}`)
   } catch (error) {
