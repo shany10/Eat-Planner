@@ -1,0 +1,33 @@
+name: Deploy
+
+# Deploiement continu : a chaque push sur main, la VPS fait git pull + rebuild.
+# Secrets a definir dans GitHub (Settings > Secrets and variables > Actions) :
+#   VPS_HOST     -> IP ou domaine de la VPS
+#   VPS_USER     -> utilisateur de deploiement (ex: deploy)
+#   VPS_SSH_KEY  -> cle privee SSH autorisee sur la VPS
+on:
+  push:
+    branches: [main]
+
+# Un seul deploiement a la fois, sans annuler celui en cours.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/eat-planner
+            git pull --ff-only
+            docker compose -f docker-compose.prod.yml -f docker-compose.caddy.yml up -d --build
+            docker image prune -f

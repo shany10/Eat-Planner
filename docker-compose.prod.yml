@@ -40,6 +40,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      # DSN Sentry passes au build pour embarquer @sentry/nuxt (module decide au
+      # build). Sans ca, le suivi d'erreurs frontend/SSR ne serait pas inclus.
+      args:
+        NUXT_PUBLIC_SENTRY_DSN: "${NUXT_PUBLIC_SENTRY_DSN}"
+        SENTRY_SERVER_DSN: "${SENTRY_SERVER_DSN}"
     environment:
       NODE_ENV: "production"
       NITRO_HOST: "0.0.0.0"

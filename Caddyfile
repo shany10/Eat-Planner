@@ -1,0 +1,20 @@
+# Reverse proxy HTTPS pour Eat Planner (certificats Let's Encrypt automatiques).
+#
+# Les domaines sont lus depuis l'environnement (APP_DOMAIN / API_DOMAIN),
+# fournis par docker-compose.caddy.yml a partir du .env.
+#   APP_DOMAIN  -> le frontend Nuxt (ex: mondomaine.com)
+#   API_DOMAIN  -> le backend Express + Socket.IO (ex: api.mondomaine.com)
+#
+# Caddy joint les conteneurs par leur nom de service sur le reseau Docker,
+# les ports applicatifs n'ont donc pas besoin d'etre exposes au public.
+
+{$APP_DOMAIN} {
+	encode gzip
+	reverse_proxy frontend:3001
+}
+
+{$API_DOMAIN} {
+	encode gzip
+	# WebSocket (Socket.IO / visio) : reverse_proxy gere l'upgrade automatiquement.
+	reverse_proxy backend:3000
+}

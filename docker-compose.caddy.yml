@@ -1,0 +1,36 @@
+# Override a combiner avec docker-compose.prod.yml pour placer Caddy (HTTPS auto,
+# Let's Encrypt) devant l'app et ne plus exposer les ports applicatifs au public.
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.caddy.yml up -d --build
+#
+# Prerequis : DNS A pour APP_DOMAIN et API_DOMAIN pointant sur la VPS, ports 80/443
+# ouverts, et Docker Compose >= 2.24 (pour le tag !reset).
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: "${APP_DOMAIN}"
+      API_DOMAIN: "${API_DOMAIN}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+      - backend
+
+  # Caddy atteint ces services par le reseau interne : on retire l'exposition
+  # publique des ports applicatifs (seuls 80/443 de Caddy restent ouverts).
+  backend:
+    ports: !reset []
+
+  frontend:
+    ports: !reset []
+
+volumes:
+  caddy-data:
+  caddy-config:
