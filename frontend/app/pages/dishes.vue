@@ -4,6 +4,7 @@ import AppModal from '~/components/common/AppModal.vue'
 import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
 import DishForm from '~/components/dishes/DishForm.vue'
 import DishTable from '~/components/dishes/DishTable.vue'
+import PricingAlertsCard from '~/components/dishes/PricingAlertsCard.vue'
 import type { Dish, DishIngredientLine } from '~/types/business'
 import { useAuthStore } from '~/stores/auth'
 import { useDishStore } from '~/stores/dishes'
@@ -311,6 +312,8 @@ onMounted(loadPage)
             :hint="stat.hint"
           />
         </div>
+
+        <PricingAlertsCard />
 
         <section class="app-section space-y-4">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

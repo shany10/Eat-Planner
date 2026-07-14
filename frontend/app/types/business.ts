@@ -115,6 +115,37 @@ export type Dish = {
   profitability?: DishProfitability
 }
 
+export type PricingAlertType
+  = | 'missing_price'
+    | 'selling_at_loss'
+    | 'low_margin'
+    | 'star_reprice'
+    | 'slow_mover'
+
+export type PricingAlertSeverity = 'info' | 'warning' | 'critical'
+
+export type PricingAlert = {
+  dishId: string
+  dishName: string
+  category: string
+  type: PricingAlertType
+  severity: PricingAlertSeverity
+  message: string
+  actualPriceIncludingTax: number
+  suggestedPriceIncludingTax: number
+  actualMarginRate: number | null
+  targetMarginRate: number
+  soldQuantity: number
+}
+
+export type PricingAlertsReport = {
+  generatedAt: string
+  periodDays: number
+  totalSoldQuantity: number
+  counts: Record<PricingAlertSeverity, number>
+  alerts: PricingAlert[]
+}
+
 export type Charge = {
   _id: string
   owner?: string | null

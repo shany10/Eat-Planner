@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { getFetchErrorMessage } from '~/utils/fetch-error'
 import EmptyStateCard from '~/components/common/EmptyStateCard.vue'
+import PricingAlertsCard from '~/components/dishes/PricingAlertsCard.vue'
 import type { ManagedUser } from '~/types/access'
 import { useAuthStore } from '~/stores/auth'
 import { useChargeStore } from '~/stores/charges'
@@ -369,6 +370,11 @@ onMounted(loadDashboard)
           </div>
         </article>
       </section>
+
+      <PricingAlertsCard
+        v-if="!isAdmin"
+        :limit="4"
+      />
 
       <section
         v-if="!isAdmin"

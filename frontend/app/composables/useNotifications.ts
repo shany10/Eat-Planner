@@ -2,6 +2,7 @@ import { useAuthStore } from '~/stores/auth'
 import { useDishStore } from '~/stores/dishes'
 import { useForecastStore } from '~/stores/forecasts'
 import { useIngredientStore } from '~/stores/ingredients'
+import { usePricingAlertStore } from '~/stores/pricing-alerts'
 import { usePurchaseOrderStore } from '~/stores/purchase-orders'
 import { useSaleStore } from '~/stores/sales'
 import { useSupplierMessageStore } from '~/stores/supplier-messages'
@@ -37,6 +38,7 @@ export function useNotifications() {
   const forecastStore = useForecastStore()
   const purchaseOrderStore = usePurchaseOrderStore()
   const supplierMessageStore = useSupplierMessageStore()
+  const pricingAlertStore = usePricingAlertStore()
 
   const readIds = useState<string[]>('notifications:read', () => [])
   const loading = useState<boolean>('notifications:loading', () => false)
@@ -107,6 +109,21 @@ export function useNotifications() {
         icon: 'i-lucide-utensils',
         title: `${toReview.length} plat(s) a revoir`,
         description: 'Marge brute faible ou recette incomplete.',
+        to: '/dishes'
+      })
+    }
+
+    const pricingReport = pricingAlertStore.report
+    if (pricingReport && pricingReport.alerts.length > 0) {
+      const severity: NotificationSeverity = pricingReport.counts.critical > 0
+        ? 'critical'
+        : pricingReport.counts.warning > 0 ? 'warning' : 'info'
+      list.push({
+        id: `pricing-alerts:${pricingReport.alerts.length}:${pricingReport.counts.critical}:${pricingReport.counts.warning}`,
+        severity,
+        icon: 'i-lucide-badge-euro',
+        title: `${pricingReport.alerts.length} alerte(s) de rentabilite`,
+        description: 'Marge sous objectif ou prix a revoir, prix conseille disponible.',
         to: '/dishes'
       })
     }
@@ -207,6 +224,7 @@ export function useNotifications() {
         purchaseOrderStore.load(),
         supplierMessageStore.load(),
         forecastStore.load(),
+        pricingAlertStore.load(),
         authStore.profile ? Promise.resolve() : authStore.loadProfile()
       ])
     } finally {

@@ -3,6 +3,7 @@ import { authMiddleware, roleMiddleware, validateMiddleware } from "../middlewar
 import { createDishBody, CreateDishInput, updateDishBody, UpdateDishInput } from "../schemas";
 import { DishModel, IngredientModel, SaleModel } from "../models";
 import { buildDishProfitabilityById, listDishProfitability } from "../services/profitabilityService";
+import { buildPricingAlertsReport } from "../services/pricingAlertsService";
 import { buildAccountScope, getOwnerPatch, loadRequestUser } from "../services/accountScopeService";
 
 const dishRouter = Router();
@@ -35,6 +36,17 @@ dishRouter.get("/", authMiddleware, async (req, res): Promise<void> => {
       profitability: metrics
     };
   }));
+});
+
+dishRouter.get("/alerts/pricing", authMiddleware, async (req, res): Promise<void> => {
+  const user = await loadRequestUser(req);
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  const report = await buildPricingAlertsReport(user);
+  res.json(report);
 });
 
 dishRouter.get("/:id", authMiddleware, async (req, res): Promise<void> => {
