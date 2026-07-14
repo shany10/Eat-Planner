@@ -1,0 +1,26 @@
+# Expose la stack monitoring (GlitchTip + Umami) en HTTPS derriere Caddy, en prod.
+# A combiner avec les compose prod + caddy + monitoring :
+#
+#   docker compose \
+#     -f docker-compose.prod.yml \
+#     -f docker-compose.caddy.yml \
+#     -f docker-compose.monitoring.yml \
+#     -f docker-compose.monitoring-caddy.yml up -d --build
+#
+# Prerequis : DNS A pour SENTRY_DOMAIN et STATS_DOMAIN pointant sur la VPS, et
+# ces deux variables + GLITCHTIP_DOMAIN=https://<SENTRY_DOMAIN> dans le .env.
+services:
+  caddy:
+    environment:
+      SENTRY_DOMAIN: "${SENTRY_DOMAIN}"
+      STATS_DOMAIN: "${STATS_DOMAIN}"
+    volumes:
+      # Active les vhosts monitoring (import /etc/caddy/conf.d/*.caddy).
+      - ./caddy.d/monitoring.caddy:/etc/caddy/conf.d/monitoring.caddy:ro
+
+  # Caddy joint ces services par le reseau interne : on ferme leurs ports publics.
+  glitchtip-web:
+    ports: !reset []
+
+  umami:
+    ports: !reset []

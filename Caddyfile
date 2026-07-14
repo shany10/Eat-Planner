@@ -8,6 +8,10 @@
 # Caddy joint les conteneurs par leur nom de service sur le reseau Docker,
 # les ports applicatifs n'ont donc pas besoin d'etre exposes au public.
 
+# Routes additionnelles optionnelles (ex: monitoring sentry./stats.), montees
+# seulement quand on deploie le monitoring. Le glob ne plante pas si vide.
+import /etc/caddy/conf.d/*.caddy
+
 {$APP_DOMAIN} {
 	encode gzip
 	reverse_proxy frontend:3001

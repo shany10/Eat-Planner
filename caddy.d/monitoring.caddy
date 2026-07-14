@@ -1,0 +1,15 @@
+# Routes reverse proxy pour la stack monitoring (GlitchTip + Umami).
+# Montee dans le conteneur Caddy uniquement via docker-compose.monitoring-caddy.yml,
+# donc ces vhosts n'existent que lorsqu'on deploie le monitoring en production.
+#
+# Domaines fournis par l'environnement (SENTRY_DOMAIN / STATS_DOMAIN) depuis le .env.
+
+{$SENTRY_DOMAIN} {
+	encode gzip
+	reverse_proxy glitchtip-web:8000
+}
+
+{$STATS_DOMAIN} {
+	encode gzip
+	reverse_proxy umami:3000
+}
