@@ -6,4 +6,5 @@ export * from "./chargeRouter";
 export * from "./saleRouter";
 export * from "./forecastRouter";
 export * from "./purchaseOrderRouter";
+export * from "./paymentCardRouter";
 export * from "./debugRouter";

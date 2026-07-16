@@ -63,7 +63,11 @@ export type PurchaseOrderStatus = typeof PURCHASE_ORDER_STATUSES[number];
 
 export const PAYMENT_METHODS = [
   "bank_transfer",
+  "card",
   "payment_on_delivery",
   "purchase_order"
 ] as const;
 export type PaymentMethod = typeof PAYMENT_METHODS[number];
+
+export const CARD_BRANDS = ["visa", "mastercard", "amex", "cb"] as const;
+export type CardBrand = typeof CARD_BRANDS[number];

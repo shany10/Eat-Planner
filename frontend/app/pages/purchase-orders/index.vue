@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { getFetchErrorMessage } from '~/utils/fetch-error'
 import StatCard from '~/components/common/StatCard.vue'
+import CardPaymentForm, { type CardPaymentFormPayload } from '~/components/purchase-orders/CardPaymentForm.vue'
 import type { Ingredient, PurchaseOrder, PurchaseOrderItem, PurchaseOrderStatus } from '~/types/business'
 import { usePurchaseOrderStore } from '~/stores/purchase-orders'
 import { useSupplierStore } from '~/stores/suppliers'
@@ -48,6 +49,9 @@ const orderFilters = reactive({
 const payingOrder = ref<PurchaseOrder | null>(null)
 const paymentSubmitting = ref(false)
 const paymentErrors = ref<string[]>([])
+const paymentMethodTab = ref<'card' | 'bank'>('card')
+const paymentStage = ref<'form' | 'processing' | 'success'>('form')
+const paymentSuccessSummary = ref('')
 const paymentForm = reactive({
   accountHolder: '',
   iban: '',
@@ -152,6 +156,9 @@ async function loadPage() {
 function openPayment(order: PurchaseOrder) {
   payingOrder.value = order
   paymentErrors.value = []
+  paymentMethodTab.value = 'card'
+  paymentStage.value = 'form'
+  paymentSuccessSummary.value = ''
   paymentForm.reference = order.paymentReference || `VIR-${order.orderNumber || order._id}`
   paymentForm.accountHolder = order.paymentAccountHolder || getOrderSupplierNames(order)
   paymentForm.iban = ''
@@ -162,9 +169,57 @@ function openPayment(order: PurchaseOrder) {
 }
 
 function closePayment() {
+  if (paymentStage.value === 'processing') {
+    return
+  }
+
   payingOrder.value = null
   paymentErrors.value = []
   paymentSubmitting.value = false
+  paymentStage.value = 'form'
+  paymentSuccessSummary.value = ''
+}
+
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function submitCardPayment(payload: CardPaymentFormPayload) {
+  const order = payingOrder.value
+  if (!order || paymentSubmitting.value) {
+    return
+  }
+
+  paymentSubmitting.value = true
+  paymentStage.value = 'processing'
+
+  try {
+    // Delai minimal pour laisser l'animation de traitement respirer
+    const [result] = await Promise.all([
+      purchaseOrderStore.payByCard(order._id, {
+        ...payload,
+        notifySupplier: paymentForm.notifySupplier
+      }),
+      delay(1800)
+    ])
+
+    const notificationLabel = result.sent.length > 0
+      ? `${result.sent.length} confirmation(s) envoyee(s) au fournisseur.`
+      : 'Paiement trace en interne.'
+    paymentSuccessSummary.value = `${formatCurrency(order.totalInclTax || order.totalAmount || 0)} regles a ${getOrderSupplierNames(order)}`
+    paymentStage.value = 'success'
+
+    await delay(2300)
+    paymentStage.value = 'form'
+    closePayment()
+    appToast.success('Paiement carte accepte', `${result.order.orderNumber || ''} marquee payee. ${notificationLabel}`)
+  } catch (error) {
+    paymentStage.value = 'form'
+    errorMessage.value = getFetchErrorMessage(error, 'Le paiement par carte a ete refuse')
+    appToast.error('Paiement refuse', errorMessage.value)
+  } finally {
+    paymentSubmitting.value = false
+  }
 }
 
 function validateBankTransferFields() {
@@ -539,7 +594,17 @@ onMounted(loadPage)
                   {{ order.internalComment || order.notes }}
                 </p>
                 <p
-                  v-if="order.paymentReference"
+                  v-if="order.paymentMethod === 'card' && order.paymentCardLast4"
+                  class="mt-1 text-sm font-semibold text-[#005013] dark:text-[#8ad986]"
+                >
+                  <UIcon
+                    name="i-lucide-credit-card"
+                    class="size-4 align-text-bottom"
+                  />
+                  Paye par carte ****{{ order.paymentCardLast4 }} - {{ order.paymentReference }}
+                </p>
+                <p
+                  v-else-if="order.paymentReference"
                   class="mt-1 text-sm font-semibold text-[#005013] dark:text-[#8ad986]"
                 >
                   Virement {{ order.paymentReference }}
@@ -657,7 +722,7 @@ onMounted(loadPage)
         class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
         @click.self="closePayment"
       >
-        <div class="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl dark:bg-[#1a1c1c] sm:rounded-2xl">
+        <div class="pay-modal-panel max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl dark:bg-[#1a1c1c] sm:rounded-2xl">
           <div class="flex items-start justify-between gap-4">
             <div>
               <p class="app-eyebrow">
@@ -691,91 +756,184 @@ onMounted(loadPage)
                 {{ formatCurrency(payingOrder.totalInclTax || payingOrder.totalAmount || 0) }}
               </span>
             </div>
-            <div class="flex justify-between gap-3">
-              <span class="text-[#40493e] dark:text-[#c0c9ba]">Moyen de paiement</span>
-              <span class="font-semibold">Virement bancaire</span>
+          </div>
+
+          <template v-if="paymentStage === 'form'">
+            <div class="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                class="flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition"
+                :class="paymentMethodTab === 'card'
+                  ? 'border-[#005013] bg-[#005013]/10 text-[#005013] dark:border-[#8ad986] dark:bg-[#8ad986]/10 dark:text-[#8ad986]'
+                  : 'border-[#c0c9ba]/40 text-[#40493e] hover:bg-[#f3f3f3] dark:border-white/10 dark:text-[#c0c9ba] dark:hover:bg-[#2f3131]'"
+                @click="paymentMethodTab = 'card'"
+              >
+                <UIcon
+                  name="i-lucide-credit-card"
+                  class="size-4"
+                />
+                Carte bancaire
+              </button>
+              <button
+                type="button"
+                class="flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-semibold transition"
+                :class="paymentMethodTab === 'bank'
+                  ? 'border-[#005013] bg-[#005013]/10 text-[#005013] dark:border-[#8ad986] dark:bg-[#8ad986]/10 dark:text-[#8ad986]'
+                  : 'border-[#c0c9ba]/40 text-[#40493e] hover:bg-[#f3f3f3] dark:border-white/10 dark:text-[#c0c9ba] dark:hover:bg-[#2f3131]'"
+                @click="paymentMethodTab = 'bank'"
+              >
+                <UIcon
+                  name="i-lucide-landmark"
+                  class="size-4"
+                />
+                Virement
+              </button>
             </div>
-          </div>
 
-          <div class="mt-4 grid gap-3 md:grid-cols-2">
-            <input
-              v-model="paymentForm.accountHolder"
-              class="app-input"
-              placeholder="Titulaire beneficiaire"
-            >
-            <input
-              v-model="paymentForm.iban"
-              class="app-input"
-              placeholder="IBAN / RIB fournisseur"
-            >
-            <input
-              v-model="paymentForm.bic"
-              class="app-input"
-              placeholder="BIC fournisseur"
-            >
-            <input
-              v-model="paymentForm.executionDate"
-              class="app-input"
-              type="date"
-            >
-            <input
-              v-model="paymentForm.reference"
-              class="app-input md:col-span-2"
-              placeholder="Reference de virement"
-            >
-            <textarea
-              v-model="paymentForm.note"
-              class="app-input min-h-20 md:col-span-2"
-              placeholder="Note paiement visible dans le dossier commande"
-            />
-          </div>
-
-          <label class="app-inset mt-4 flex cursor-pointer items-start gap-3">
-            <input
-              v-model="paymentForm.notifySupplier"
-              type="checkbox"
-              class="mt-1"
-            >
-            <span>
-              <span class="block font-semibold text-[#1a1c1c] dark:text-white">Notifier le fournisseur</span>
-              <span class="mt-1 block text-sm text-[#40493e] dark:text-[#c0c9ba]">
-                Envoie un email de confirmation et ajoute le message dans le portail fournisseur.
+            <label class="app-inset mt-4 flex cursor-pointer items-start gap-3">
+              <input
+                v-model="paymentForm.notifySupplier"
+                type="checkbox"
+                class="mt-1"
+              >
+              <span>
+                <span class="block font-semibold text-[#1a1c1c] dark:text-white">Notifier le fournisseur</span>
+                <span class="mt-1 block text-sm text-[#40493e] dark:text-[#c0c9ba]">
+                  Envoie un email de confirmation et ajoute le message dans le portail fournisseur.
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
+
+            <CardPaymentForm
+              v-if="paymentMethodTab === 'card'"
+              class="mt-4"
+              :amount="payingOrder.totalInclTax || payingOrder.totalAmount || 0"
+              :submitting="paymentSubmitting"
+              @submit="submitCardPayment"
+            />
+
+            <template v-else>
+              <div class="mt-4 grid gap-3 md:grid-cols-2">
+                <input
+                  v-model="paymentForm.accountHolder"
+                  class="app-input"
+                  placeholder="Titulaire beneficiaire"
+                >
+                <input
+                  v-model="paymentForm.iban"
+                  class="app-input"
+                  placeholder="IBAN / RIB fournisseur"
+                >
+                <input
+                  v-model="paymentForm.bic"
+                  class="app-input"
+                  placeholder="BIC fournisseur"
+                >
+                <input
+                  v-model="paymentForm.executionDate"
+                  class="app-input"
+                  type="date"
+                >
+                <input
+                  v-model="paymentForm.reference"
+                  class="app-input md:col-span-2"
+                  placeholder="Reference de virement"
+                >
+                <textarea
+                  v-model="paymentForm.note"
+                  class="app-input min-h-20 md:col-span-2"
+                  placeholder="Note paiement visible dans le dossier commande"
+                />
+              </div>
+
+              <div
+                v-if="paymentErrors.length > 0"
+                class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+              >
+                <p
+                  v-for="message in paymentErrors"
+                  :key="message"
+                >
+                  {{ message }}
+                </p>
+              </div>
+
+              <div class="mt-5 flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  class="btn-secondary"
+                  @click="closePayment"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  class="btn-primary"
+                  :disabled="paymentSubmitting"
+                  @click="submitBankTransferPayment"
+                >
+                  <UIcon
+                    name="i-lucide-check"
+                    class="size-4"
+                  />
+                  {{ paymentSubmitting ? 'Confirmation...' : 'Confirmer le virement' }}
+                </button>
+              </div>
+            </template>
+          </template>
 
           <div
-            v-if="paymentErrors.length > 0"
-            class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+            v-else-if="paymentStage === 'processing'"
+            class="flex flex-col items-center gap-4 py-12"
           >
-            <p
-              v-for="message in paymentErrors"
-              :key="message"
-            >
-              {{ message }}
+            <span class="pay-spinner">
+              <UIcon
+                name="i-lucide-credit-card"
+                class="size-6 text-[#005013] dark:text-[#8ad986]"
+              />
+            </span>
+            <p class="font-semibold text-[#1a1c1c] dark:text-white">
+              Paiement en cours...
+            </p>
+            <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
+              Verification aupres de la banque, ne ferme pas cette fenetre.
             </p>
           </div>
 
-          <div class="mt-5 flex flex-wrap justify-end gap-2">
-            <button
-              type="button"
-              class="btn-secondary"
-              @click="closePayment"
+          <div
+            v-else
+            class="relative flex flex-col items-center gap-4 overflow-hidden py-12"
+          >
+            <span
+              v-for="index in 12"
+              :key="index"
+              class="pay-confetti"
+              :class="`pay-confetti--${index}`"
+            />
+            <svg
+              class="pay-check"
+              viewBox="0 0 52 52"
+              aria-hidden="true"
             >
-              Annuler
-            </button>
-            <button
-              type="button"
-              class="btn-primary"
-              :disabled="paymentSubmitting"
-              @click="submitBankTransferPayment"
-            >
-              <UIcon
-                name="i-lucide-check"
-                class="size-4"
+              <circle
+                class="pay-check__circle"
+                cx="26"
+                cy="26"
+                r="24"
+                fill="none"
               />
-              {{ paymentSubmitting ? 'Confirmation...' : 'Confirmer le virement' }}
-            </button>
+              <path
+                class="pay-check__mark"
+                fill="none"
+                d="M14 27l8 8 16-17"
+              />
+            </svg>
+            <p class="text-lg font-bold text-[#005013] dark:text-[#8ad986]">
+              Paiement accepte
+            </p>
+            <p class="text-sm text-[#40493e] dark:text-[#c0c9ba]">
+              {{ paymentSuccessSummary }}
+            </p>
           </div>
         </div>
       </div>
@@ -882,3 +1040,120 @@ onMounted(loadPage)
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.pay-modal-panel {
+  animation: pay-modal-pop 0.3s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+@keyframes pay-modal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.pay-spinner {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.5rem;
+  height: 4.5rem;
+}
+
+.pay-spinner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 3px solid rgba(0, 80, 19, 0.15);
+  border-top-color: #005013;
+  animation: pay-spin 0.9s linear infinite;
+}
+
+:global(.dark) .pay-spinner::before {
+  border-color: rgba(138, 217, 134, 0.2);
+  border-top-color: #8ad986;
+}
+
+@keyframes pay-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pay-check {
+  width: 4.5rem;
+  height: 4.5rem;
+}
+
+.pay-check__circle {
+  stroke: #005013;
+  stroke-width: 3;
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-linecap: round;
+  animation: pay-draw 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.pay-check__mark {
+  stroke: #005013;
+  stroke-width: 4;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: pay-draw 0.35s cubic-bezier(0.65, 0, 0.45, 1) 0.55s forwards;
+}
+
+:global(.dark) .pay-check__circle,
+:global(.dark) .pay-check__mark {
+  stroke: #8ad986;
+}
+
+@keyframes pay-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.pay-confetti {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: pay-confetti-fall 1.6s ease-out 0.6s forwards;
+}
+
+.pay-confetti--1 { background: #feb236; --tx: -130px; --rot: 200deg; }
+.pay-confetti--2 { background: #005013; --tx: -95px; --rot: -160deg; animation-delay: 0.7s; }
+.pay-confetti--3 { background: #8ad986; --tx: -60px; --rot: 240deg; animation-delay: 0.65s; }
+.pay-confetti--4 { background: #ba1a1a; --tx: -30px; --rot: -120deg; animation-delay: 0.8s; }
+.pay-confetti--5 { background: #feb236; --tx: 0px; --rot: 180deg; animation-delay: 0.7s; }
+.pay-confetti--6 { background: #005013; --tx: 30px; --rot: -220deg; animation-delay: 0.75s; }
+.pay-confetti--7 { background: #8ad986; --tx: 60px; --rot: 150deg; animation-delay: 0.62s; }
+.pay-confetti--8 { background: #ba1a1a; --tx: 95px; --rot: -190deg; animation-delay: 0.85s; }
+.pay-confetti--9 { background: #feb236; --tx: 130px; --rot: 210deg; animation-delay: 0.68s; }
+.pay-confetti--10 { background: #8ad986; --tx: -150px; --rot: -140deg; animation-delay: 0.9s; }
+.pay-confetti--11 { background: #005013; --tx: 150px; --rot: 170deg; animation-delay: 0.78s; }
+.pay-confetti--12 { background: #feb236; --tx: 80px; --rot: -250deg; animation-delay: 0.95s; }
+
+@keyframes pay-confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), 190px) rotate(var(--rot));
+  }
+}
+</style>

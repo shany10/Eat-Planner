@@ -12,6 +12,7 @@ import {
   saleRouter,
   forecastRouter,
   purchaseOrderRouter,
+  paymentCardRouter,
   debugRouter
 } from './src/routes';
 import { connectMongoose } from "./src/db/mangoose";
@@ -45,6 +46,7 @@ app.use('/charges', chargeRouter);
 app.use('/sales', saleRouter);
 app.use('/forecasts', forecastRouter);
 app.use('/purchase-orders', purchaseOrderRouter);
+app.use('/payment-cards', paymentCardRouter);
 app.use('/debug', debugRouter);
 
 // Must be registered after all routes so Sentry can capture errors thrown in

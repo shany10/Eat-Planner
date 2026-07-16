@@ -46,6 +46,8 @@ export interface IPurchaseOrder extends Document {
   paymentAccountHolder?: string;
   paymentIbanLast4?: string;
   paymentBic?: string;
+  paymentCardBrand?: string;
+  paymentCardLast4?: string;
   paymentExecutionDate?: string;
   paymentNote?: string;
   paidAt?: Date | null;
@@ -98,6 +100,8 @@ const purchaseOrderSchema = new Schema<IPurchaseOrder>({
   paymentAccountHolder: { type: String, default: "", trim: true },
   paymentIbanLast4: { type: String, default: "", trim: true },
   paymentBic: { type: String, default: "", trim: true },
+  paymentCardBrand: { type: String, default: "", trim: true },
+  paymentCardLast4: { type: String, default: "", trim: true },
   paymentExecutionDate: { type: String, default: "", trim: true },
   paymentNote: { type: String, default: "", trim: true },
   paidAt: { type: Date, default: null },

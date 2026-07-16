@@ -4,6 +4,8 @@ import { authMiddleware, roleMiddleware, validateMiddleware } from "../middlewar
 import {
   bankTransferPaymentBody,
   BankTransferPaymentInput,
+  cardPaymentBody,
+  CardPaymentInput,
   createPurchaseOrderBody,
   CreatePurchaseOrderInput,
   receivePurchaseOrderBody,
@@ -12,10 +14,11 @@ import {
   updatePurchaseOrderStatusBody,
   UpdatePurchaseOrderStatusInput
 } from "../schemas";
-import { IngredientModel, PurchaseOrderModel, SupplierMessageModel, SupplierModel } from "../models";
+import { IngredientModel, IPurchaseOrder, PaymentCardModel, PurchaseOrderModel, SupplierMessageModel, SupplierModel } from "../models";
 import { buildAccountScope, getOwnerPatch, loadRequestUser } from "../services/accountScopeService";
 import { IUser } from "../models";
-import { BusinessUnit, PurchaseOrderStatus } from "../types/business";
+import { BusinessUnit, CardBrand, PurchaseOrderStatus } from "../types/business";
+import { detectCardBrand, getCardLast4, isCardExpired, isValidCardNumber } from "../services/paymentCardService";
 import { sendSupplierOrderEmail, sendSupplierPaymentConfirmationEmail } from "../utils/email";
 
 const purchaseOrderRouter = Router();
@@ -326,6 +329,110 @@ function getOrderItemsForSupplier(
 
     return item.supplierName === supplier.name;
   });
+}
+
+const CARD_BRAND_LABELS: Record<CardBrand, string> = {
+  visa: "Visa",
+  mastercard: "Mastercard",
+  amex: "American Express",
+  cb: "CB"
+};
+
+type PaymentNotificationDetails = {
+  paymentReference: string;
+  paymentIbanLast4: string;
+  paymentBic: string;
+  paymentCardLabel: string;
+  note: string;
+  paidAt: Date;
+};
+
+async function notifySuppliersOfPayment(user: IUser, order: IPurchaseOrder, details: PaymentNotificationDetails) {
+  const sent: Array<{ supplierName: string; to: string; itemCount: number }> = [];
+  const failed: Array<{ supplierName: string; to: string; error: string }> = [];
+  const suppliers = getSupplierMailTargets(order);
+
+  for (const supplier of suppliers) {
+    const items = getOrderItemsForSupplier(order, supplier);
+    if (items.length === 0) {
+      continue;
+    }
+
+    const supplierSubtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
+    const subject = `Paiement confirme - ${order.orderNumber}`;
+    const body = [
+      `${user.restaurantName || "Eat Planner"} confirme le paiement de la commande ${order.orderNumber}.`,
+      `Reference de paiement: ${details.paymentReference}`,
+      `Montant fournisseur: ${formatMoney(supplierSubtotal)}`,
+      `Total commande TTC: ${formatMoney(order.totalInclTax || order.totalAmount)}`,
+      details.paymentCardLabel ? `Carte utilisee: ${details.paymentCardLabel}` : "",
+      details.paymentIbanLast4 ? `IBAN beneficiaire verifie: ****${details.paymentIbanLast4}` : "",
+      details.paymentBic ? `BIC: ${details.paymentBic}` : "",
+      details.note ? `Note: ${details.note}` : ""
+    ].filter(Boolean).join("\n");
+
+    try {
+      await sendSupplierPaymentConfirmationEmail({
+        to: supplier.email,
+        supplierName: supplier.name,
+        orderNumber: order.orderNumber,
+        restaurantName: user.restaurantName || "Eat Planner",
+        paymentReference: details.paymentReference,
+        paymentIbanLast4: details.paymentIbanLast4,
+        paymentBic: details.paymentBic,
+        paidAt: details.paidAt,
+        totalInclTax: order.totalInclTax || order.totalAmount,
+        supplierSubtotal,
+        items: items.map((item) => ({
+          ingredientName: item.ingredientName,
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal
+        }))
+      });
+
+      await SupplierMessageModel.create({
+        supplier: supplier.id,
+        owner: user._id,
+        subject,
+        body,
+        direction: "outbound",
+        from: user.email,
+        to: supplier.email,
+        status: "sent",
+        sentAt: new Date()
+      });
+
+      sent.push({
+        supplierName: supplier.name,
+        to: supplier.email,
+        itemCount: items.length
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Payment email send failed";
+      await SupplierMessageModel.create({
+        supplier: supplier.id,
+        owner: user._id,
+        subject,
+        body,
+        direction: "outbound",
+        from: user.email,
+        to: supplier.email,
+        status: "failed",
+        sentAt: null,
+        errorMessage
+      });
+
+      failed.push({
+        supplierName: supplier.name,
+        to: supplier.email,
+        error: errorMessage
+      });
+    }
+  }
+
+  return { sent, failed };
 }
 
 purchaseOrderRouter.get("/", authMiddleware, async (req, res): Promise<void> => {
@@ -781,91 +888,143 @@ purchaseOrderRouter.post(
     order.paidAt = paidAt;
     await order.save();
 
-    const sent: Array<{ supplierName: string; to: string; itemCount: number }> = [];
-    const failed: Array<{ supplierName: string; to: string; error: string }> = [];
+    const { sent, failed } = payload.notifySupplier
+      ? await notifySuppliersOfPayment(user, order, {
+        paymentReference,
+        paymentIbanLast4,
+        paymentBic,
+        paymentCardLabel: "",
+        note: payload.note,
+        paidAt
+      })
+      : { sent: [], failed: [] };
 
-    if (payload.notifySupplier) {
-      const suppliers = getSupplierMailTargets(order);
+    const populatedOrder = await order.populate(orderPopulate);
 
-      for (const supplier of suppliers) {
-        const items = getOrderItemsForSupplier(order, supplier);
-        if (items.length === 0) {
-          continue;
-        }
+    res.json({
+      ok: failed.length === 0,
+      sent,
+      failed,
+      order: populatedOrder
+    });
+  }
+);
 
-        const supplierSubtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
-        const subject = `Paiement confirme - ${order.orderNumber}`;
-        const body = [
-          `${user.restaurantName || "Eat Planner"} confirme le paiement de la commande ${order.orderNumber}.`,
-          `Reference de virement: ${paymentReference}`,
-          `Montant fournisseur: ${formatMoney(supplierSubtotal)}`,
-          `Total commande TTC: ${formatMoney(order.totalInclTax || order.totalAmount)}`,
-          paymentIbanLast4 ? `IBAN beneficiaire verifie: ****${paymentIbanLast4}` : "",
-          paymentBic ? `BIC: ${paymentBic}` : "",
-          payload.note ? `Note: ${payload.note}` : ""
-        ].filter(Boolean).join("\n");
+purchaseOrderRouter.post(
+  "/:id/payments/card",
+  authMiddleware,
+  roleMiddleware(["admin", "manager"]),
+  validateMiddleware({ body: cardPaymentBody }),
+  async (req, res): Promise<void> => {
+    const user = await loadRequestUser(req);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
 
-        try {
-          await sendSupplierPaymentConfirmationEmail({
-            to: supplier.email,
-            supplierName: supplier.name,
-            orderNumber: order.orderNumber,
-            restaurantName: user.restaurantName || "Eat Planner",
-            paymentReference,
-            paymentIbanLast4,
-            paymentBic,
-            paidAt,
-            totalInclTax: order.totalInclTax || order.totalAmount,
-            supplierSubtotal,
-            items: items.map((item) => ({
-              ingredientName: item.ingredientName,
-              quantity: item.quantity,
-              unit: item.unit,
-              unitPrice: item.unitPrice,
-              lineTotal: item.lineTotal
-            }))
-          });
+    const payload = req.body as CardPaymentInput;
+    const order = await PurchaseOrderModel.findOne(buildAccountScope(user, { _id: req.params.id }))
+      .populate(orderPopulate)
+      .exec();
 
-          await SupplierMessageModel.create({
-            supplier: supplier.id,
-            owner: user._id,
-            subject,
-            body,
-            direction: "outbound",
-            from: user.email,
-            to: supplier.email,
-            status: "sent",
-            sentAt: new Date()
-          });
+    if (!order) {
+      res.status(404).json({ error: "Purchase order not found" });
+      return;
+    }
 
-          sent.push({
-            supplierName: supplier.name,
-            to: supplier.email,
-            itemCount: items.length
-          });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : "Payment email send failed";
-          await SupplierMessageModel.create({
-            supplier: supplier.id,
-            owner: user._id,
-            subject,
-            body,
-            direction: "outbound",
-            from: user.email,
-            to: supplier.email,
-            status: "failed",
-            sentAt: null,
-            errorMessage
-          });
+    if (order.status === "cancelled") {
+      res.status(409).json({ error: "Cancelled order cannot be paid" });
+      return;
+    }
 
-          failed.push({
-            supplierName: supplier.name,
-            to: supplier.email,
-            error: errorMessage
+    let holder = "";
+    let brand: CardBrand = "cb";
+    let last4 = "";
+
+    if (payload.savedCardId) {
+      const savedCard = await PaymentCardModel.findOne(
+        buildAccountScope(user, { _id: payload.savedCardId })
+      ).exec();
+
+      if (!savedCard) {
+        res.status(404).json({ error: "Carte enregistree introuvable" });
+        return;
+      }
+
+      if (isCardExpired(savedCard.expiryMonth, savedCard.expiryYear)) {
+        res.status(400).json({ error: "Carte expiree" });
+        return;
+      }
+
+      holder = savedCard.holder;
+      brand = savedCard.brand;
+      last4 = savedCard.last4;
+    } else if (payload.card) {
+      if (!isValidCardNumber(payload.card.cardNumber)) {
+        res.status(400).json({ error: "Numero de carte invalide" });
+        return;
+      }
+
+      if (isCardExpired(payload.card.expiryMonth, payload.card.expiryYear)) {
+        res.status(400).json({ error: "Carte expiree" });
+        return;
+      }
+
+      holder = payload.card.holder.trim();
+      brand = detectCardBrand(payload.card.cardNumber);
+      last4 = getCardLast4(payload.card.cardNumber);
+
+      if (payload.saveCard) {
+        const existing = await PaymentCardModel.findOne(buildAccountScope(user, {
+          brand,
+          last4,
+          expiryMonth: payload.card.expiryMonth,
+          expiryYear: payload.card.expiryYear
+        })).exec();
+
+        if (!existing) {
+          await PaymentCardModel.create({
+            holder,
+            brand,
+            last4,
+            expiryMonth: payload.card.expiryMonth,
+            expiryYear: payload.card.expiryYear,
+            owner: user._id
           });
         }
       }
+    } else {
+      res.status(400).json({ error: "Aucune carte fournie" });
+      return;
     }
+
+    const paidAt = new Date();
+    const paymentReference = `CB-${order.orderNumber}`;
+    const paymentCardLabel = `${CARD_BRAND_LABELS[brand]} ****${last4}`;
+
+    order.status = "paid";
+    order.paymentMethod = "card";
+    order.paymentReference = paymentReference;
+    order.paymentAccountHolder = holder;
+    order.paymentIbanLast4 = "";
+    order.paymentBic = "";
+    order.paymentCardBrand = brand;
+    order.paymentCardLast4 = last4;
+    order.paymentExecutionDate = paidAt.toISOString().slice(0, 10);
+    order.paymentNote = payload.note.trim();
+    order.paidAt = paidAt;
+    await order.save();
+
+    const { sent, failed } = payload.notifySupplier
+      ? await notifySuppliersOfPayment(user, order, {
+        paymentReference,
+        paymentIbanLast4: "",
+        paymentBic: "",
+        paymentCardLabel,
+        note: payload.note,
+        paidAt
+      })
+      : { sent: [], failed: [] };
 
     const populatedOrder = await order.populate(orderPopulate);
 

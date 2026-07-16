@@ -244,7 +244,21 @@ export type PurchaseOrderStatus
     | 'sent'
     | 'received'
 
-export type PaymentMethod = 'bank_transfer' | 'payment_on_delivery' | 'purchase_order'
+export type PaymentMethod = 'bank_transfer' | 'card' | 'payment_on_delivery' | 'purchase_order'
+
+export type CardBrand = 'visa' | 'mastercard' | 'amex' | 'cb'
+
+export type PaymentCard = {
+  _id: string
+  owner?: string | null
+  holder: string
+  brand: CardBrand
+  last4: string
+  expiryMonth: number
+  expiryYear: number
+  label?: string
+  created_at?: string
+}
 
 export type PurchaseOrderItem = {
   ingredient: Ingredient | string
@@ -285,6 +299,8 @@ export type PurchaseOrder = {
   paymentAccountHolder?: string
   paymentIbanLast4?: string
   paymentBic?: string
+  paymentCardBrand?: string
+  paymentCardLast4?: string
   paymentExecutionDate?: string
   paymentNote?: string
   paidAt?: string | null

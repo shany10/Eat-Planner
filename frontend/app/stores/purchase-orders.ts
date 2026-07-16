@@ -46,6 +46,20 @@ type BankTransferPaymentResult = SupplierEmailResult & {
   }>
 }
 
+type CardPaymentPayload = {
+  savedCardId?: string
+  card?: {
+    holder: string
+    cardNumber: string
+    expiryMonth: number
+    expiryYear: number
+    cvv: string
+  }
+  saveCard?: boolean
+  note?: string
+  notifySupplier?: boolean
+}
+
 export const usePurchaseOrderStore = defineStore('purchase-orders', () => {
   const items = ref<PurchaseOrder[]>([])
   const rewards = ref<PurchaseRewards | null>(null)
@@ -102,6 +116,17 @@ export const usePurchaseOrderStore = defineStore('purchase-orders', () => {
     return result
   }
 
+  async function payByCard(id: string, payload: CardPaymentPayload) {
+    const result = await $fetch<BankTransferPaymentResult>(`/api/purchase-orders/${id}/payments/card`, {
+      method: 'POST',
+      body: payload
+    })
+    lastOrder.value = result.order
+    await load()
+    await loadRewards()
+    return result
+  }
+
   async function sendSupplierEmail(id: string) {
     const result = await $fetch<SupplierEmailResult>(`/api/purchase-orders/${id}/send-supplier-email`, {
       method: 'POST'
@@ -138,6 +163,7 @@ export const usePurchaseOrderStore = defineStore('purchase-orders', () => {
     updateStatus,
     receive,
     payByBankTransfer,
+    payByCard,
     sendSupplierEmail,
     remove,
     loadRewards,
