@@ -29,5 +29,7 @@ jobs:
             set -e
             cd /opt/eat-planner
             git pull --ff-only
-            docker compose -f docker-compose.prod.yml -f docker-compose.caddy.yml up -d --build
+            docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml -f docker-compose.external.yml up -d --build
+            # Le reverse proxy central doit voir nos services (idempotent) :
+            docker network connect eat-planner_default caddy 2>/dev/null || true
             docker image prune -f

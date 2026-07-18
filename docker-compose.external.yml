@@ -1,0 +1,40 @@
+# Deploiement derriere un reverse proxy EXTERNE (ex : un Caddy central partage
+# qui possede deja 80/443 sur l'hote et sert plusieurs projets).
+#
+# On ne lance PAS notre propre Caddy, et on ne publie AUCUN port applicatif :
+# le proxy externe joint les services par le reseau Docker du projet
+# (frontend:3001, backend:3000, glitchtip-web:8000, umami:3000, mailpit:8025).
+#
+#   docker compose -f docker-compose.prod.yml \
+#     -f docker-compose.monitoring.yml \
+#     -f docker-compose.external.yml up -d --build
+#
+# Cote proxy externe : le connecter au reseau <projet>_default et ajouter les
+# vhosts pointant vers les services ci-dessus.
+services:
+  backend:
+    ports: !reset []
+
+  frontend:
+    ports: !reset []
+
+  glitchtip-web:
+    ports: !reset []
+
+  umami:
+    ports: !reset []
+
+  # Mailpit (capture des emails). Interface servie par le proxy externe sur
+  # MAIL_DOMAIN ; le backend envoie les mails vers mailpit:1025.
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: "5000"
+      MP_DATABASE: /data/mailpit.db
+      MP_UI_AUTH: "${MAILPIT_AUTH}"
+    volumes:
+      - mailpit-data:/data
+
+volumes:
+  mailpit-data:
