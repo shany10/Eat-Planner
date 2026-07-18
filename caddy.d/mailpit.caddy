@@ -1,0 +1,9 @@
+# Route reverse proxy pour l'interface web Mailpit (emails de prod).
+# Montee dans Caddy uniquement via docker-compose.mailpit.yml.
+# L'authentification est geree par Mailpit lui-meme (MP_UI_AUTH), donc pas de
+# basic_auth ici : Caddy se contente de relayer en HTTPS.
+
+{$MAIL_DOMAIN} {
+	encode gzip
+	reverse_proxy mailpit:8025
+}

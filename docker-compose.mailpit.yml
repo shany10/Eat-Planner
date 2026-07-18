@@ -1,0 +1,29 @@
+# Ajoute Mailpit a la stack de production, derriere Caddy en HTTPS.
+# A combiner avec les compose prod + caddy :
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.caddy.yml \
+#     -f docker-compose.mailpit.yml up -d --build
+#
+# Le backend envoie les emails vers mailpit:1025 (SMTP interne). L'interface web
+# (mailpit:8025) est exposee sur MAIL_DOMAIN via Caddy, protegee par un login
+# (MP_UI_AUTH = MAILPIT_AUTH du .env). Aucun port Mailpit n'est expose au public.
+services:
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: "5000"
+      MP_DATABASE: /data/mailpit.db
+      # Login de l'interface web ("utilisateur:motdepasse"), depuis le .env.
+      MP_UI_AUTH: "${MAILPIT_AUTH}"
+    volumes:
+      - mailpit-data:/data
+
+  caddy:
+    environment:
+      MAIL_DOMAIN: "${MAIL_DOMAIN}"
+    volumes:
+      - ./caddy.d/mailpit.caddy:/etc/caddy/conf.d/mailpit.caddy:ro
+
+volumes:
+  mailpit-data:
